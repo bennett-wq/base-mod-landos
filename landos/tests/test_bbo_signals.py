@@ -22,6 +22,7 @@ from src.adapters.spark.bbo_signals import (
     detect_agent_land_accumulation,
     detect_cdom_threshold,
     detect_developer_exit,
+    detect_office_land_program,
     detect_private_remarks_signals,
     detect_subdivision_remnant,
 )
@@ -34,7 +35,7 @@ from src.triggers.context import TriggerContext
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.engine import TriggerEngine
 from src.triggers.enums import PhaseGate
-from src.triggers.rules import ALL_RULES, RO, RQ
+from src.triggers.rules import ALL_RULES, RO, RP, RQ, RR
 
 _FIXED_TS = datetime(2026, 3, 9, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -264,6 +265,37 @@ class TestAgentAccumulationDetection:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# SECTION 5B: Office land program detection
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestOfficeDetection:
+
+    def test_five_listings_same_office_detected(self):
+        listings = [
+            _listing(listing_key=f"L-{i}", listing_office_id="OFF-001")
+            for i in range(5)
+        ]
+        detected, count = detect_office_land_program(listings[0], listings, threshold=5)
+        assert detected is True
+        assert count == 5
+
+    def test_four_listings_below_threshold_not_detected(self):
+        listings = [
+            _listing(listing_key=f"L-{i}", listing_office_id="OFF-001")
+            for i in range(4)
+        ]
+        detected, count = detect_office_land_program(listings[0], listings, threshold=5)
+        assert detected is False
+        assert count == 4
+
+    def test_none_listing_office_id_not_detected(self):
+        listing = _listing(listing_office_id=None)
+        detected, count = detect_office_land_program(listing, [listing], threshold=1)
+        assert detected is False
+        assert count == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # SECTION 6: Subdivision remnant detection
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -320,6 +352,16 @@ class TestReverseRulesWired:
         rule_ids = [r.rule_id for r in ALL_RULES]
         assert RQ.rule_id in rule_ids
         assert RQ.wake_target == "spark_signal_agent"
+
+    def test_rp_in_all_rules_targets_spark_signal_agent(self):
+        rule_ids = [r.rule_id for r in ALL_RULES]
+        assert RP.rule_id in rule_ids
+        assert RP.wake_target == "spark_signal_agent"
+
+    def test_rr_in_all_rules_targets_spark_signal_agent(self):
+        rule_ids = [r.rule_id for r in ALL_RULES]
+        assert RR.rule_id in rule_ids
+        assert RR.wake_target == "spark_signal_agent"
 
     def test_all_bbo_forward_rules_present(self):
         """RI through RN2 all present in ALL_RULES."""
