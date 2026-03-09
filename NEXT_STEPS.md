@@ -7,7 +7,7 @@ It should stay short, current, and operational.
 ---
 
 ## Current phase
-Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Step 1 complete. Ready for Step 2.
+Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Steps 1-4 complete (128/128 tests pass). Ready for Step 5.
 
 ---
 
@@ -27,12 +27,14 @@ These must be built first. Everything else depends on them.
 - Acceptance: an event envelope can be instantiated, serialized, and validated against the schema.
 
 **Step 2. Phase 1 object scaffold**
+- Status: complete locally. Object-model files and Step 2 tests exist in the current repo state.
 - Implement storage schemas for all 12 Phase 1 objects: Parcel, Listing, Municipality, MunicipalEvent, Owner, OwnerCluster, Subdivision, SiteCondoProject, DeveloperEntity, Opportunity, HomeProduct, SiteFit.
 - Implement the 2 lightweight system objects: AgentRun, Action.
 - Fields per `LANDOS_OBJECT_MODEL.md`. Required and optional annotations respected. Confidence fields included where specified.
 - Acceptance: all 14 objects can be created, persisted, and retrieved with their required fields.
 
 **Step 3. Trigger engine scaffold**
+- Status: complete locally. Trigger engine files and Step 3 tests exist in the current repo state.
 - Implement the routing engine: receive an event envelope → evaluate trigger rules → dispatch wake instructions.
 - The trigger engine must support multi-directional cross-family routing when warranted: listings may wake municipalities and clusters, municipalities may wake parcels and opportunities, clusters may wake municipal scans and listing review, and historical stall signals may wake supply rediscovery — always through explicit trigger rules and guardrails, never through uncontrolled recursion.
 - Implement cooldown enforcement, materiality gates, generation-depth hard cap (default: 5), and phase-gating (Phase 2+ rules exist but do not fire).
@@ -43,10 +45,12 @@ These must be built first. Everything else depends on them.
 These connect the system to real-world data and produce the first events.
 
 **Step 4. Spark MLS listing ingestion path**
-- Map Spark RETS/RESO fields to Listing object fields (field mapping is part of this step, not a separate prerequisite).
-- Build the ingestion adapter: poll feed → normalize → create/update Listing objects → emit listing-family events (`listing_added`, `listing_status_changed`, `listing_expired`, `listing_price_reduced`, `listing_relisted`).
-- Michigan land/lot listings only for Phase 1.
-- Acceptance: Spark feed data produces Listing objects and listing events flowing through the trigger engine.
+- Status: complete. Implemented in `landos/src/adapters/spark/`. 128/128 tests pass.
+- RESO→Listing field mapping, property-type filter (Michigan land/lot only), and type coercion in normalizer.
+- All 5 listing-family raw events emitted with correct identity, payload contracts, and relist dual-emit.
+- RE rule (listing_expired → RESCORE) activated from PLANNED_RULES.
+- BBO depth follow-up items logged; deferred to post-Step-6 pass.
+- Acceptance criteria met: Spark feed data produces Listing objects and listing events flowing through the trigger engine.
 
 **Step 5. Regrid parcel linkage path**
 - Map Regrid fields to Parcel object fields.
@@ -136,7 +140,7 @@ These are real system capabilities that exist in the architecture docs but must 
    ```
 7. **HomeProduct seed data** — Available. At least one BaseMod home model with real dimensions confirmed. Unblocks Step 10.
 
-All blockers resolved. Step 1 complete. Coding continues at Step 2 (Phase 1 object scaffold).
+All blockers resolved. Steps 1-3 are complete in the current local repo state. Coding continues at Step 4 (Spark MLS listing ingestion path).
 
 ---
 
