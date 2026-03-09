@@ -1,0 +1,30 @@
+.DS_Store
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment files
+.env
+.env.*
+
+# VS Code local state
+.vscode/settings.json
+
+# Coverage and test outputs
+.coverage
+htmlcov/
+
+# Local data junk
+*.sqlite3
