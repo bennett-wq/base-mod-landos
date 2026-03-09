@@ -238,3 +238,119 @@ Begin Step 5: Regrid parcel linkage path — map Regrid fields to Parcel object 
 - Municipal scan (Step 7)
 - Database or persistence wiring
 - Packaging, pricing, UI, or Phase 2+ work
+
+---
+
+## 2026-03-09 — Step 4.5 Complete: Spark BBO Signal Intelligence + PM Gate Review
+
+### What was completed
+- PM Agent conducted full gate review of Step 4.5 (Spark BBO Signal Intelligence).
+- Step 4.5 APPROVED. 202/202 tests pass. Zero regressions against Steps 1–5 baseline.
+- 37 new BBO tests added in `landos/tests/test_bbo_signals.py`.
+- 6 BBO signal detection families implemented as pure functions in `landos/src/adapters/spark/bbo_signals.py`.
+- 6 new BBO event builders added to `landos/src/adapters/spark/event_factory.py`.
+- `landos/src/models/listing.py` extended additively with all BBO field categories (developer exit, listing behavior, language intelligence, agent/office clustering, subdivision remnant, land detail, purchase contract).
+- `landos/src/adapters/spark/field_map.py`: `BBO_TO_LISTING` dict added; `CumulativeDaysOnMarket` migrated from RESO to BBO map.
+- `landos/src/adapters/spark/ingestion.py`: `_detect_and_build_bbo_events` helper added; BBO detection runs after store update and routes through TriggerEngine.
+- `landos/src/triggers/rules/__init__.py`: 23 new rules added (RI–RU, with fan-out rules expressed as separate entries). ALL_RULES grew from 8 to 31 active rules.
+- Bidirectional event mesh fully closed: forward rules RI–RN (BBO → cluster/supply agents), reverse rules RO–RR (cluster/parcel agents → spark_signal_agent), opportunity routing RS–RU (signals → opportunity/municipal agents).
+- `.claude/` agent-team infrastructure built: 6 agent specs, 3 skill files, 5 hook scripts, settings.json.
+- Infrastructure defect found and fixed: hook scripts used relative paths that broke when shell cwd changed to `landos/` subdirectory. All 5 hook commands updated to absolute paths in `.claude/settings.json`.
+
+### Files that changed or were materially advanced
+- `landos/src/models/listing.py` (BBO fields added)
+- `landos/src/adapters/spark/field_map.py` (BBO_TO_LISTING added)
+- `landos/src/adapters/spark/normalizer.py` (BBO field mapping added)
+- `landos/src/adapters/spark/bbo_signals.py` (new — 6 detection functions)
+- `landos/src/adapters/spark/event_factory.py` (6 BBO event builders added)
+- `landos/src/adapters/spark/ingestion.py` (_detect_and_build_bbo_events added)
+- `landos/src/triggers/rules/__init__.py` (RI–RU added; ALL_RULES = 31)
+- `landos/tests/test_bbo_signals.py` (new — 37 BBO test cases)
+- `.claude/settings.json` (hook paths fixed to absolute)
+- `.claude/agents/` (6 agent spec files)
+- `.claude/skills/` (3 skill files)
+- `.claude/hooks/` (5 hook scripts)
+
+### Key decisions locked
+- BBO language intelligence is regex-only in Phase 1. LLM remarks pipeline deferred.
+- Private remarks never appear in full in event payloads. Excerpt capped at 200 chars.
+- One private remarks event per listing with all matched categories in `detected_categories` list.
+- `detect_agent_land_accumulation` uses `list_agent_key` (stable UUID), not agent name string.
+- Fan-out rules (RN, RU) expressed as separate rules (RN1/RN2, RU1/RU2) because engine does not natively support multi-target fan-out. Semantics preserved.
+- Hook commands must use absolute paths. Relative path hook configuration is fragile after any `cd` operation in a Bash tool call.
+
+### Minor gaps noted (non-blocking, carry into Step 6 pre-work)
+- No dedicated unit test class for `detect_office_land_program` (agent accumulation tested; office not given its own class).
+- RP (`same_owner_listing_detected`) and RR (`parcel_owner_resolved`) reverse rules are wired but not individually name-verified in TestReverseRulesWired (only RO and RQ have explicit assertions).
+
+### Open items at checkpoint
+- Two small test additions should be done before Step 6 builder session begins (see pre-Step-6 cleanup in NEXT_STEPS).
+- InMemory stores (Listing, Parcel, Owner) still need PostgreSQL replacements before live feed wiring.
+
+### Next exact task
+Pre-Step 6 cleanup (small): add `TestOfficeDetection` class and explicit RP/RR assertions to `test_bbo_signals.py`. Then begin Step 6: Cluster Detection.
+
+### Do not drift into
+- Step 6 cluster implementation before test cleanup is done
+- Municipal scan (Step 7) before cluster (Step 6)
+- Database persistence
+- Phase 2+ work
+
+---
+
+## 2026-03-09 — Step 5 Complete
+
+### What was completed
+- Completed Step 5: Regrid parcel linkage path. 165/165 tests pass.
+- Added `address_raw` and `parcel_number_raw` as Optional fields to the Listing model.
+- Added `address_raw` as Optional field to the Parcel model.
+- Extended Spark field_map with `UnparsedAddress` → `address_raw` and `ParcelNumber` → `parcel_number_raw`.
+- Updated Spark normalizer and event_factory to populate and emit these fields.
+- Built `landos/src/adapters/regrid/` (5 files): `field_map.py`, `normalizer.py`, `event_factory.py`, `linker.py`, `ingestion.py`, `__init__.py`.
+- Normalizer: Regrid bulk record → Parcel; SkipRecord guards; vacancy inference from improvval/improvcode; centroid construction from lat/lon; municipality linkage via default or lookup.
+- Linker (`ParcelListingLinker`): address_match → parcel_number_match → geo_match (haversine 50m threshold) priority chain.
+- Event factory: `parcel_linked_to_listing`, `parcel_owner_resolved`, `parcel_score_updated` — all RAW (ingestion adapter is the authoritative origin, matching Step 4 Spark convention).
+- Ingestion adapter (`RegridIngestionAdapter`): batch normalize → link → owner resolve → score → emit → route through TriggerEngine; `InMemoryParcelStore` + `InMemoryOwnerStore` for Phase 1.
+- Phase 1 scoring model (v0.1_phase1_basic): acreage_signal + vacancy_signal + linkage_signal; materiality gate 0.05.
+- Created `landos/src/triggers/rules/parcel_rules.py` with RF, RG, RH.
+- Promoted RF from PLANNED_RULES to ALL_RULES. Added RG and RH. ALL_RULES now has 8 active rules.
+- 37 new Step 5 tests; 165/165 total pass.
+
+### Files that changed or were materially advanced
+- `landos/src/models/listing.py` (address_raw, parcel_number_raw added)
+- `landos/src/models/parcel.py` (address_raw added)
+- `landos/src/adapters/spark/field_map.py` (UnparsedAddress, ParcelNumber added)
+- `landos/src/adapters/spark/normalizer.py` (address_raw, parcel_number_raw mapped)
+- `landos/src/adapters/spark/event_factory.py` (listing_added now emits address_raw)
+- `landos/src/adapters/regrid/__init__.py` (new)
+- `landos/src/adapters/regrid/field_map.py` (new)
+- `landos/src/adapters/regrid/normalizer.py` (new)
+- `landos/src/adapters/regrid/event_factory.py` (new)
+- `landos/src/adapters/regrid/linker.py` (new)
+- `landos/src/adapters/regrid/ingestion.py` (new)
+- `landos/src/triggers/rules/parcel_rules.py` (new — RF, RG, RH)
+- `landos/src/triggers/rules/__init__.py` (RF, RG, RH added to ALL_RULES; PLANNED cleaned)
+- `landos/tests/test_regrid_adapter.py` (new — 37 Step 5 test cases)
+
+### Key decisions locked
+- Parcel-state events emitted from the ingestion adapter use EventClass.RAW, consistent with Spark adapter convention. DERIVED class applies to downstream agent re-emission only.
+- Phase 1 scoring model is v0.1_phase1_basic: acreage (40%) + vacancy (40%) + linkage (20%). No entity resolution in Phase 1 — owner matching is name-normalized string dedup only.
+- `address_raw` added to both Listing (from RESO UnparsedAddress) and Parcel (from Regrid address/saddress). This field was always in the architecture; Step 5 is the first point it has data.
+- Geo-match uses haversine centroid distance (50m threshold). Shapely polygon intersection deferred to PostGIS wiring.
+- InMemoryParcelStore deduplicates on regrid_id. Re-ingesting the same regrid_id produces no events.
+
+### Open items at checkpoint
+- InMemoryParcelStore, InMemoryOwnerStore, InMemoryListingStore all need PostgreSQL replacements before live feed wiring.
+- Owner entity resolution (LLC graphs, trust beneficiaries) deferred — Phase 1 uses name-normalized string matching only.
+- Geo-match polygon intersection (shapely) deferred until PostGIS is wired.
+- Municipality linkage from Regrid requires a pre-built lookup dict or default UUID — production wiring deferred.
+
+### Next exact task
+Begin Step 6: Cluster detection path — owner/agent/office cluster detection from linked listings and parcels; emit `same_owner_listing_detected`, `owner_cluster_detected`, `owner_cluster_size_threshold_crossed`, `agent_subdivision_program_detected`, `office_inventory_program_detected`; create OwnerCluster objects.
+
+### Do not drift into
+- Database or persistence wiring
+- Owner entity resolution (LLC graphs) — Step 6 uses name matching only
+- Municipal scan (Step 7)
+- Stallout detection (Step 8)
+- Pricing, packaging, UI, or Phase 2+ work
