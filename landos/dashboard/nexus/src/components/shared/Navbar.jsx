@@ -1,11 +1,13 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { setActiveTab, toggleCommandPalette } from '../../store/uiSlice';
+import { toggleUploadPortal } from '../../store/missionsSlice';
 
 const TABS = [
   { id: 'mesh', label: '⚡ Mesh' },
   { id: 'radar', label: '🎯 Radar' },
   { id: 'clusters', label: '🏢 Clusters' },
   { id: 'command', label: '🤖 Command' },
+  { id: 'missions', label: '🚀 Missions' },
   { id: 'economics', label: '📊 Economics' },
 ];
 
@@ -13,6 +15,7 @@ export default function Navbar() {
   const dispatch = useDispatch();
   const activeTab = useSelector(s => s.ui.activeTab);
   const { eventsPerSecond, totalRulesFired, totalWakes } = useSelector(s => s.mesh);
+  const activeMissions = useSelector(s => s.missions.missions.filter(m => m.phase !== 'complete').length);
 
   return (
     <nav className="h-[52px] bg-void-1 border-b border-white/5 flex items-center px-5 gap-4 z-50 shrink-0">
@@ -33,13 +36,18 @@ export default function Navbar() {
           <button
             key={tab.id}
             onClick={() => dispatch(setActiveTab(tab.id))}
-            className={`px-4 py-2 rounded-t-md text-[12px] font-medium tracking-wide border border-transparent border-b-0 transition-all cursor-pointer
+            className={`px-4 py-2 rounded-t-md text-[12px] font-medium tracking-wide border border-transparent border-b-0 transition-all cursor-pointer relative
               ${activeTab === tab.id
                 ? 'text-brass bg-void-2 border-white/5'
                 : 'text-white/25 hover:text-white/45 hover:bg-void-2'
               }`}
           >
             {tab.label}
+            {tab.id === 'missions' && activeMissions > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-nexus-amber text-void-0 text-[9px] font-bold flex items-center justify-center animate-breathe">
+                {activeMissions}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -59,6 +67,14 @@ export default function Navbar() {
           <div className="text-[9px] text-white/18 uppercase tracking-widest">Wakes</div>
         </div>
       </div>
+
+      {/* Upload button */}
+      <button
+        onClick={() => dispatch(toggleUploadPortal())}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-void-3 border border-white/6 text-white/25 text-[11px] cursor-pointer hover:border-brass-dim hover:text-brass transition-all"
+      >
+        📦 Upload
+      </button>
 
       {/* Status */}
       <div className="flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-medium bg-nexus-emerald/15 text-nexus-emerald border border-nexus-emerald/10">

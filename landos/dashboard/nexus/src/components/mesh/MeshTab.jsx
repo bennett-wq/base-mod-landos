@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setSelectedAgent } from '../../store/uiSlice';
+import { setSelectedAgent, setRightPanel } from '../../store/uiSlice';
 import useMeshCanvas from '../../hooks/useMeshCanvas';
 import SignalFeed from './SignalFeed';
 import RuleGrid from './RuleGrid';
@@ -109,7 +109,7 @@ function RightPanelTabs() {
       {tabs.map(([id, label]) => (
         <button
           key={id}
-          onClick={() => dispatch({ type: 'ui/setRightPanel', payload: id })}
+          onClick={() => dispatch(setRightPanel(id))}
           className={`flex-1 py-2.5 text-center text-[10px] font-medium uppercase tracking-widest border-b-2 transition-all cursor-pointer
             ${active === id ? 'text-brass border-brass' : 'text-white/17 border-transparent hover:text-white/30'}`}
         >

@@ -2,17 +2,22 @@ import { useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addSignal, tickAgents } from './store/meshSlice';
 import { toggleCommandPalette } from './store/uiSlice';
+import { toggleUploadPortal, toggleDrawMode } from './store/missionsSlice';
 import Navbar from './components/shared/Navbar';
 import MeshTab from './components/mesh/MeshTab';
 import RadarTab from './components/radar/RadarTab';
 import ClustersTab from './components/clusters/ClustersTab';
 import CommandTab from './components/command/CommandTab';
+import MissionsTab from './components/missions/MissionsTab';
 import EconomicsTab from './components/economics/EconomicsTab';
 import CommandPalette from './components/shared/CommandPalette';
 import AgentDetail from './components/shared/AgentDetail';
 import ToastContainer from './components/shared/ToastContainer';
+import MissionTheater from './components/missions/MissionTheater';
+import DataUploadPortal from './components/missions/DataUploadPortal';
+import DealSpotlight from './components/missions/DealSpotlight';
 
-const TABS = { mesh: MeshTab, radar: RadarTab, clusters: ClustersTab, command: CommandTab, economics: EconomicsTab };
+const TABS = { mesh: MeshTab, radar: RadarTab, clusters: ClustersTab, command: CommandTab, missions: MissionsTab, economics: EconomicsTab };
 
 export default function App() {
   const dispatch = useDispatch();
@@ -31,11 +36,21 @@ export default function App() {
     return () => clearInterval(id);
   }, [dispatch]);
 
-  // Keyboard shortcut
+  // Keyboard shortcuts
   const handleKeyDown = useCallback((e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       dispatch(toggleCommandPalette());
+    }
+    // ⌘⇧U — Upload
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'U') {
+      e.preventDefault();
+      dispatch(toggleUploadPortal());
+    }
+    // ⌘⇧P — Polygon draw (when on radar)
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
+      e.preventDefault();
+      dispatch(toggleDrawMode());
     }
   }, [dispatch]);
 
@@ -50,9 +65,13 @@ export default function App() {
       <div className="flex-1 overflow-hidden">
         <ActiveComponent />
       </div>
+      {/* Overlays — ordered by z-index */}
       <CommandPalette />
       <AgentDetail />
       <ToastContainer />
+      <DealSpotlight />
+      <DataUploadPortal />
+      <MissionTheater />
     </div>
   );
 }
