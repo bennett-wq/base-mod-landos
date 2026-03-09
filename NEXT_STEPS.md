@@ -7,7 +7,7 @@ It should stay short, current, and operational.
 ---
 
 ## Current phase
-Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Ready for first coding session — Step 1.
+Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Step 1 complete. Ready for Step 2.
 
 ---
 
@@ -19,6 +19,7 @@ The first coding session builds the Phase 1 signal engine foundation. It covers 
 These must be built first. Everything else depends on them.
 
 **Step 1. Canonical event envelope**
+- Status: complete. Implemented in the `landos/` Python workspace with local tests passing.
 - Implement the canonical event envelope exactly as defined in `LANDOS_EVENT_LIBRARY.md` (envelope section).
 - Required fields: `event_id`, `event_type`, `event_family`, `event_class`, `occurred_at`, `observed_at`, `source_system`, `entity_refs`, `payload`, `schema_version`, `status`.
 - Optional fields: `source_record_id`, `source_confidence`, `derived_from_event_ids`, `causal_chain_id`, `generation_depth`, `wake_priority`, `routing_class`, `dedupe_key`, `fingerprint_hash`, `emitted_by_agent_run_id`, `ttl`, `created_at`.
@@ -135,7 +136,7 @@ These are real system capabilities that exist in the architecture docs but must 
    ```
 7. **HomeProduct seed data** — Available. At least one BaseMod home model with real dimensions confirmed. Unblocks Step 10.
 
-All blockers resolved. Coding begins at Step 1 (canonical event envelope).
+All blockers resolved. Step 1 complete. Coding continues at Step 2 (Phase 1 object scaffold).
 
 ---
 
