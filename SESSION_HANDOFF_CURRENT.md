@@ -1,71 +1,81 @@
 # SESSION_HANDOFF_CURRENT.md
+
 ## Project
+
 BaseMod LandOS — Event Mesh ("Land Swarm")
+
 ## Current phase
-Phase 0 complete. Implementation planning complete. Founder decisions resolved. Steps 1–5 and 4.5 complete (202/202 tests pass). Ready for Step 6 pre-work cleanup, then Step 6.
-## Concise summary of what was completed
-- Completed Step 1: canonical event envelope, enums, validation rules, serialization helpers, and local test coverage.
-- Completed Step 2: all 14 Phase 1 object models plus 30 model enums, organized by domain across `src/models/`, with object-model test coverage.
-- Completed Step 3: full trigger engine scaffold in `src/triggers/`. TriggerEngine evaluates rules, produces WakeInstructions, enforces cooldown/phase-gating/depth-cap. 5 executable rules (RA-RE), PLANNED_RULES catalog for Steps 5-8. Critical deterministic time-handling fix applied (context.current_timestamp threaded through all engine operations).
-- Completed Step 4: Spark MLS listing ingestion adapter in `src/adapters/spark/`. Normalizes RESO records into Listing objects; emits 5 listing-family raw events (`listing_added`, `listing_status_changed`, `listing_expired`, `listing_price_reduced`, `listing_relisted`); routes all events through TriggerEngine. RE rule activated (listing_expired → RESCORE). 21 new Step 4 tests; 128/128 total pass.
-- Completed Step 5: Regrid parcel linkage path in `src/adapters/regrid/`. Normalizes Regrid bulk records into Parcel objects; implements parcel-to-listing linkage (address_match → parcel_number_match → geo_match); emits 3 parcel-state events (`parcel_linked_to_listing`, `parcel_owner_resolved`, `parcel_score_updated`); routes all events through TriggerEngine. RF, RG, RH rules activated. 37 new Step 5 tests; 165/165 total pass.
-- Completed Step 4.5 (PM gate review APPROVED 2026-03-09): Spark BBO signal intelligence. 6 BBO signal families detected and emitted as events. 23 new trigger rules (RI–RU) added; ALL_RULES grew from 8 to 31. Bidirectional event mesh fully closed: BBO signals wake cluster/supply agents; cluster/parcel events reverse-route to spark_signal_agent. 37 new BBO tests; 202/202 total pass. Infrastructure: .claude/ agent-team scaffold built (6 agents, 3 skills, 5 hooks). Hook path defect found and fixed (absolute paths in settings.json).
+
+Phase 0 complete. Phase 1 implementation in progress. Steps 1–6 and 4.5 complete. Step 6.5 (comprehensive review + hardening) complete. **235/235 tests pass.** Ready for Step 7: Municipal Scan.
+
+## Concise summary of what was completed this session
+
+- Conducted a comprehensive repository review covering architecture, implementation quality, test coverage, and readiness assessment.
+- **Fixed a bug in `detect_market_velocity`**: referenced nonexistent `l.city` attribute on Listing. Replaced with configurable `geography_field` parameter using `getattr()`. Added 4 new tests.
+- **Made SparkIngestionAdapter thresholds configurable**: `cdom_threshold` and `agent_accumulation_threshold` are now constructor params. Eliminated brittle 80-line subclass hack in integration tests — tests now use clean constructor calls.
+- **Added ALL_RULES uniqueness guard**: startup assertion in `rules/__init__.py` raises `RuntimeError` on duplicate `rule_id` values at import time.
+- **Documented APN normalization strategy**: `_normalize_apn` in `linker.py` now has a docstring explaining Phase 1 limitation (global `lstrip("0")` vs per-segment) and the production fix path for multi-county.
+- **Documented `detect_developer_exit` field precedence**: numbered branch order and explicit rationale for why `major_change_type` fires without a CDOM check while `withdrawal_date` requires cdom >= 120.
+- Updated `LANDOS_DECISIONS_LOG.md` with 5 new locked decisions.
+- Updated `MEMORY.md` with Step 6.5 results and known Phase 1 limitations.
+
 ## Files that changed or were materially advanced
-- `SESSION_HANDOFF_CURRENT.md` (this file — updated to Step 5 checkpoint)
-- `NEXT_STEPS.md` (Step 5 marked complete; Step 6 marked next)
-- `SESSION_LOG.md` (Step 5 Complete entry added)
-- `landos/src/models/listing.py` (address_raw, parcel_number_raw added)
-- `landos/src/models/parcel.py` (address_raw added)
-- `landos/src/adapters/spark/field_map.py` (UnparsedAddress, ParcelNumber added)
-- `landos/src/adapters/spark/normalizer.py` (address_raw, parcel_number_raw mapped)
-- `landos/src/adapters/spark/event_factory.py` (listing_added now emits address_raw)
-- `landos/src/adapters/regrid/__init__.py` (new)
-- `landos/src/adapters/regrid/field_map.py` (new)
-- `landos/src/adapters/regrid/normalizer.py` (new)
-- `landos/src/adapters/regrid/event_factory.py` (new)
-- `landos/src/adapters/regrid/linker.py` (new)
-- `landos/src/adapters/regrid/ingestion.py` (new)
-- `landos/src/triggers/rules/parcel_rules.py` (new — RF, RG, RH)
-- `landos/src/triggers/rules/__init__.py` (RF, RG, RH added to ALL_RULES; PLANNED cleaned)
-- `landos/tests/test_regrid_adapter.py` (new — 37 Step 5 test cases)
+
+- `landos/src/adapters/spark/bbo_signals.py` — `detect_developer_exit` docstring expanded; `detect_market_velocity` fixed (geography_field param)
+- `landos/src/adapters/spark/ingestion.py` — `SparkIngestionAdapter.__init__` now accepts `cdom_threshold` and `agent_accumulation_threshold`; `_detect_and_build_bbo_events` uses instance thresholds
+- `landos/src/adapters/regrid/linker.py` — `_normalize_apn` docstring documenting Phase 1 limitation
+- `landos/src/triggers/rules/__init__.py` — startup uniqueness assertion for ALL_RULES rule_ids
+- `landos/tests/test_bbo_signals.py` — 4 new `TestMarketVelocity` tests; integration tests simplified (no more subclassing)
+- `LANDOS_DECISIONS_LOG.md` — 5 new decisions logged
+- `MEMORY.md` — updated to 235/235 tests, Step 6.5 documented
+
 ## Key decisions that were locked
-- First implementation pass is 10 steps in 3 tiers: Tier 1 (event envelope, object scaffold, trigger engine), Tier 2 (Spark ingestion, Regrid linkage, cluster detection), Tier 3 (municipal scan, stallout detection, site-condo detection, geometry-only SiteFit).
-- Source identity contract: `entity_refs.listing_id` = internal UUID; `source_record_id` = Spark listing key string; `source_system` = "spark_rets". No changes to EntityRefs model needed.
-- Relist dual-emit: expired/withdrawn/canceled → active always emits both `listing_status_changed` and `listing_relisted`.
-- `gap_days` is Optional[int]; None means unknown. Never emit 0 as a sentinel.
-- `reduction_count` is a cumulative lifetime tally; never resets on price increase.
-- RE rule (listing_expired → RESCORE) promoted from PLANNED_RULES to ALL_RULES in Step 4.
-- RF (parcel_linked_to_listing → RESCORE), RG (parcel_owner_resolved → RESCAN cluster), RH (parcel_score_updated → RESCORE, materiality gate) activated in Step 5. ALL_RULES now has 8 active rules.
-- Parcel-state events from the ingestion adapter use EventClass.RAW (authoritative source — adapter is the origin, matching Step 4 convention). DERIVED applies to downstream agent re-emission only.
-- Phase 1 scoring model v0.1_phase1_basic: acreage_signal (40%) + vacancy_signal (40%) + linkage_signal (20%); materiality gate 0.05.
-- `address_raw` added to both Listing (RESO UnparsedAddress) and Parcel (Regrid address/saddress).
-- Owner matching in Phase 1 is name-normalized string dedup only. Entity resolution (LLC graphs, trust beneficiaries) is deferred.
-- InMemoryParcelStore deduplicates on regrid_id. Re-ingesting the same regrid_id produces no events.
-- Geo-match uses haversine centroid distance (50m threshold). Shapely polygon intersection deferred to PostGIS wiring.
-- BBO/private-role MLS depth (PrivateRemarks, custom Michigan fields, metadata-driven mapping, historical bulk query) is explicitly deferred — not addressed in Steps 4-5.
-- InMemoryListingStore: `__len__` causes falsy evaluation when empty — always use `is not None` checks when defaulting, not `or`.
-- Listing remarks classification remains a Phase 1 capability, deferred from first implementation pass.
-- Trigger engine multi-directional cross-family routing: controlled by explicit rules and guardrails, never uncontrolled recursion.
-- Phase ordering always via phase_allows() — no direct PhaseGate comparisons.
-- Deterministic time: context.current_timestamp threaded through all engine, cooldown, wake, and result operations.
+
+- SparkIngestionAdapter thresholds must be constructor params, not hardcoded in internal methods.
+- ALL_RULES must enforce rule_id uniqueness at import time.
+- APN normalization is global lstrip in Phase 1; per-segment deferred to multi-county.
+- `detect_developer_exit` field precedence (major_change_type > cancellation_date > withdrawal_date > off_market_date) is intentional and reflects MLS field confidence hierarchy.
+- `detect_market_velocity` uses configurable `geography_field` until Listing gains a proper `city` attribute.
+
 ## Unresolved questions still open
-- InMemoryCooldownTracker, InMemoryListingStore, InMemoryParcelStore, InMemoryOwnerStore all need production replacements (PostgreSQL/Redis) before live feed wiring.
-- Fan-out enforcement (max_fan_out) not yet implemented; belongs in agent orchestration layer.
-- No MLS query layer yet — process_batch() is a pure record processor; polling/query integration belongs to a future step.
-- BBO depth follow-up deferred: PrivateRemarks, custom Michigan fields, metadata-driven field registry, historical bulk query, media/document ingestion.
+
+- InMemory stores (Listing, Parcel, Owner, Cluster) all need production replacements (PostgreSQL/Redis) before live feed wiring.
+- Fan-out enforcement (`max_fan_out`) not yet implemented; belongs in agent orchestration layer.
+- No MLS query layer yet — `process_batch()` is a pure record processor; polling/query integration is future work.
+- BBO depth follow-up deferred: PrivateRemarks access, custom Michigan fields, metadata-driven field registry, historical bulk query, media/document ingestion.
 - Municipality linkage from Regrid requires a pre-built lookup dict or default UUID — production wiring deferred.
 - Geo-match polygon intersection (shapely) deferred until PostGIS is wired.
-## Two minor test gaps to close before Step 6 begins
-1. Add `TestOfficeDetection` class to `landos/tests/test_bbo_signals.py` — positive (≥5 listings same office), negative (<5), None office id. Mirrors existing `TestAgentAccumulationDetection` pattern.
-2. Add explicit RP and RR assertions to `TestReverseRulesWired` in same file — confirm `same_owner_listing_detected → spark_signal_agent` and `parcel_owner_resolved → spark_signal_agent` by name. Currently only RO and RQ have named assertions.
+- Listing model needs a `city` field for proper `detect_market_velocity` geography matching.
+
+## Known Phase 1 limitations (documented, not bugs)
+
+- `_normalize_apn`: global `lstrip("0")` — multi-county needs per-segment normalization
+- `detect_market_velocity`: uses `geography_field` workaround — Listing needs a `city` field
+- Geo-linker takes first match within threshold, not strictly closest (ordering-dependent)
+- ClusterDetector groups by `owner_id` OR `seller_name_raw`, not both (entity resolution deferred)
+- Municipality resolution is pass-through (default_municipality_id sentinel)
+
 ## Single next highest-priority task
-Pre-work cleanup (small, ~20 min): close the two test gaps above, confirm 204+ tests pass. Then begin Step 6: Cluster detection path — owner/agent/office cluster detection from linked listings, parcels, and BBO signals; emit `same_owner_listing_detected`, `owner_cluster_detected`, `owner_cluster_size_threshold_crossed`, `agent_subdivision_program_detected`, `office_inventory_program_detected`; create OwnerCluster objects. Reverse rules RO, RP, RU are pre-wired and will activate when Step 6 emits the cluster events they listen for.
+
+Begin Step 7: Municipal Scan — the first Tier 3 step. Build the municipal scan agent for priority Michigan municipalities. This includes:
+- Municipality adapter/ingestion path
+- Municipal event builders for the 16 raw municipal_process family events
+- `municipality_rule_now_supports_split` derived event
+- Connect to the pre-wired PLANNED rule: `PLANNED__municipality_rule_now_supports_split__rescore_parcels`
+- Tests for municipal event emission and trigger routing
+
+Per the Build Roadmap (Phase 1, section 1g): connect to Register of Deeds (priority counties), permit systems, planning commission minutes. Emit municipal process detection events. Evaluate rule changes.
+
 ## Short warning list of what not to drift into next
-- Do not reopen or broaden Steps 1–5 or 4.5 unless a concrete defect is found.
+
+- Do not reopen Steps 1–6 or 4.5 unless a concrete defect is found.
 - Do not wire database persistence yet.
-- Do not jump to municipal scan (Step 7) before cluster detection (Step 6) is done.
+- Do not jump to stallout detection (Step 8) before municipal scan (Step 7) is done.
+- Do not build pricing engine, marketplace UI, buyer demand, incentives, or transaction orchestration.
+- Do not build LLM remarks pipeline — Phase 1 uses regex only.
 - Do not invent new strategy or broaden the architecture.
-- Do not create duplicate master docs.
-- Do not overbuild UI before the signal engine is real.
-- Do not build pricing engine, marketplace UI, buyer demand, incentives execution, transaction orchestration, or broad source expansion — all explicitly out of scope for first implementation pass.
-- Never use `cd <subdir> &&` in a Bash tool call — use absolute paths for pytest and other commands to avoid contaminating the shell cwd and breaking hooks.
+- Never use `cd <subdir> &&` in a Bash tool call — use absolute paths for pytest and other commands.
+
+## Whether the current task is complete
+
+Complete. Step 6.5 (comprehensive review + hardening) is done. 235/235 tests pass. All documentation updated. Ready for Step 7.

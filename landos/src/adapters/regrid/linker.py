@@ -175,9 +175,18 @@ def _normalize_address(raw: str) -> str:
 
 
 def _normalize_apn(raw: str) -> str:
-    """Strip hyphens, spaces, and leading zeros for APN comparison."""
+    """Strip hyphens, spaces, and leading zeros for APN comparison.
+
+    Phase 1 limitation: strips ALL leading zeros from the concatenated string,
+    not per-segment. This is sufficient for Washtenaw County single-county use
+    but may cause false positives/negatives for multi-segment APN formats
+    where interior segments have meaningful leading zeros (e.g., Michigan PINs
+    like "12-003-045" where "003" is distinct from "3").
+
+    Production fix (multi-county): split on separator, lstrip("0") per segment,
+    rejoin. Deferred until multi-county ingestion is wired.
+    """
     s = re.sub(r"[-\s]", "", raw.strip())
-    # Strip leading zeros from each segment (split on remaining separators)
     s = s.lstrip("0") or "0"
     return s.lower()
 

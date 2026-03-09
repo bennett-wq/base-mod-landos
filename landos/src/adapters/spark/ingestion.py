@@ -124,10 +124,14 @@ class SparkIngestionAdapter:
         engine: TriggerEngine,
         context: TriggerContext | None = None,
         store: InMemoryListingStore | None = None,
+        cdom_threshold: int = CDOM_THRESHOLD_DEFAULT,
+        agent_accumulation_threshold: int = 3,
     ) -> None:
         self._engine = engine
         self._context = context if context is not None else TriggerContext()
         self._store = store if store is not None else InMemoryListingStore()
+        self._cdom_threshold = cdom_threshold
+        self._agent_accumulation_threshold = agent_accumulation_threshold
 
     @property
     def store(self) -> InMemoryListingStore:
@@ -187,15 +191,15 @@ class SparkIngestionAdapter:
         self,
         listing: Listing,
         now: datetime,
-        cdom_threshold: int = CDOM_THRESHOLD_DEFAULT,
     ) -> list[EventEnvelope]:
         """Run BBO signal detectors and build events for any signals found.
 
         Called AFTER the store is updated so accumulation counts include
-        the current listing.
+        the current listing. Thresholds come from constructor params.
         """
         bbo_events: list[EventEnvelope] = []
         all_listings = self.store_listings
+        cdom_threshold = self._cdom_threshold
 
         # RI — CDOM threshold
         if detect_cdom_threshold(listing, threshold=cdom_threshold):
@@ -219,7 +223,9 @@ class SparkIngestionAdapter:
             )
 
         # RL — agent land accumulation
-        agent_detected, agent_count = detect_agent_land_accumulation(listing, all_listings)
+        agent_detected, agent_count = detect_agent_land_accumulation(
+            listing, all_listings, threshold=self._agent_accumulation_threshold,
+        )
         if agent_detected:
             bbo_events.append(
                 build_agent_land_accumulation_detected(listing, agent_listing_count=agent_count, now=now)

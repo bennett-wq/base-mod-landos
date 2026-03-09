@@ -26,12 +26,18 @@ def detect_cdom_threshold(listing: Listing, threshold: int = CDOM_THRESHOLD_DEFA
 
 def detect_developer_exit(listing: Listing) -> tuple[bool, str]:
     """
-    Returns (detected, reason). Fires on:
-    - off_market_date set on active listing
-    - cancellation with cdom >= 60
-    - withdrawal with cdom >= 120
-    - major_change_type containing "Expired" or "Withdrawn"
-    reason = most specific signal found.
+    Returns (detected, reason). Fires on first matching signal (short-circuit):
+    1. major_change_type containing "Expired" or "Withdrawn"
+    2. cancellation_date set AND cdom >= 60
+    3. withdrawal_date set AND cdom >= 120
+    4. off_market_date set on active/pending listing
+
+    Field precedence note: a listing with major_change_type="Withdrawn" fires
+    via branch 1 regardless of cdom, while a listing with only withdrawal_date
+    set requires cdom >= 120 via branch 3. This is intentional —
+    major_change_type is a stronger MLS-confirmed signal than withdrawal_date
+    alone. The two fields can describe the same physical state but
+    major_change_type carries higher confidence.
     """
     if listing.major_change_type and any(
         kw in listing.major_change_type for kw in ("Expired", "Withdrawn")
@@ -123,16 +129,24 @@ def detect_market_velocity(
     listing: Listing,
     sold_listings: list[Listing],
     geography_key: str,
+    geography_field: str = "address_raw",
 ) -> Optional[float]:
     """
     Returns avg days-to-close for comparable sold listings in same geography.
     Returns None if fewer than 3 comps available.
-    geography_key = listing city or county for grouping.
+
+    geography_key:   value to match against (e.g. "Ann Arbor").
+    geography_field: Listing attribute to compare against geography_key.
+                     Defaults to address_raw. When a city/county field is
+                     added to Listing, switch to that.
+
     Utility-only in Step 4.5 — no events emitted here.
     """
     comps = [
         l for l in sold_listings
-        if l.city == geography_key and l.close_date is not None and l.cdom is not None
+        if getattr(l, geography_field, None) == geography_key
+        and l.close_date is not None
+        and l.cdom is not None
     ]
     if len(comps) < 3:
         return None

@@ -1,14 +1,16 @@
 """Step 4.5 acceptance tests — Spark BBO Signal Intelligence.
 
 Coverage:
-  CDOM detection         (3 tests)
-  Developer exit         (3 tests)
-  Private remarks        (6 tests)
+  CDOM detection         (4 tests)
+  Developer exit         (6 tests)
+  Private remarks        (7 tests)
   Remarks excerpt safety (2 tests)
   Agent accumulation     (3 tests)
-  Subdivision remnant    (4 tests)
-  Reverse rules wired    (2 tests)
-  Full integration       (3 tests)
+  Office detection       (3 tests)
+  Subdivision remnant    (6 tests)
+  Market velocity        (4 tests)
+  Reverse rules wired    (6 tests)
+  Full integration       (5 tests)
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ from src.adapters.spark.bbo_signals import (
     detect_agent_land_accumulation,
     detect_cdom_threshold,
     detect_developer_exit,
+    detect_market_velocity,
     detect_office_land_program,
     detect_private_remarks_signals,
     detect_subdivision_remnant,
@@ -338,6 +341,61 @@ class TestSubdivisionRemnantDetection:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# SECTION 6B: Market velocity utility
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestMarketVelocity:
+    """Tests for detect_market_velocity utility function.
+
+    Uses address_raw as geography_field since Listing has no city attribute yet.
+    When a city field is added, these tests should be updated.
+    """
+
+    _GEO = "Ann Arbor"
+
+    def test_returns_avg_cdom_for_comps_in_same_geography(self):
+        sold = [
+            _listing(listing_key=f"S-{i}", address_raw=self._GEO, cdom=cdom, close_date=date(2026, 1, i + 1))
+            for i, cdom in enumerate([60, 90, 120])
+        ]
+        trigger = _listing(address_raw=self._GEO)
+        result = detect_market_velocity(trigger, sold, geography_key=self._GEO, geography_field="address_raw")
+        assert result == pytest.approx(90.0)
+
+    def test_returns_none_when_fewer_than_three_comps(self):
+        sold = [
+            _listing(listing_key=f"S-{i}", address_raw=self._GEO, cdom=60, close_date=date(2026, 1, i + 1))
+            for i in range(2)
+        ]
+        trigger = _listing(address_raw=self._GEO)
+        result = detect_market_velocity(trigger, sold, geography_key=self._GEO, geography_field="address_raw")
+        assert result is None
+
+    def test_ignores_comps_in_different_geography(self):
+        sold = [
+            _listing(listing_key="S-1", address_raw=self._GEO, cdom=60, close_date=date(2026, 1, 1)),
+            _listing(listing_key="S-2", address_raw=self._GEO, cdom=90, close_date=date(2026, 1, 2)),
+            _listing(listing_key="S-3", address_raw="Ypsilanti", cdom=30, close_date=date(2026, 1, 3)),
+        ]
+        trigger = _listing(address_raw=self._GEO)
+        # Only 2 comps match — below threshold
+        result = detect_market_velocity(trigger, sold, geography_key=self._GEO, geography_field="address_raw")
+        assert result is None
+
+    def test_ignores_comps_missing_close_date_or_cdom(self):
+        sold = [
+            _listing(listing_key="S-1", address_raw=self._GEO, cdom=60, close_date=date(2026, 1, 1)),
+            _listing(listing_key="S-2", address_raw=self._GEO, cdom=90, close_date=date(2026, 1, 2)),
+            _listing(listing_key="S-3", address_raw=self._GEO, cdom=None, close_date=date(2026, 1, 3)),
+            _listing(listing_key="S-4", address_raw=self._GEO, cdom=120, close_date=None),
+        ]
+        trigger = _listing(address_raw=self._GEO)
+        # Only S-1 and S-2 qualify — below threshold
+        result = detect_market_velocity(trigger, sold, geography_key=self._GEO, geography_field="address_raw")
+        assert result is None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # SECTION 7: Reverse rules wired in ALL_RULES
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -384,23 +442,9 @@ class TestReverseRulesWired:
 
 class TestBboIntegration:
 
-    def _make_adapter(self, threshold: int = CDOM_THRESHOLD_DEFAULT) -> SparkIngestionAdapter:
-        engine = _engine()
-        store = InMemoryListingStore()
-        adapter = SparkIngestionAdapter(engine=engine, context=_ctx(), store=store)
-        adapter._bbo_cdom_threshold = threshold  # allow override for test
-        return adapter
-
     def test_cdom_threshold_event_emitted(self):
         """Listing with cdom=120 (>= default 90) emits RI event."""
-        engine = _engine()
-        store = InMemoryListingStore()
-
-        class _TestAdapter(SparkIngestionAdapter):
-            def _detect_and_build_bbo_events(self, listing, now, cdom_threshold=90):
-                return super()._detect_and_build_bbo_events(listing, now, cdom_threshold=90)
-
-        adapter = _TestAdapter(engine=engine, context=_ctx(), store=store)
+        adapter = SparkIngestionAdapter(engine=_engine(), context=_ctx())
         record = _land_record(CumulativeDaysOnMarket="120")
         results = adapter.process_batch([record], now=_FIXED_TS)
 
@@ -409,9 +453,7 @@ class TestBboIntegration:
 
     def test_private_remarks_event_emitted(self):
         """Listing with package language in private_remarks emits remarks event."""
-        engine = _engine()
-        store = InMemoryListingStore()
-        adapter = SparkIngestionAdapter(engine=engine, context=_ctx(), store=store)
+        adapter = SparkIngestionAdapter(engine=_engine(), context=_ctx())
         record = _land_record(PrivateRemarks="package deal, all remaining lots available")
         results = adapter.process_batch([record], now=_FIXED_TS)
 
@@ -420,71 +462,10 @@ class TestBboIntegration:
 
     def test_agent_accumulation_event_emitted_at_threshold(self):
         """When 2+ listings share same ListAgentKey, RL event fires with threshold=2."""
-        engine = _engine()
-        store = InMemoryListingStore()
+        adapter = SparkIngestionAdapter(
+            engine=_engine(), context=_ctx(), agent_accumulation_threshold=2,
+        )
 
-        class _ThresholdAdapter(SparkIngestionAdapter):
-            def _detect_and_build_bbo_events(self, listing, now, cdom_threshold=CDOM_THRESHOLD_DEFAULT):
-                from src.adapters.spark.bbo_signals import (
-                    detect_agent_land_accumulation,
-                    detect_cdom_threshold,
-                    detect_developer_exit,
-                    detect_office_land_program,
-                    detect_private_remarks_signals,
-                    detect_subdivision_remnant,
-                )
-                from src.adapters.spark.event_factory import (
-                    build_agent_land_accumulation_detected,
-                    build_developer_exit_signal_detected,
-                    build_listing_bbo_cdom_threshold_crossed,
-                    build_listing_private_remarks_signal_detected,
-                    build_office_land_program_detected,
-                    build_subdivision_remnant_detected,
-                )
-                bbo_events = []
-                all_listings = self.store_listings
-                if detect_cdom_threshold(listing, threshold=cdom_threshold):
-                    bbo_events.append(
-                        build_listing_bbo_cdom_threshold_crossed(
-                            listing, cdom=listing.cdom, threshold=cdom_threshold, now=now
-                        )
-                    )
-                remarks_categories = detect_private_remarks_signals(listing)
-                if remarks_categories:
-                    bbo_events.append(
-                        build_listing_private_remarks_signal_detected(
-                            listing,
-                            detected_categories=remarks_categories,
-                            remarks_excerpt=(listing.private_remarks or "")[:200],
-                            now=now,
-                        )
-                    )
-                # Use threshold=2 for this test
-                agent_detected, agent_count = detect_agent_land_accumulation(listing, all_listings, threshold=2)
-                if agent_detected:
-                    bbo_events.append(
-                        build_agent_land_accumulation_detected(listing, agent_listing_count=agent_count, now=now)
-                    )
-                office_detected, office_count = detect_office_land_program(listing, all_listings)
-                if office_detected:
-                    bbo_events.append(
-                        build_office_land_program_detected(listing, office_listing_count=office_count, now=now)
-                    )
-                exit_detected, exit_reason = detect_developer_exit(listing)
-                if exit_detected:
-                    bbo_events.append(
-                        build_developer_exit_signal_detected(listing, reason=exit_reason, now=now)
-                    )
-                remnant_detected, remnant_reason = detect_subdivision_remnant(listing)
-                if remnant_detected:
-                    bbo_events.append(
-                        build_subdivision_remnant_detected(listing, reason=remnant_reason, now=now)
-                    )
-                return bbo_events
-
-        adapter = _ThresholdAdapter(engine=engine, context=_ctx(), store=store)
-
-        # Ingest 2 listings with same ListAgentKey
         records = [
             _land_record(ListingKey="L-1", ListAgentKey="AGT-001"),
             _land_record(ListingKey="L-2", ListAgentKey="AGT-001"),

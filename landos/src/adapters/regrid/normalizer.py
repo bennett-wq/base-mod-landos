@@ -166,16 +166,23 @@ def _resolve_municipality(
 
 
 def _infer_vacancy(record: dict) -> VacancyStatus:
-    """Infer VacancyStatus from improvement value and improvement code."""
+    """Infer VacancyStatus from improvement value, improvement code, or usedesc.
+
+    Priority order:
+      1. improvval > 0          → IMPROVED
+      2. improvval == 0         → VACANT (unless improvcode contradicts)
+      3. improvcode in VACANT   → VACANT
+      4. usedesc contains VACANT → VACANT
+      5. usedesc present (no VACANT) → IMPROVED
+      6. nothing determinable   → UNKNOWN
+    """
     improv_val = _to_float_optional(record.get("improvval"))
     if improv_val is not None:
         if improv_val > 0:
             return VacancyStatus.IMPROVED
         if improv_val == 0:
-            # Could be truly vacant or just missing data — check code too
             improv_code = _to_str_optional(record.get("improvcode"))
             if improv_code and improv_code.upper() not in VACANT_IMPROV_CODES:
-                # Non-zero but unrecognized code — treat as unknown
                 return VacancyStatus.UNKNOWN
             return VacancyStatus.VACANT
 
@@ -184,7 +191,14 @@ def _infer_vacancy(record: dict) -> VacancyStatus:
     if improv_code:
         if improv_code.upper() in VACANT_IMPROV_CODES:
             return VacancyStatus.VACANT
-        # Recognizable non-vacant code
+        return VacancyStatus.IMPROVED
+
+    # No improvval or improvcode — check usedesc for VACANT keyword
+    usedesc = _to_str_optional(record.get("usedesc"))
+    if usedesc:
+        if "VACANT" in usedesc.upper():
+            return VacancyStatus.VACANT
+        # Has a use description but no vacancy indicator — likely improved
         return VacancyStatus.IMPROVED
 
     return VacancyStatus.UNKNOWN
