@@ -86,3 +86,33 @@
 **Why:** It combines stranded lots, stalled site condos/subdivisions, relevant legal changes, and a strong mismatch between supply and attainable product.
 **Affects:** Early geography focus, municipal tracking, product examples, GTM wedge.
 **Reversible?:** Yes.
+
+## 2026-03-09 | SparkIngestionAdapter thresholds must be constructor params
+**Decision:** BBO detection thresholds (CDOM threshold, agent accumulation threshold) are constructor parameters on SparkIngestionAdapter, not hardcoded in internal methods.
+**Why:** Hardcoded thresholds forced brittle test subclassing (80+ lines of duplicated method body). Constructor params enable clean configuration and testability. The adapter's detection sensitivity should be caller-controllable for different markets or deployment contexts.
+**Affects:** SparkIngestionAdapter API, integration test patterns, future per-market configuration.
+**Reversible?:** Yes, but no reason to revert.
+
+## 2026-03-09 | ALL_RULES must enforce rule_id uniqueness at import time
+**Decision:** The `rules/__init__.py` module performs a startup assertion that raises `RuntimeError` if any duplicate `rule_id` values exist in `ALL_RULES`.
+**Why:** A duplicate rule_id would cause both rules to silently evaluate, producing double-wake instructions with no diagnostic signal. This is a cheap guard that catches misconfiguration at import time rather than at runtime debugging.
+**Affects:** Rule registry, engine initialization, future rule additions.
+**Reversible?:** Yes, but no reason to revert.
+
+## 2026-03-09 | APN normalization is global lstrip in Phase 1, per-segment deferred
+**Decision:** `_normalize_apn` strips all leading zeros from the concatenated APN string (global `lstrip("0")`), not per-segment.
+**Why:** Sufficient for Washtenaw County single-county Phase 1 use. Per-segment normalization requires knowing the APN format, which varies by county. Premature per-segment logic could introduce more bugs than it prevents at this stage.
+**Affects:** Parcel-to-listing linkage accuracy in multi-county deployments.
+**Reversible?:** Yes — upgrade to per-segment when multi-county ingestion is wired.
+
+## 2026-03-09 | detect_developer_exit field precedence is intentional
+**Decision:** `detect_developer_exit` evaluates fields in a fixed short-circuit order: (1) major_change_type, (2) cancellation_date+cdom, (3) withdrawal_date+cdom, (4) off_market_date. `major_change_type="Withdrawn"` fires without a CDOM check; `withdrawal_date` alone requires cdom >= 120.
+**Why:** `major_change_type` is an MLS-confirmed status field with higher confidence than `withdrawal_date`, which is a date stamp that may be set without a corresponding status update. The asymmetric CDOM requirement reflects this confidence gap.
+**Affects:** Developer exit signal sensitivity, false positive rate on exit detection.
+**Reversible?:** Yes — can be tuned when real-world signal data is available.
+
+## 2026-03-09 | detect_market_velocity uses configurable geography_field
+**Decision:** `detect_market_velocity` accepts a `geography_field` parameter (default `"address_raw"`) instead of hardcoding `l.city`, because the Listing model has no `city` attribute.
+**Why:** The original implementation referenced a nonexistent field. Rather than adding a `city` field prematurely (which implies a geocoding dependency), the function uses `getattr` with a configurable field name. When a proper `city` or `county` field is added to Listing, callers switch the parameter.
+**Affects:** Market velocity utility, future Listing model expansion.
+**Reversible?:** Yes — replace with direct field access when Listing gains a city attribute.

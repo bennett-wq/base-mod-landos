@@ -135,8 +135,19 @@ class TestRegridNormalizer:
         record = _valid_record()
         record.pop("improvval", None)
         record.pop("improvcode", None)
+        record.pop("usedesc", None)
         parcel = normalize(record, default_municipality_id=MUNIC_ID, now=NOW)
         assert parcel.vacancy_status == VacancyStatus.UNKNOWN
+
+    def test_usedesc_vacant_infers_vacant(self):
+        record = _valid_record(improvval="", improvcode="", usedesc="RESIDENTIAL VACANT")
+        parcel = normalize(record, default_municipality_id=MUNIC_ID, now=NOW)
+        assert parcel.vacancy_status == VacancyStatus.VACANT
+
+    def test_usedesc_non_vacant_infers_improved(self):
+        record = _valid_record(improvval="", improvcode="", usedesc="RESIDENTIAL")
+        parcel = normalize(record, default_municipality_id=MUNIC_ID, now=NOW)
+        assert parcel.vacancy_status == VacancyStatus.IMPROVED
 
     def test_centroid_built_from_lat_lon(self):
         parcel = normalize(_valid_record(), default_municipality_id=MUNIC_ID, now=NOW)

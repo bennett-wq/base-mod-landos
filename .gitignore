@@ -28,3 +28,6 @@ htmlcov/
 
 # Local data junk
 *.sqlite3
+
+# Bulk data files (Regrid CSV exports, etc.)
+landos/data/

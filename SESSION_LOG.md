@@ -298,6 +298,59 @@ Pre-Step 6 cleanup (small): add `TestOfficeDetection` class and explicit RP/RR a
 
 ---
 
+## 2026-03-09 — Step 6.5: Comprehensive Review + Hardening
+
+### What was completed
+
+- Comprehensive repository review covering architecture, implementation quality, test coverage, and readiness assessment across all 7 test files and all source modules.
+- Fixed bug: `detect_market_velocity` referenced nonexistent `l.city` on Listing. Replaced with configurable `geography_field` parameter. 4 new tests added.
+- Made `SparkIngestionAdapter` thresholds (`cdom_threshold`, `agent_accumulation_threshold`) into constructor params. Eliminated 80-line brittle subclass hack in integration tests.
+- Added `ALL_RULES` uniqueness guard — startup assertion raises `RuntimeError` on duplicate `rule_id` values at import time.
+- Documented `_normalize_apn` Phase 1 limitation (global `lstrip("0")` vs per-segment) with production fix path.
+- Documented `detect_developer_exit` field precedence and MLS confidence hierarchy rationale.
+
+### Files materially advanced
+
+- `landos/src/adapters/spark/bbo_signals.py` (bug fix + docstring)
+- `landos/src/adapters/spark/ingestion.py` (constructor params)
+- `landos/src/adapters/regrid/linker.py` (docstring)
+- `landos/src/triggers/rules/__init__.py` (uniqueness guard)
+- `landos/tests/test_bbo_signals.py` (4 new tests, integration tests simplified)
+- `LANDOS_DECISIONS_LOG.md` (5 new decisions)
+- `MEMORY.md` (updated)
+- `SESSION_HANDOFF_CURRENT.md` (updated)
+
+### Key decisions locked
+
+- SparkIngestionAdapter thresholds must be constructor params.
+- ALL_RULES must enforce rule_id uniqueness at import time.
+- APN normalization is global lstrip in Phase 1; per-segment deferred to multi-county.
+- `detect_developer_exit` field precedence is intentional (MLS confidence hierarchy).
+- `detect_market_velocity` uses configurable `geography_field` until Listing gains a city attribute.
+
+### Open items at checkpoint
+
+- InMemory stores need production replacements before live feed wiring.
+- Listing model needs a `city` field for proper geography matching.
+- APN normalization needs per-segment logic for multi-county.
+
+### Next exact task
+
+Begin Step 7: Municipal Scan — municipality adapter, municipal event builders, `municipality_rule_now_supports_split` derived event, activate PLANNED rule.
+
+### Do not drift into
+
+- Reopening Steps 1–6 unless a defect is found
+- Database persistence
+- Stallout detection before municipal scan
+- Pricing, packaging, UI, or Phase 2+ work
+
+### Task status
+
+Complete — 235/235 tests pass. All documentation updated.
+
+---
+
 ## 2026-03-09 — Step 5 Complete
 
 ### What was completed

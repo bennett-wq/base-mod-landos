@@ -91,6 +91,13 @@ PLANNED_RULES: list[TriggerRule] = [
     ),
 ]
 
+# ── Startup safety: reject duplicate rule_ids ─────────────────────────
+_all_ids = [r.rule_id for r in ALL_RULES]
+_dupes = [rid for rid in _all_ids if _all_ids.count(rid) > 1]
+if _dupes:
+    raise RuntimeError(f"Duplicate rule_id(s) in ALL_RULES: {sorted(set(_dupes))}")
+del _all_ids, _dupes
+
 __all__ = [
     "ALL_RULES", "PLANNED_RULES",
     "RA", "RB", "RC", "RD", "RE", "RF", "RG", "RH",

@@ -242,7 +242,9 @@ def _to_datetime_optional(value: object) -> datetime | None:
     if not s:
         return None
     try:
-        # Try full ISO 8601 datetime
+        # Python 3.9 fromisoformat doesn't handle trailing 'Z'; replace with +00:00
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
         dt = datetime.fromisoformat(s)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
