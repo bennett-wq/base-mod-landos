@@ -7,7 +7,7 @@ It should stay short, current, and operational.
 ---
 
 ## Current phase
-Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Steps 1-4 complete (128/128 tests pass). Ready for Step 5.
+Phase 0 (documentation spine) complete. Implementation planning complete. Founder decisions resolved. Steps 1–5 and 4.5 complete (202/202 tests pass). Two minor test gaps to close, then ready for Step 6.
 
 ---
 
@@ -53,14 +53,70 @@ These connect the system to real-world data and produce the first events.
 - Acceptance criteria met: Spark feed data produces Listing objects and listing events flowing through the trigger engine.
 
 **Step 5. Regrid parcel linkage path**
-- Map Regrid fields to Parcel object fields.
-- Ingest Regrid parcel data for priority Michigan counties.
-- Implement parcel-to-listing linkage: address match, parcel number match, geo-match fallback.
-- Emit parcel-state events: `parcel_linked_to_listing`, `parcel_owner_resolved`, `parcel_score_updated`.
-- Acceptance: listings are matched to parcels; parcel objects are created with geometry, ownership, and zoning fields populated.
+- Status: complete. Implemented in `landos/src/adapters/regrid/`. 165/165 tests pass.
+- Regrid bulk record → Parcel normalization; vacancy inference; centroid construction; municipality linkage.
+- Parcel-to-listing linkage: address_match → parcel_number_match → geo_match (haversine 50m).
+- 3 parcel-state RAW events emitted: `parcel_linked_to_listing`, `parcel_owner_resolved`, `parcel_score_updated`.
+- Phase 1 scoring model v0.1_phase1_basic: acreage (40%) + vacancy (40%) + linkage (20%). Materiality gate 0.05.
+- RF, RG, RH rules activated from PLANNED_RULES. ALL_RULES now has 8 active rules.
+- `address_raw` added to Listing model (RESO UnparsedAddress) and Parcel model (Regrid address field).
+- `parcel_number_raw` added to Listing model (RESO ParcelNumber) for parcel-number linkage.
+- Acceptance criteria met: listings matched to parcels; parcel objects created with geometry, ownership, and zoning fields populated.
 
-**Step 6. Cluster detection path**
-- Implement owner/agent/office cluster detection from linked listings and parcels.
+#### Step 4.5. Spark BBO signal intelligence path
+
+Status: COMPLETE — PM gate review APPROVED 2026-03-09. 202/202 tests pass.
+
+- Ingest private-role Spark BBO fields: CumulativeDaysOnMarket, PrivateRemarks, ListAgentKey, OffMarketDate, and related fields into Listing objects.
+- Detect and emit events across 6 signal families:
+
+  1. Developer Exit — coordinated liquidation patterns, infrastructure-complete-but-vacant signals
+  2. Listing Behavior — CDOM accumulation, relist cadence, price cut patterns
+  3. Language Intelligence — PrivateRemarks pattern matching for package language, fatigue, restrictions, utilities (regex Phase 1; LLM pipeline deferred)
+  4. Agent/Office Clustering — same ListAgentKey or office accumulating land listings across a geography
+  5. Subdivision Remnant Inventory — scattered lots from partially-built subdivisions
+  6. Market Velocity / Absorption Rate — how fast land is moving in a submarket
+
+- New BBO events: `listing_bbo_cdom_threshold_crossed`, `listing_private_remarks_signal_detected`, `agent_land_accumulation_detected`, `office_land_program_detected`, `subdivision_remnant_detected`, `developer_exit_signal_detected`
+- Forward trigger rules (RI–RN): BBO signals wake other agents
+- Reverse trigger rules (RO–RU): other agents wake BBO/spark_signal_agent to compound signals
+- Full bidirectional trigger matrix: ALL_RULES grows from 8 to 21
+
+Forward rules (BBO → others):
+  RI: listing_bbo_cdom_threshold_crossed → RESCAN cluster_detection_agent
+  RJ: private_remarks_signal (package_language) → CLASSIFY supply_intelligence_team
+  RK: private_remarks_signal (fatigue_language) → RESCORE supply_intelligence_team
+  RL: agent_land_accumulation_detected → RESCAN cluster_detection_agent
+  RM: office_land_program_detected → RESCAN cluster_detection_agent
+  RN: developer_exit_signal_detected → RESCAN cluster_detection_agent + RESCORE supply_intelligence_team
+
+Reverse rules (others → BBO, closing the feedback loop):
+  RO: owner_cluster_detected → RESCAN spark_signal_agent
+      "Cluster found — pull CDOM + PrivateRemarks on ALL cluster listings now."
+  RP: same_owner_listing_detected → RESCAN spark_signal_agent
+      "Same owner appearing — check behavioral signals across their portfolio."
+  RQ: parcel_score_updated (score ≥ 0.70) → RESCAN spark_signal_agent
+      "High-value parcel + linked listing → check BBO depth immediately."
+  RR: parcel_owner_resolved → RESCAN spark_signal_agent
+      "Owner known — check if they have active listings + what signals show."
+
+Opportunity routing rules (signals → opportunity pipeline):
+  RS: developer_exit_signal_detected → RESCAN opportunity_creation_agent
+      "Exit signal + linked parcel = opportunity candidate."
+  RT: subdivision_remnant_detected → RESCAN opportunity_creation_agent
+      "Remnant lots + high parcel score = package candidate."
+  RU: owner_cluster_size_threshold_crossed → RESCAN opportunity_creation_agent
+                                           + RESCAN municipal_agent
+      "Cluster threshold crossed = acquisition opportunity + municipal check."
+
+- Acceptance: BBO fields ingested; 6 signal families emit events; all 21 trigger rules
+  (RA-RU) defined in ALL_RULES; all 165 existing tests pass; new BBO + reverse routing tests added.
+
+#### Step 6. Cluster detection path
+
+Builds on top of Step 4.5 BBO signal set — agent/office clustering is richer with BBO fields.
+
+- Implement owner/agent/office cluster detection from linked listings, parcels, and BBO signals.
 - Emit cluster events: `same_owner_listing_detected`, `owner_cluster_detected`, `owner_cluster_size_threshold_crossed`, `agent_subdivision_program_detected`, `office_inventory_program_detected`.
 - Acceptance: when multiple listings share an owner, agent, or office, cluster events fire and OwnerCluster objects are created.
 
