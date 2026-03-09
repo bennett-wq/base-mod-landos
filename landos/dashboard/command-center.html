@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LandOS NEXUS — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --void-0:#050508;--void-1:#09090f;--void-2:#0e0e18;--void-3:#141422;--void-4:#1a1a2e;--void-5:#22223a;
+  --brass-dim:#6b5a2a;--brass:#c9a44e;--brass-bright:#e8c96a;--brass-glow:#c9a44e40;
+  --cyan:#00f0ff;--cyan-dim:#00f0ff30;--emerald:#00ff88;--emerald-dim:#00ff8830;
+  --crimson:#ff2d55;--crimson-dim:#ff2d5530;--amber:#ffb800;--amber-dim:#ffb80030;
+  --purple:#a855f7;--purple-dim:#a855f730;--blue:#3b82f6;--blue-dim:#3b82f630;
+  --orange:#f97316;
+  --font-mono:'IBM Plex Mono','SF Mono',monospace;--font-display:'Outfit',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--void-0);color:#e0e0e0;font-family:var(--font-mono);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--brass-dim);border-radius:2px}
+
+/* ── NAV BAR ── */
+.navbar{height:52px;background:var(--void-1);border-bottom:1px solid #ffffff08;display:flex;align-items:center;padding:0 20px;gap:16px;z-index:100;position:relative}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:30px;height:30px;background:linear-gradient(135deg,var(--brass),var(--brass-bright));border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:15px;color:var(--void-0);box-shadow:0 0 14px var(--brass-glow)}
+.nav-title{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--brass);letter-spacing:.5px}
+.nav-sub{font-size:10px;color:#ffffff28;letter-spacing:2px;text-transform:uppercase}
+.nav-tabs{display:flex;gap:2px;margin-left:32px}
+.nav-tab{padding:8px 18px;border-radius:6px 6px 0 0;font-size:12px;font-weight:500;color:#ffffff40;cursor:pointer;transition:all .2s;border:1px solid transparent;border-bottom:none;letter-spacing:.5px}
+.nav-tab:hover{color:#ffffff70;background:var(--void-2)}
+.nav-tab.active{color:var(--brass);background:var(--void-2);border-color:#ffffff08}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;background:var(--emerald-dim);color:var(--emerald);border:1px solid #00ff8818}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:1;box-shadow:0 0 4px currentColor}50%{opacity:.4;box-shadow:none}}
+.phase-badge{padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;background:var(--cyan-dim);color:var(--cyan);border:1px solid #00f0ff15}
+.nav-cmd{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:6px;background:var(--void-3);border:1px solid #ffffff10;color:#ffffff40;font-size:12px;cursor:pointer;transition:all .2s}
+.nav-cmd:hover{border-color:var(--brass-dim);color:var(--brass)}
+.nav-cmd kbd{font-family:var(--font-mono);font-size:10px;padding:1px 5px;border-radius:3px;background:#ffffff08;border:1px solid #ffffff10}
+
+/* ── MAIN CONTENT ── */
+.main{height:calc(100vh - 52px);overflow:hidden}
+.tab-panel{display:none;height:100%;overflow:hidden}
+.tab-panel.active{display:flex;flex-direction:column}
+
+/* ═══════ MESH TAB ═══════ */
+.mesh-layout{display:grid;grid-template-columns:280px 1fr 320px;grid-template-rows:1fr 170px;height:100%;gap:1px;background:#ffffff06}
+.mesh-left{background:var(--void-1);overflow-y:auto;padding:8px}
+.mesh-canvas-wrap{background:var(--void-0);position:relative;overflow:hidden}
+#meshCanvas{width:100%;height:100%;display:block}
+.mesh-right{background:var(--void-1);display:flex;flex-direction:column;overflow:hidden}
+.mesh-bottom{grid-column:1/-1;background:var(--void-1);display:flex;border-top:1px solid #ffffff08}
+.mesh-hud{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:20px;background:#09090fcc;backdrop-filter:blur(12px);padding:8px 20px;border-radius:20px;border:1px solid #ffffff08;z-index:2}
+.mesh-hud-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#ffffff50}
+.mesh-hud-val{font-weight:600;color:var(--brass-bright);font-variant-numeric:tabular-nums}
+
+/* ── Shared Panel Pieces ── */
+.ph{padding:12px 16px;border-bottom:1px solid #ffffff08;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ph-title{font-family:var(--font-display);font-weight:600;font-size:11px;color:#ffffff50;text-transform:uppercase;letter-spacing:1.5px}
+.ph-count{margin-left:auto;font-size:10px;color:#ffffff20;padding:2px 8px;background:#ffffff06;border-radius:10px}
+
+/* ── Agent Cards ── */
+.agent-card{padding:12px;border-radius:8px;border:1px solid transparent;margin-bottom:4px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac,var(--brass));opacity:0;transition:opacity .2s}
+.agent-card:hover{background:var(--void-3);border-color:#ffffff08}.agent-card:hover::before{opacity:1}
+.agent-card.active{background:var(--void-3);border-color:var(--ac,var(--brass-dim))}.agent-card.active::before{opacity:1}
+.ac-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ac-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--void-4);border:1px solid #ffffff08;flex-shrink:0}
+.ac-name{font-family:var(--font-display);font-weight:600;font-size:12px;color:#e0e0e0}
+.ac-role{font-size:9px;color:#ffffff28}
+.ac-status{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:10px;font-weight:500}
+.ac-status.online{color:var(--emerald)}.ac-status.scanning{color:var(--cyan)}.ac-status.cooldown{color:var(--amber)}.ac-status.idle{color:#ffffff25}
+.ac-stats{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:6px;font-size:10px;color:#ffffff28}
+.ac-stats b{color:#ffffff60;font-weight:500}
+.wake-pips{display:flex;gap:3px;margin-top:6px}
+.wp{width:14px;height:3px;border-radius:1px;background:var(--brass-dim);opacity:.3;transition:all .3s}
+.wp.on{opacity:1;background:var(--brass);box-shadow:0 0 6px var(--brass-glow)}
+
+/* ── Right Panel Tabs ── */
+.rp-tabs{display:flex;border-bottom:1px solid #ffffff08;flex-shrink:0}
+.rp-tab{flex:1;padding:10px;text-align:center;font-size:10px;font-weight:500;color:#ffffff28;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+.rp-tab:hover{color:#ffffff50}.rp-tab.active{color:var(--brass);border-bottom-color:var(--brass)}
+.rp-content{flex:1;overflow-y:auto;padding:8px}
+.rp-panel{display:none}.rp-panel.active{display:block}
+
+/* ── Signal Items ── */
+.sig-item{padding:8px 12px;border-radius:8px;margin-bottom:4px;border-left:3px solid transparent;animation:sigIn .3s ease;transition:background .2s}
+.sig-item:hover{background:var(--void-3)}
+@keyframes sigIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.sig-item.t1{border-left-color:var(--crimson)}.sig-item.t2{border-left-color:var(--amber)}.sig-item.t3{border-left-color:var(--cyan)}.sig-item.t4{border-left-color:var(--purple)}.sig-item.t5{border-left-color:var(--blue)}
+.sig-head{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.sig-type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.sig-time{font-size:9px;color:#ffffff18;margin-left:auto;font-variant-numeric:tabular-nums}
+.sig-body{font-size:11px;color:#ffffff45;line-height:1.4}
+.sig-tags{display:flex;gap:6px;margin-top:4px}
+.sig-tag{font-size:9px;padding:1px 6px;border-radius:3px;background:#ffffff06;color:#ffffff28}
+
+/* ── Rule Grid ── */
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px}
+.rule-cell{padding:7px;border-radius:6px;background:var(--void-2);border:1px solid transparent;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.rule-cell:hover{border-color:#ffffff10;background:var(--void-3)}
+.rule-cell-id{font-size:11px;font-weight:600;color:var(--brass);margin-bottom:1px}
+.rule-cell-name{font-size:9px;color:#ffffff28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rule-cell-fc{position:absolute;top:5px;right:7px;font-size:10px;font-weight:600;color:#ffffff18}
+.rule-cell-cd{position:absolute;bottom:0;left:0;height:2px;background:var(--amber);transition:width 1s linear}
+
+/* ── Cluster Items ── */
+.cl-item{padding:8px 12px;border-radius:8px;margin-bottom:4px;background:var(--void-2);border:1px solid transparent;cursor:pointer;transition:all .2s}
+.cl-item:hover{border-color:#ffffff10;background:var(--void-3)}
+.cl-head{display:flex;align-items:center;gap:6px}
+.cl-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
+.cl-badge.owner{background:var(--purple-dim);color:var(--purple)}
+.cl-badge.subdivision{background:var(--cyan-dim);color:var(--cyan)}
+.cl-badge.proximity{background:var(--blue-dim);color:var(--blue)}
+.cl-badge.agent{background:var(--emerald-dim);color:var(--emerald)}
+.cl-badge.office{background:var(--amber-dim);color:var(--amber)}
+.cl-name{font-size:12px;font-weight:500;color:#ffffffa0}
+.cl-size{margin-left:auto;font-size:14px;font-weight:700;color:var(--brass-bright)}
+.cl-details{display:flex;gap:12px;margin-top:4px;font-size:10px;color:#ffffff28}
+
+/* ── Bottom Metrics ── */
+.metrics-strip{flex:1;display:flex;gap:1px;background:#ffffff06}
+.mc{flex:1;background:var(--void-1);padding:14px 20px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.mc-label{font-size:10px;color:#ffffff28;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px}
+.mc-val{font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--brass-bright);line-height:1;font-variant-numeric:tabular-nums}
+.mc-delta{font-size:10px;font-weight:500;margin-top:3px}
+.mc-delta.up{color:var(--emerald)}.mc-delta.down{color:var(--crimson)}.mc-delta.flat{color:#ffffff20}
+.mc canvas{margin-top:6px;height:20px;width:100%}
+.pipe-section{width:380px;flex-shrink:0;padding:14px 20px;display:flex;flex-direction:column;gap:6px;border-left:1px solid #ffffff08}
+.pipe-title{font-size:10px;color:#ffffff28;text-transform:uppercase;letter-spacing:1.5px}
+.pipe-stage{display:flex;align-items:center;gap:8px}
+.pipe-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pipe-dot.on{animation:breathe 2s ease-in-out infinite}
+.pipe-name{font-size:11px;color:#ffffff50;flex:1}
+.pipe-stat{font-size:11px;font-weight:500;color:#ffffff70;font-variant-numeric:tabular-nums}
+.pipe-bar{width:56px;height:4px;background:var(--void-4);border-radius:2px;overflow:hidden}
+.pipe-fill{height:100%;border-radius:2px}
+
+/* ═══════ RADAR TAB ═══════ */
+.radar-layout{display:grid;grid-template-columns:1fr 400px;height:100%;gap:1px;background:#ffffff06}
+.radar-map-wrap{position:relative;background:var(--void-0)}
+#radarMap{width:100%;height:100%;z-index:1}
+.radar-sidebar{background:var(--void-1);display:flex;flex-direction:column;overflow:hidden}
+.radar-filters{padding:12px;border-bottom:1px solid #ffffff08;display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.rf-group{display:flex;flex-direction:column;gap:3px}
+.rf-label{font-size:9px;color:#ffffff25;text-transform:uppercase;letter-spacing:1px}
+.rf-select,.rf-input{background:var(--void-3);border:1px solid #ffffff10;border-radius:5px;padding:5px 10px;color:#e0e0e0;font-family:var(--font-mono);font-size:11px;outline:none;transition:border-color .2s}
+.rf-select:focus,.rf-input:focus{border-color:var(--brass-dim)}
+.rf-select option{background:var(--void-2);color:#e0e0e0}
+.radar-table-wrap{flex:1;overflow-y:auto}
+.radar-table{width:100%;border-collapse:collapse}
+.radar-table th{position:sticky;top:0;background:var(--void-2);padding:8px 10px;font-size:10px;font-weight:600;color:#ffffff35;text-transform:uppercase;letter-spacing:.5px;text-align:left;cursor:pointer;border-bottom:1px solid #ffffff08;z-index:2}
+.radar-table th:hover{color:#ffffff60}
+.radar-table th.sorted{color:var(--brass)}
+.radar-table td{padding:7px 10px;font-size:11px;color:#ffffff60;border-bottom:1px solid #ffffff06;transition:background .15s}
+.radar-table tr:hover td{background:var(--void-3)}
+.radar-table tr{cursor:pointer;border-left:3px solid transparent}
+.radar-table tr.highest{border-left-color:var(--crimson)}
+.radar-table tr.high{border-left-color:var(--orange)}
+.radar-table tr.medium{border-left-color:var(--amber)}
+.radar-table tr.low{border-left-color:#6b7280}
+.sig-badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:.5px}
+.sig-badge.highest{background:var(--crimson-dim);color:var(--crimson)}
+.sig-badge.high{background:#f9731620;color:var(--orange)}
+.sig-badge.medium{background:var(--amber-dim);color:var(--amber)}
+.sig-badge.low{background:#6b728020;color:#9ca3af}
+.sig-badge.none{background:var(--blue-dim);color:var(--blue)}
+.tier-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px}
+.tier-badge.A{background:var(--emerald-dim);color:var(--emerald)}
+.tier-badge.B{background:var(--cyan-dim);color:var(--cyan)}
+.tier-badge.C{background:var(--amber-dim);color:var(--amber)}
+.tier-badge.X{background:var(--crimson-dim);color:var(--crimson)}
+.conc-badge{font-size:9px;padding:2px 6px;border-radius:3px;background:#ffffff06;color:#ffffff35}
+.conc-badge.tight{border:1px solid var(--brass-dim);color:var(--brass)}
+
+/* ── Radar Stats Bar ── */
+.radar-stats{display:flex;gap:1px;background:#ffffff06;border-bottom:1px solid #ffffff08;flex-shrink:0}
+.rs{flex:1;background:var(--void-1);padding:10px 14px;text-align:center}
+.rs-val{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--brass-bright)}
+.rs-label{font-size:9px;color:#ffffff25;text-transform:uppercase;letter-spacing:1px}
+
+/* ═══════ CLUSTERS TAB ═══════ */
+.clusters-layout{display:grid;grid-template-columns:1fr 1fr;height:100%;gap:1px;background:#ffffff06}
+.clusters-map-wrap{position:relative;background:var(--void-0)}
+#clustersMap{width:100%;height:100%;z-index:1}
+.clusters-panel{background:var(--void-1);display:flex;flex-direction:column;overflow:hidden}
+.clusters-list{flex:1;overflow-y:auto;padding:8px}
+.cl-detail-card{background:var(--void-2);border-radius:var(--radius-lg);padding:16px;margin-bottom:8px;border:1px solid #ffffff08}
+.cl-detail-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cl-detail-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--void-3);border:1px solid #ffffff08}
+.cl-detail-name{font-family:var(--font-display);font-size:18px;font-weight:700;color:#e0e0e0}
+.cl-detail-type{font-size:10px;color:#ffffff30}
+.cl-detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.cl-dg{background:var(--void-3);border-radius:6px;padding:10px}
+.cl-dg-val{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--brass-bright)}
+.cl-dg-label{font-size:9px;color:#ffffff25;text-transform:uppercase;letter-spacing:1px}
+
+/* ── Score Ring ── */
+.score-ring-wrap{display:flex;align-items:center;justify-content:center;padding:16px}
+.score-ring{position:relative;width:100px;height:100px}
+.score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring-bg{fill:none;stroke:var(--void-4);stroke-width:8}
+.score-ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.score-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--brass-bright)}
+
+/* ── Dimension Bars ── */
+.dim-bars{display:flex;flex-direction:column;gap:6px;flex:1}
+.dim-bar{display:flex;align-items:center;gap:8px}
+.dim-bar-label{font-size:10px;color:#ffffff40;width:80px;text-align:right}
+.dim-bar-track{flex:1;height:6px;background:var(--void-4);border-radius:3px;overflow:hidden}
+.dim-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.dim-bar-val{font-size:10px;font-weight:600;color:#ffffff60;width:30px}
+
+/* ═══════ COMMAND TAB ═══════ */
+.cmd-layout{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:100%;gap:1px;background:#ffffff06}
+.agent-runner{background:var(--void-1);display:flex;flex-direction:column;overflow:hidden}
+.ar-header{padding:14px 18px;border-bottom:1px solid #ffffff08;display:flex;align-items:center;gap:10px}
+.ar-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--void-3);border:1px solid #ffffff08}
+.ar-name{font-family:var(--font-display);font-weight:700;font-size:14px;color:#e0e0e0}
+.ar-desc{font-size:10px;color:#ffffff30}
+.ar-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500}
+.ar-status .status-dot{width:8px;height:8px}
+.ar-status.ready{color:var(--emerald)}.ar-status.running{color:var(--amber)}.ar-status.error{color:var(--crimson)}.ar-status.idle{color:#ffffff25}
+.ar-body{flex:1;overflow-y:auto;padding:14px 18px}
+.ar-stats-row{display:flex;gap:12px;margin-bottom:12px}
+.ar-stat{background:var(--void-2);border-radius:6px;padding:8px 12px;flex:1}
+.ar-stat-val{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--brass-bright)}
+.ar-stat-label{font-size:9px;color:#ffffff25;text-transform:uppercase;letter-spacing:1px}
+.ar-log{background:var(--void-2);border-radius:6px;padding:10px;font-size:11px;color:#ffffff40;max-height:120px;overflow-y:auto;font-family:var(--font-mono);line-height:1.6}
+.ar-log .ok{color:var(--emerald)}.ar-log .warn{color:var(--amber)}.ar-log .err{color:var(--crimson)}.ar-log .info{color:var(--cyan)}
+.ar-footer{padding:10px 18px;border-top:1px solid #ffffff08;display:flex;gap:8px}
+.ar-btn{padding:6px 16px;border-radius:6px;font-family:var(--font-mono);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+.ar-btn.primary{background:var(--brass);color:var(--void-0)}.ar-btn.primary:hover{background:var(--brass-bright);box-shadow:0 0 12px var(--brass-glow)}
+.ar-btn.secondary{background:var(--void-3);color:#ffffff60;border:1px solid #ffffff10}.ar-btn.secondary:hover{border-color:var(--brass-dim);color:var(--brass)}
+
+/* ═══════ ECONOMICS TAB ═══════ */
+.econ-layout{display:grid;grid-template-columns:1fr 1fr;height:100%;gap:1px;background:#ffffff06}
+.econ-panel{background:var(--void-1);overflow-y:auto;padding:20px}
+.econ-section{margin-bottom:24px}
+.econ-title{font-family:var(--font-display);font-weight:700;font-size:16px;color:#e0e0e0;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ffffff08}
+.waterfall{display:flex;flex-direction:column;gap:4px}
+.wf-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+.wf-label{font-size:11px;color:#ffffff50;width:140px}
+.wf-bar-wrap{flex:1;height:8px;background:var(--void-3);border-radius:4px;overflow:hidden}
+.wf-bar{height:100%;border-radius:4px;transition:width .5s ease}
+.wf-val{font-size:12px;font-weight:600;color:#ffffff70;width:80px;text-align:right;font-variant-numeric:tabular-nums}
+.wf-row.total{border-top:1px solid #ffffff10;padding-top:10px;margin-top:4px}
+.wf-row.total .wf-label{font-weight:600;color:var(--brass)}
+.wf-row.total .wf-val{color:var(--brass-bright);font-size:14px}
+.wf-row.profit .wf-val{color:var(--emerald);font-size:14px;font-weight:700}
+.sensitivity-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.sg-cell{background:var(--void-2);border-radius:6px;padding:10px;text-align:center}
+.sg-cell.header{background:var(--void-3);font-size:10px;color:#ffffff35;text-transform:uppercase;letter-spacing:.5px}
+.sg-price{font-size:10px;color:#ffffff40;margin-bottom:2px}
+.sg-profit{font-family:var(--font-display);font-size:14px;font-weight:700}
+.sg-margin{font-size:10px;margin-top:2px}
+.sg-cell.positive .sg-profit{color:var(--emerald)}.sg-cell.positive .sg-margin{color:var(--emerald)}
+.sg-cell.negative .sg-profit{color:var(--crimson)}.sg-cell.negative .sg-margin{color:var(--crimson)}
+.sg-cell.highlight{border:1px solid var(--brass-dim);box-shadow:0 0 8px var(--brass-glow)}
+
+/* ── Comps ── */
+.comps-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.comp-card{background:var(--void-2);border-radius:var(--radius);padding:14px;text-align:center}
+.comp-card-title{font-size:10px;color:#ffffff30;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.comp-card-val{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--brass-bright)}
+.comp-card-sub{font-size:10px;color:#ffffff30;margin-top:2px}
+
+/* ═══════ COMMAND PALETTE OVERLAY ═══════ */
+.cmd-overlay{position:fixed;inset:0;background:rgba(5,5,8,.8);backdrop-filter:blur(16px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding-top:15vh}
+.cmd-overlay.visible{display:flex;animation:fadeIn .15s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.cmd-box{width:560px;background:var(--void-2);border:1px solid #ffffff10;border-radius:var(--radius-lg);box-shadow:0 24px 80px rgba(0,0,0,.6);overflow:hidden;animation:cmdIn .2s ease}
+@keyframes cmdIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+.cmd-input-wrap{display:flex;align-items:center;padding:0 20px;border-bottom:1px solid #ffffff08}
+.cmd-input-icon{color:var(--brass);font-size:16px;margin-right:8px}
+.cmd-input{flex:1;background:transparent;border:none;outline:none;color:#e0e0e0;font-family:var(--font-mono);font-size:14px;padding:16px 0}
+.cmd-input::placeholder{color:#ffffff22}
+.cmd-results{max-height:300px;overflow-y:auto;padding:8px}
+.cmd-group-title{font-size:10px;color:#ffffff20;text-transform:uppercase;letter-spacing:1px;padding:6px 12px}
+.cmd-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;transition:background .15s}
+.cmd-item:hover{background:var(--void-4)}
+.cmd-item-icon{font-size:14px;width:24px;text-align:center}
+.cmd-item-label{flex:1;font-size:13px;color:#ffffffa0}
+.cmd-item-shortcut{font-size:10px;color:#ffffff18}
+.cmd-item-shortcut kbd{padding:1px 5px;border-radius:3px;background:#ffffff08;border:1px solid #ffffff10;font-family:var(--font-mono);font-size:10px}
+
+/* ═══════ AGENT DETAIL OVERLAY ═══════ */
+.detail-overlay{position:fixed;inset:0;z-index:500;display:none}
+.detail-overlay.visible{display:block}
+.detail-backdrop{position:absolute;inset:0;background:rgba(5,5,8,.5);animation:fadeIn .2s}
+.detail-panel{position:absolute;top:0;right:0;bottom:0;width:500px;background:var(--void-1);border-left:1px solid #ffffff10;box-shadow:-20px 0 60px rgba(0,0,0,.5);animation:slideR .3s ease;overflow-y:auto;padding:28px}
+@keyframes slideR{from{transform:translateX(100%)}to{transform:none}}
+.dp-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:6px;background:var(--void-3);border:1px solid #ffffff10;color:#ffffff50;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.dp-close:hover{background:var(--void-4);color:#ffffff80}
+.dp-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--void-3);border:1px solid #ffffff10;margin-bottom:12px}
+.dp-name{font-family:var(--font-display);font-size:22px;font-weight:800;color:#e0e0e0;margin-bottom:4px}
+.dp-desc{font-size:12px;color:#ffffff35;margin-bottom:20px;line-height:1.5}
+.dp-section{margin-bottom:20px}
+.dp-section-title{font-size:10px;color:#ffffff20;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #ffffff06}
+.dp-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dp-stat{padding:8px 12px;background:var(--void-2);border-radius:6px}
+.dp-stat-val{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--brass-bright)}
+.dp-stat-label{font-size:10px;color:#ffffff28}
+.dp-rule{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:4px;font-size:11px;background:var(--void-2);margin-bottom:3px}
+.dp-rule-id{font-weight:600;color:var(--brass);width:32px}
+.dp-rule-name{flex:1;color:#ffffff45}
+.dp-rule-status{font-size:9px;padding:2px 6px;border-radius:3px}
+.dp-rule-status.hot{background:var(--crimson-dim);color:var(--crimson)}
+.dp-rule-status.warm{background:var(--amber-dim);color:var(--amber)}
+.dp-rule-status.cold{background:#ffffff06;color:#ffffff20}
+
+/* ── Chat ── */
+.dp-chat{background:var(--void-2);border-radius:var(--radius);padding:12px}
+.dp-chat-msgs{max-height:180px;overflow-y:auto;margin-bottom:8px}
+.chat-msg{margin-bottom:6px;padding:6px 10px;border-radius:8px;font-size:12px;line-height:1.5}
+.chat-msg.agent{background:var(--void-3);color:#ffffff70;margin-right:20%}
+.chat-msg.user{background:var(--brass-glow);color:var(--brass-bright);margin-left:20%;border:1px solid #ffffff08}
+.dp-chat-row{display:flex;gap:8px}
+.dp-chat-input{flex:1;background:var(--void-3);border:1px solid #ffffff10;border-radius:6px;padding:7px 12px;color:#e0e0e0;font-family:var(--font-mono);font-size:12px;outline:none;transition:border-color .2s}
+.dp-chat-input:focus{border-color:var(--brass-dim)}
+.dp-chat-send{padding:7px 16px;background:var(--brass);color:var(--void-0);border:none;border-radius:6px;font-family:var(--font-mono);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.dp-chat-send:hover{background:var(--brass-bright);box-shadow:0 0 12px var(--brass-glow)}
+
+/* ═══════ TOAST ═══════ */
+.toast-box{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--void-2);border:1px solid #ffffff10;border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:toastIn .3s ease;font-size:12px;color:#ffffffa0;min-width:280px}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px) translateX(8px)}to{opacity:1;transform:none}}
+.toast-icon{font-size:16px}
+
+/* ── Leaflet dark overrides ── */
+.leaflet-container{background:var(--void-0)!important}
+.leaflet-control-zoom a{background:var(--void-2)!important;color:var(--brass)!important;border-color:#ffffff10!important}
+.leaflet-popup-content-wrapper{background:var(--void-2)!important;color:#e0e0e0!important;border-radius:var(--radius)!important;border:1px solid #ffffff10!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
+.leaflet-popup-tip{background:var(--void-2)!important}
+.leaflet-popup-content{font-family:var(--font-mono)!important;font-size:12px!important;margin:12px!important}
+</style>
+</head>
+<body>
+
+<!-- ═══════ NAV BAR ═══════ -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo">L</div>
+    <div><div class="nav-title">LandOS NEXUS</div><div class="nav-sub">Command Center</div></div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="mesh">⚡ Mesh</div>
+    <div class="nav-tab" data-tab="radar">🎯 Radar</div>
+    <div class="nav-tab" data-tab="clusters">🏢 Clusters</div>
+    <div class="nav-tab" data-tab="command">🤖 Command</div>
+    <div class="nav-tab" data-tab="economics">📊 Economics</div>
+  </div>
+  <div class="nav-right">
+    <span class="phase-badge">Phase 1</span>
+    <div class="status-pill"><span class="status-dot"></span>Mesh Online</div>
+    <div class="nav-cmd" id="cmdTrigger"><span>Command</span><kbd>K</kbd></div>
+  </div>
+</nav>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+
+<!-- ── MESH TAB ── -->
+<div class="tab-panel active" id="tab-mesh">
+<div class="mesh-layout">
+  <div class="mesh-left">
+    <div class="ph"><div class="ph-title">Agent Mesh</div><div class="ph-count">7 agents</div></div>
+    <div id="agentList"></div>
+  </div>
+  <div class="mesh-canvas-wrap">
+    <canvas id="meshCanvas"></canvas>
+    <div class="mesh-hud">
+      <div class="mesh-hud-item">Clusters <span class="mesh-hud-val">2,229</span></div>
+      <div class="mesh-hud-item">Tier 1 <span class="mesh-hud-val">23</span></div>
+      <div class="mesh-hud-item">Rules <span class="mesh-hud-val">31</span></div>
+      <div class="mesh-hud-item">Depth Cap <span class="mesh-hud-val">5</span></div>
+    </div>
+  </div>
+  <div class="mesh-right">
+    <div class="rp-tabs">
+      <div class="rp-tab active" data-rp="signals">Signals</div>
+      <div class="rp-tab" data-rp="rules">Rules</div>
+      <div class="rp-tab" data-rp="clusters">Clusters</div>
+    </div>
+    <div class="rp-content">
+      <div class="rp-panel active" id="rp-signals"></div>
+      <div class="rp-panel" id="rp-rules"></div>
+      <div class="rp-panel" id="rp-clusters"></div>
+    </div>
+  </div>
+  <div class="mesh-bottom">
+    <div class="metrics-strip">
+      <div class="mc"><div class="mc-label">Active Listings</div><div class="mc-val">95</div><div class="mc-delta up">+3 today</div><canvas id="sp1"></canvas></div>
+      <div class="mc"><div class="mc-label">Vacant Parcels</div><div class="mc-val">10,266</div><div class="mc-delta flat">Regrid CSV</div><canvas id="sp2"></canvas></div>
+      <div class="mc"><div class="mc-label">Clusters</div><div class="mc-val">2,229</div><div class="mc-delta up">1,112 own / 81 sub / 1,036 prox</div></div>
+      <div class="mc"><div class="mc-label">Tier 1</div><div class="mc-val" style="color:var(--crimson)">23</div><div class="mc-delta up">High convergence</div></div>
+      <div class="mc"><div class="mc-label">Dormant</div><div class="mc-val">22,057</div><div class="mc-delta flat">acres / 76 clusters</div></div>
+    </div>
+    <div class="pipe-section">
+      <div class="pipe-title">Pipeline Pulse</div>
+      <div class="pipe-stage"><div class="pipe-dot on" style="background:var(--emerald)"></div><div class="pipe-name">Spark MLS</div><div class="pipe-stat">95</div><div class="pipe-bar"><div class="pipe-fill" style="width:100%;background:var(--emerald)"></div></div></div>
+      <div class="pipe-stage"><div class="pipe-dot on" style="background:var(--cyan)"></div><div class="pipe-name">Regrid CSV</div><div class="pipe-stat">10,266</div><div class="pipe-bar"><div class="pipe-fill" style="width:100%;background:var(--cyan)"></div></div></div>
+      <div class="pipe-stage"><div class="pipe-dot on" style="background:var(--purple)"></div><div class="pipe-name">Cluster Detection</div><div class="pipe-stat">2,229</div><div class="pipe-bar"><div class="pipe-fill" style="width:100%;background:var(--purple)"></div></div></div>
+      <div class="pipe-stage"><div class="pipe-dot on" style="background:var(--brass)"></div><div class="pipe-name">Trigger Engine</div><div class="pipe-stat">31 rules</div><div class="pipe-bar"><div class="pipe-fill" style="width:100%;background:var(--brass)"></div></div></div>
+      <div class="pipe-stage"><div class="pipe-dot" style="background:var(--amber);opacity:.3"></div><div class="pipe-name" style="color:#ffffff28">Municipal Scan</div><div class="pipe-stat" style="color:#ffffff18">Step 7</div><div class="pipe-bar"><div class="pipe-fill" style="width:0;background:var(--amber)"></div></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── RADAR TAB ── -->
+<div class="tab-panel" id="tab-radar">
+<div class="radar-layout">
+  <div class="radar-map-wrap"><div id="radarMap"></div></div>
+  <div class="radar-sidebar">
+    <div class="radar-stats">
+      <div class="rs"><div class="rs-val" id="rsCluster">0</div><div class="rs-label">Clusters</div></div>
+      <div class="rs"><div class="rs-val" id="rsLots">0</div><div class="rs-label">Total Lots</div></div>
+      <div class="rs"><div class="rs-val" id="rsSignal">0</div><div class="rs-label">High Signal</div></div>
+      <div class="rs"><div class="rs-val" id="rsTierA">0</div><div class="rs-label">Tier A</div></div>
+    </div>
+    <div class="radar-filters">
+      <div class="rf-group"><div class="rf-label">Signal</div><select class="rf-select" id="filterSignal"><option value="">All</option><option>HIGHEST</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select></div>
+      <div class="rf-group"><div class="rf-label">Tier</div><select class="rf-select" id="filterTier"><option value="">All</option><option>A</option><option>B</option><option>C</option><option>X</option></select></div>
+      <div class="rf-group"><div class="rf-label">Concentration</div><select class="rf-select" id="filterConc"><option value="">All</option><option>TIGHT</option><option>MODERATE</option><option>SPREAD</option></select></div>
+      <div class="rf-group"><div class="rf-label">Owner</div><input class="rf-input" id="filterOwner" placeholder="Search..." style="width:120px"></div>
+    </div>
+    <div class="radar-table-wrap">
+      <table class="radar-table">
+        <thead><tr>
+          <th data-sort="name">Owner</th>
+          <th data-sort="lots">Lots</th>
+          <th data-sort="signal">Signal</th>
+          <th data-sort="tier">Tier</th>
+          <th data-sort="margin">Margin</th>
+        </tr></thead>
+        <tbody id="radarBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── CLUSTERS TAB ── -->
+<div class="tab-panel" id="tab-clusters">
+<div class="clusters-layout">
+  <div class="clusters-map-wrap"><div id="clustersMap"></div></div>
+  <div class="clusters-panel">
+    <div class="ph"><div class="ph-title">Cluster Intelligence</div><div class="ph-count">2,229 detected</div></div>
+    <div class="clusters-list" id="clustersList"></div>
+  </div>
+</div>
+</div>
+
+<!-- ── COMMAND TAB ── -->
+<div class="tab-panel" id="tab-command">
+<div class="cmd-layout" id="cmdLayout"></div>
+</div>
+
+<!-- ── ECONOMICS TAB ── -->
+<div class="tab-panel" id="tab-economics">
+<div class="econ-layout">
+  <div class="econ-panel" id="econLeft"></div>
+  <div class="econ-panel" id="econRight"></div>
+</div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ═══════ OVERLAYS ═══════ -->
+<div class="cmd-overlay" id="cmdOverlay">
+  <div class="cmd-box">
+    <div class="cmd-input-wrap"><span class="cmd-input-icon">⚡</span><input class="cmd-input" id="cmdInput" placeholder="Type a command..." autocomplete="off"></div>
+    <div class="cmd-results" id="cmdResults"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-backdrop" id="detailBackdrop"></div>
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   LandOS NEXUS — Engine
+   ═══════════════════════════════════════════ */
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const fmt=n=>n.toLocaleString();
+const fmtTime=()=>new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+// ── DATA ──
+const AGENTS=[
+  {id:'supply_intelligence',name:'Supply Intelligence',icon:'🔭',role:'Listing analysis & scoring',color:'#00f0ff',status:'online',rules:['RA','RB','RE','RF','RH','RJ','RK','RN2'],stats:{events:1247,rules:89,wake:'2m'},wakeTypes:['LINK','CLASSIFY','RESCORE'],desc:'Monitors MLS listing events and parcel linkage signals. Primary wake target for scoring pipeline.'},
+  {id:'cluster_detection',name:'Cluster Detection',icon:'🔮',role:'Owner/agent/office discovery',color:'#a855f7',status:'scanning',rules:['RG','RI','RL','RM','RN1'],stats:{events:892,rules:156,wake:'45s'},wakeTypes:['RESCAN'],desc:'Dual-detector: ClusterDetector (MLS-side) + ParcelClusterDetector (parcel-side). Produces 2,229 clusters.'},
+  {id:'spark_signal',name:'BBO Signal Intel',icon:'📡',role:'BBO pattern matching',color:'#ff2d55',status:'online',rules:['RO','RP','RQ','RR'],stats:{events:534,rules:67,wake:'5m'},wakeTypes:['RESCAN'],desc:'Reverse wake target — cluster/parcel events trigger BBO rescans. CDOM thresholds, private remarks signals, agent accumulation.'},
+  {id:'municipal_intelligence',name:'Municipal Intel',icon:'🏛️',role:'Municipal scans & incentives',color:'#ffb800',status:'idle',rules:['RC','RU2'],stats:{events:45,rules:12,wake:'1h'},wakeTypes:['RESCAN'],desc:'Monitors municipal events. Woken by large cluster detections (≥3 owners). Step 7 will fully activate.'},
+  {id:'opportunity_creation',name:'Opportunity Engine',icon:'💎',role:'Signal convergence → opportunities',color:'#00ff88',status:'online',rules:['RS','RT','RU1'],stats:{events:223,rules:34,wake:'8m'},wakeTypes:['RESCAN','CREATE'],desc:'Converts convergent signals into typed opportunities. Tier 1 = multi-signal convergence with active listings.'},
+  {id:'listing_analysis',name:'Listing Analyst',icon:'📊',role:'Large-acreage deep analysis',color:'#3b82f6',status:'cooldown',rules:['RB'],stats:{events:67,rules:23,wake:'15m'},wakeTypes:['CLASSIFY'],desc:'Specialized analyst for listings ≥5 acres. Classifies land type, development potential.'},
+  {id:'municipal_agent',name:'Municipal Router',icon:'🗺️',role:'Routes large clusters → municipal',color:'#f97316',status:'idle',rules:['RU2'],stats:{events:18,rules:6,wake:'2h'},wakeTypes:['RESCAN'],desc:'Woken by owner_cluster_size_threshold_crossed (≥5). Routes large ownership patterns to municipal scanning.'}
+];
+
+const RULES=[
+  {id:'RA',name:'listing_added → LINK',family:'listing',cd:null,fires:0},{id:'RB',name:'listing ≥5ac → CLASSIFY',family:'listing',cd:null,fires:0},
+  {id:'RC',name:'cluster ≥3 → muni RESCAN',family:'cluster',cd:43200,fires:0},{id:'RE',name:'expired → RESCORE',family:'listing',cd:null,fires:0},
+  {id:'RF',name:'linked → RESCORE',family:'parcel',cd:null,fires:0},{id:'RG',name:'owner_resolved → RESCAN',family:'parcel',cd:null,fires:0},
+  {id:'RH',name:'Δ≥0.05 → RESCORE',family:'parcel',cd:null,fires:0},{id:'RI',name:'CDOM≥90 → RESCAN',family:'bbo',cd:86400,fires:0},
+  {id:'RJ',name:'pkg_lang → CLASSIFY',family:'bbo',cd:604800,fires:0},{id:'RK',name:'fatigue → RESCORE',family:'bbo',cd:86400,fires:0},
+  {id:'RL',name:'agent_accum → RESCAN',family:'bbo',cd:43200,fires:0},{id:'RM',name:'office_prog → RESCAN',family:'bbo',cd:43200,fires:0},
+  {id:'RN1',name:'dev_exit → cl RESCAN',family:'bbo',cd:172800,fires:0},{id:'RN2',name:'dev_exit → RESCORE',family:'bbo',cd:172800,fires:0},
+  {id:'RO',name:'cluster → BBO RESCAN',family:'rev',cd:43200,fires:0},{id:'RP',name:'same_own → BBO RESCAN',family:'rev',cd:21600,fires:0},
+  {id:'RQ',name:'score≥.70 → BBO',family:'rev',cd:86400,fires:0},{id:'RR',name:'own_res → BBO',family:'rev',cd:172800,fires:0},
+  {id:'RS',name:'dev_exit → opp',family:'opp',cd:172800,fires:0},{id:'RT',name:'remnant → opp',family:'opp',cd:259200,fires:0},
+  {id:'RU1',name:'cl≥5 → opp',family:'opp',cd:259200,fires:0},{id:'RU2',name:'cl≥5 → muni',family:'opp',cd:259200,fires:0},
+];
+
+const CLUSTERS=[];
+const ownerNames=['Toll Brothers Holdings','M/I Homes LLC','Pulte Group','Bank of Ann Arbor','Lennar Corp','NVR Inc','Taylor Morrison','Meritage Homes','Century Communities','Smith Family Trust','Johnson Land Holdings','Williams Development','Davis Realty Group','Municipal Land Bank','Thompson Estates','Martin Property LLC','Anderson Farm Trust','Heritage Homes Inc','Great Lakes Dev','Washtenaw Housing Auth'];
+const cities=['Ann Arbor','Saline','Dexter','Chelsea','Ypsilanti','Milan','Manchester','Scio Twp','Pittsfield Twp','Northfield Twp','Lima Twp','Lodi Twp','Webster Twp','Superior Twp','Salem Twp','York Twp','Augusta Twp','Bridgewater Twp','Freedom Twp','Sylvan Twp'];
+const signals=['HIGHEST','HIGH','MEDIUM','LOW','NONE'];
+const concs=['TIGHT','MODERATE','SPREAD','SCATTERED'];
+const types=['owner','subdivision','proximity','agent','office'];
+
+// Generate 60 realistic clusters
+for(let i=0;i<60;i++){
+  const lots=i<3?[146,99,59][i]:Math.floor(Math.random()*40)+2;
+  const acres=Math.floor(lots*(3+Math.random()*15));
+  const sig=i<5?signals[0]:i<12?signals[1]:i<25?signals[2]:i<40?signals[3]:signals[4];
+  const margin=sig==='HIGHEST'?25+Math.random()*15:sig==='HIGH'?15+Math.random()*12:sig==='MEDIUM'?5+Math.random()*12:sig==='LOW'?-5+Math.random()*15:-10+Math.random()*10;
+  const tier=margin>=25?'A':margin>=15?'B':margin>0?'C':'X';
+  const type=i<20?'owner':i<30?'subdivision':i<45?'proximity':i<52?'agent':'office';
+  CLUSTERS.push({
+    name:i<20?ownerNames[i]:type==='subdivision'?`${rand(cities)} Phase ${Math.floor(Math.random()*5)+1}`:type==='agent'?`${rand(['RE/MAX','Keller Williams','Howard Hanna','Coldwell Banker','Century 21'])} ${rand(cities)}`:type==='office'?`${rand(cities)} Office Group`:rand(cities)+' Cluster',
+    type,lots,acres,signal:sig,tier,margin:margin.toFixed(1),
+    conc:i<8?concs[0]:i<20?concs[1]:i<40?concs[2]:concs[3],
+    city:rand(cities),
+    lat:42.2+Math.random()*.25,lng:-83.7-Math.random()*.35,
+    score:Math.floor(40+Math.random()*55),
+    landVal:Math.floor(lots*(15000+Math.random()*45000)),
+    hasListing:sig!=='NONE'&&Math.random()>.3,
+    bis:Math.floor(20+Math.random()*75)
+  });
+}
+
+const SIGNAL_TYPES=[
+  {type:'listing_added',family:'LISTING',tier:'t3',icon:'📋'},
+  {type:'listing_price_reduced',family:'LISTING',tier:'t2',icon:'📉'},
+  {type:'owner_cluster_detected',family:'CLUSTER',tier:'t1',icon:'🔮'},
+  {type:'cdom_threshold_crossed',family:'LISTING',tier:'t2',icon:'🔥'},
+  {type:'private_remarks_signal',family:'LISTING',tier:'t2',icon:'🗣️'},
+  {type:'developer_exit_signal',family:'DEV_EXIT',tier:'t1',icon:'🚪'},
+  {type:'parcel_score_updated',family:'PARCEL',tier:'t4',icon:'📊'},
+  {type:'parcel_linked',family:'PARCEL',tier:'t3',icon:'🔗'},
+  {type:'subdivision_remnant',family:'HISTORICAL',tier:'t2',icon:'🏚️'},
+  {type:'agent_accumulation',family:'CLUSTER',tier:'t2',icon:'📡'},
+];
+
+const COMMANDS=[
+  {g:'Pipeline',items:[{i:'▶',l:'Run Full Pipeline',k:'⌘⇧R',a:'runPipeline'},{i:'📡',l:'Ingest Spark MLS',k:'⌘⇧S',a:'ingestSpark'},{i:'🗺',l:'Ingest Regrid CSV',k:'⌘⇧G',a:'ingestRegrid'},{i:'📋',l:'Signal Report',k:'⌘⇧I',a:'signalReport'}]},
+  {g:'Agents',items:[{i:'⚡',l:'Wake All Agents',k:'',a:'wakeAll'},{i:'🔮',l:'Force Cluster Rescan',k:'',a:'rescan'},{i:'📡',l:'BBO Discovery',k:'',a:'bbo'},{i:'🏛',l:'Municipal Scan',k:'',a:'muni'}]},
+  {g:'Claude Skills',items:[{i:'🔄',l:'/loop — Poll pipeline 5m',k:'',a:'loop'},{i:'📝',l:'/commit — Commit changes',k:'',a:'commit'},{i:'🔍',l:'/simplify — Code quality',k:'',a:'simplify'},{i:'🏗',l:'/feature-dev — Next step',k:'',a:'featureDev'}]},
+];
+
+// ── STATE ──
+let signalFeed=[], selectedAgent=null;
+
+// ── TOASTS ──
+function toast(icon,msg){const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="toast-icon">${icon}</span>${msg}`;$('#toastBox').appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='all .3s'},2500);setTimeout(()=>t.remove(),2800)}
+
+// ══════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════
+let mapsInit={radar:false,clusters:false};
+$$('.nav-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    $$('.nav-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    $$('.tab-panel').forEach(p=>p.classList.remove('active'));
+    const id=tab.dataset.tab;
+    $(`#tab-${id}`).classList.add('active');
+    // Lazy init maps
+    if(id==='radar'&&!mapsInit.radar){initRadarMap();mapsInit.radar=true}
+    if(id==='clusters'&&!mapsInit.clusters){initClustersMap();mapsInit.clusters=true}
+    // Resize canvas
+    if(id==='mesh')resizeCanvas();
+  });
+});
+
+// ══════════════════════════════
+// MESH TAB
+// ══════════════════════════════
+
+// Agent List
+function renderAgents(){
+  const el=$('#agentList');
+  el.innerHTML=AGENTS.map(a=>`
+    <div class="agent-card ${selectedAgent===a.id?'active':''}" style="--ac:${a.color}" data-id="${a.id}">
+      <div class="ac-head">
+        <div class="ac-icon">${a.icon}</div>
+        <div><div class="ac-name">${a.name}</div><div class="ac-role">${a.role}</div></div>
+        <div class="ac-status ${a.status}"><span class="status-dot"></span>${a.status}</div>
+      </div>
+      <div class="ac-stats">
+        <div><b>${fmt(a.stats.events)}</b> events</div><div><b>${a.stats.rules}</b> rules</div>
+        <div>Wake: <b>${a.stats.wake}</b></div><div>IDs: <b>${a.rules.join(',')}</b></div>
+      </div>
+      <div class="wake-pips">${a.rules.map(()=>`<div class="wp ${Math.random()>.5?'on':''}"></div>`).join('')}</div>
+    </div>`).join('');
+  el.querySelectorAll('.agent-card').forEach(c=>c.addEventListener('click',()=>{selectedAgent=c.dataset.id;renderAgents();showDetail(c.dataset.id)}));
+}
+
+// Signal Feed
+function addSignal(){
+  const s=rand(SIGNAL_TYPES),c=rand(CLUSTERS),now=fmtTime();
+  const bodies={listing_added:`New listing — ${(Math.random()*20+1).toFixed(1)}ac in ${rand(cities)}`,listing_price_reduced:`Price cut $${Math.floor(Math.random()*50000+10000)} on ${(Math.random()*10+2).toFixed(1)}ac`,owner_cluster_detected:`${c.name} — ${c.lots} parcels, ${c.acres} acres`,cdom_threshold_crossed:`CDOM ≥ 90 — fatigue indicator active`,private_remarks_signal:`BBO: "${rand(['package deal','take all lots','bring any offer','motivated seller','remaining lots'])}" in remarks`,developer_exit_signal:`Dev exit — ${rand(['expired 120d','withdrawn + CDOM','cancellation','off-market'])}`,parcel_score_updated:`Score: ${(Math.random()*.4+.3).toFixed(2)} → ${(Math.random()*.4+.5).toFixed(2)}`,parcel_linked:`Parcel linked to MLS — haversine 50m match`,subdivision_remnant:`Remnant: ${c.name} — ${Math.floor(Math.random()*15+2)} lots, CDOM ≥ 180`,agent_accumulation:`Agent accum: ${rand(['RE/MAX','KW','Howard Hanna'])} with ${Math.floor(Math.random()*8+3)} listings`};
+  signalFeed.unshift({type:s.type,tier:s.tier,icon:s.icon,body:bodies[s.type]||s.type,time:now,tags:[s.family,c.city]});
+  if(signalFeed.length>50)signalFeed.pop();
+  renderSignals();
+  const r=rand(RULES);r.fires++;
+  spawnParticle(s.family);
+}
+
+function renderSignals(){
+  $('#rp-signals').innerHTML=signalFeed.slice(0,30).map(s=>`
+    <div class="sig-item ${s.tier}">
+      <div class="sig-head"><span>${s.icon}</span><span class="sig-type" style="color:${({t1:'#ff2d55',t2:'#ffb800',t3:'#00f0ff',t4:'#a855f7',t5:'#3b82f6'})[s.tier]}">${s.type.replace(/_/g,' ')}</span><span class="sig-time">${s.time}</span></div>
+      <div class="sig-body">${s.body}</div>
+      <div class="sig-tags">${s.tags.map(t=>`<span class="sig-tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function renderRules(){
+  $('#rp-rules').innerHTML=`<div class="rule-grid">${RULES.map(r=>`
+    <div class="rule-cell">
+      <div class="rule-cell-id">${r.id}</div>
+      <div class="rule-cell-name">${r.name}</div>
+      <div class="rule-cell-fc">${r.fires?r.fires+'×':''}</div>
+      ${r.cd?`<div class="rule-cell-cd" style="width:${Math.random()*100}%"></div>`:''}
+    </div>`).join('')}</div>`;
+}
+
+function renderClusterPanel(){
+  $('#rp-clusters').innerHTML=CLUSTERS.slice(0,12).map(c=>`
+    <div class="cl-item"><div class="cl-head">
+      <span class="cl-badge ${c.type}">${c.type}</span>
+      <span class="cl-name">${c.name}</span>
+      <span class="cl-size">${c.lots}</span>
+    </div><div class="cl-details">
+      <span>${fmt(c.acres)} ac</span>
+      <span>${c.hasListing?'✓ Listed':'○ No listing'}</span>
+      <span style="color:${({A:'#00ff88',B:'#00f0ff',C:'#ffb800',X:'#ff2d55'})[c.tier]}">Tier ${c.tier}</span>
+    </div></div>`).join('');
+}
+
+// Right panel tabs
+$$('.rp-tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.rp-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  $$('.rp-panel').forEach(x=>x.classList.remove('active'));$(`#rp-${t.dataset.rp}`).classList.add('active');
+  if(t.dataset.rp==='rules')renderRules();if(t.dataset.rp==='clusters')renderClusterPanel();
+}));
+
+// ── MESH CANVAS ──
+const canvas=$('#meshCanvas'),ctx=canvas.getContext('2d');
+let W,H,meshNodes=[],particles=[];
+
+function resizeCanvas(){
+  const r=canvas.parentElement.getBoundingClientRect(),d=devicePixelRatio||1;
+  W=r.width;H=r.height;canvas.width=W*d;canvas.height=H*d;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(d,0,0,d,0,0);
+  initNodes();
+}
+
+function initNodes(){
+  const cx=W/2,cy=H/2,rad=Math.min(W,H)*.32;
+  meshNodes=AGENTS.map((a,i)=>{const ang=(i/AGENTS.length)*Math.PI*2-Math.PI/2;return{x:cx+Math.cos(ang)*rad,y:cy+Math.sin(ang)*rad,r:22,color:a.color,icon:a.icon,name:a.name,phase:Math.random()*6.28,glow:0}});
+  meshNodes.push({x:cx,y:cy,r:34,color:'#c9a44e',icon:'⚡',name:'Trigger Engine',phase:0,glow:.5});
+}
+
+function spawnParticle(family){
+  const colors={LISTING:'#00f0ff',CLUSTER:'#a855f7',PARCEL:'#3b82f6',MUNICIPAL:'#ffb800',DEV_EXIT:'#ff2d55',OPPORTUNITY:'#00ff88',HISTORICAL:'#f97316'};
+  if(meshNodes.length<2)return;
+  const hub=meshNodes.length-1,from=Math.floor(Math.random()*(meshNodes.length-1)),rev=Math.random()>.5;
+  const s=rev?meshNodes[hub]:meshNodes[from],e=rev?meshNodes[from]:meshNodes[hub];
+  particles.push({sx:s.x,sy:s.y,ex:e.x,ey:e.y,x:s.x,y:s.y,p:0,spd:.008+Math.random()*.012,color:colors[family]||'#ffffff30',size:2+Math.random()*2,trail:[]});
+  meshNodes[rev?from:hub].glow=Math.min(meshNodes[rev?from:hub].glow+.3,1.5);
+}
+
+function drawMesh(t){
+  ctx.clearRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='#ffffff03';ctx.lineWidth=.5;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Connections
+  const hub=meshNodes.length-1;
+  for(let i=0;i<AGENTS.length;i++){
+    ctx.beginPath();ctx.moveTo(meshNodes[i].x,meshNodes[i].y);ctx.lineTo(meshNodes[hub].x,meshNodes[hub].y);
+    ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.stroke();ctx.setLineDash([]);
+  }
+  // Particles
+  particles=particles.filter(p=>{
+    p.p+=p.spd;if(p.p>=1)return false;
+    const e=p.p<.5?4*p.p**3:1-(-2*p.p+2)**3/2;
+    p.x=p.sx+(p.ex-p.sx)*e;p.y=p.sy+(p.ey-p.sy)*e;
+    p.trail.push({x:p.x,y:p.y});if(p.trail.length>12)p.trail.shift();
+    const[r,g,b]=[parseInt(p.color.slice(1,3),16),parseInt(p.color.slice(3,5),16),parseInt(p.color.slice(5,7),16)];
+    p.trail.forEach((pt,i)=>{ctx.beginPath();ctx.arc(pt.x,pt.y,p.size*(i/p.trail.length),.0,6.28);ctx.fillStyle=`rgba(${r},${g},${b},${i/p.trail.length*.4})`;ctx.fill()});
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fillStyle=p.color;ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size*3,0,6.28);ctx.fillStyle=`rgba(${r},${g},${b},.1)`;ctx.fill();
+    return true;
+  });
+  // Nodes
+  meshNodes.forEach(n=>{
+    const pulse=Math.sin(t*.002+n.phase)*.5+.5;n.glow*=.97;
+    if(n.glow>.05){const[r,g,b]=[parseInt(n.color.slice(1,3),16),parseInt(n.color.slice(3,5),16),parseInt(n.color.slice(5,7),16)];const gd=ctx.createRadialGradient(n.x,n.y,n.r,n.x,n.y,n.r*3);gd.addColorStop(0,`rgba(${r},${g},${b},${n.glow*.3})`);gd.addColorStop(1,`rgba(${r},${g},${b},0)`);ctx.beginPath();ctx.arc(n.x,n.y,n.r*3,0,6.28);ctx.fillStyle=gd;ctx.fill()}
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r+2+pulse*2,0,6.28);ctx.strokeStyle=n.color+'30';ctx.lineWidth=1;ctx.stroke();
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,6.28);const bg=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);bg.addColorStop(0,'#1a1a2e');bg.addColorStop(1,'#0e0e18');ctx.fillStyle=bg;ctx.fill();ctx.strokeStyle=n.color+'60';ctx.lineWidth=2;ctx.stroke();
+    ctx.font=`${n.r*.8}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.icon,n.x,n.y);
+    ctx.font='500 10px IBM Plex Mono,monospace';ctx.fillStyle='#ffffff45';ctx.fillText(n.name,n.x,n.y+n.r+16);
+  });
+  // Stars
+  for(let i=0;i<50;i++){ctx.beginPath();ctx.arc((i*137.5+t*.01)%W,(i*97.3+t*.005)%H,.7,0,6.28);ctx.fillStyle=`rgba(201,164,78,${(Math.sin(t*.003+i)*.3+.3)*.12})`;ctx.fill()}
+}
+
+let lastSig=0;
+function animate(t){drawMesh(t);if(t-lastSig>900+Math.random()*2000){addSignal();lastSig=t}requestAnimationFrame(animate)}
+
+// ── Sparkline ──
+function sparkline(el,data,color){
+  const c=el.getContext('2d'),r=el.parentElement.getBoundingClientRect(),d=devicePixelRatio||1;
+  el.width=r.width*d;el.height=20*d;el.style.width=r.width+'px';el.style.height='20px';c.setTransform(d,0,0,d,0,0);
+  const w=r.width,h=20,mx=Math.max(...data),mn=Math.min(...data),rng=mx-mn||1;
+  c.beginPath();data.forEach((v,i)=>{const x=i/(data.length-1)*w,y=h-((v-mn)/rng)*(h-4)-2;i?c.lineTo(x,y):c.moveTo(x,y)});
+  c.strokeStyle=color;c.lineWidth=1.5;c.stroke();
+  c.lineTo(w,h);c.lineTo(0,h);c.closePath();
+  const[cr,cg,cb]=[parseInt(color.slice(1,3),16),parseInt(color.slice(3,5),16),parseInt(color.slice(5,7),16)];
+  const gd=c.createLinearGradient(0,0,0,h);gd.addColorStop(0,`rgba(${cr},${cg},${cb},.15)`);gd.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);c.fillStyle=gd;c.fill();
+}
+
+function genSpark(base,v,n){const d=[];let val=base;for(let i=0;i<n;i++){val+=(Math.random()-.45)*v;val=Math.max(base*.7,Math.min(base*1.3,val));d.push(val)}return d}
+
+// ══════════════════════════════
+// RADAR TAB
+// ══════════════════════════════
+let radarMap;
+function initRadarMap(){
+  radarMap=L.map('radarMap',{zoomControl:true,attributionControl:false}).setView([42.28,-83.75],10);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18}).addTo(radarMap);
+  renderRadar();
+  // Filters
+  ['filterSignal','filterTier','filterConc','filterOwner'].forEach(id=>$(`#${id}`).addEventListener(id==='filterOwner'?'input':'change',renderRadar));
+  // Sort
+  $$('.radar-table th').forEach(th=>th.addEventListener('click',()=>{
+    const s=th.dataset.sort;radarSort=radarSort===s?s+'_desc':s;renderRadar();
+  }));
+}
+
+let radarSort='lots_desc',radarMarkers=[];
+function renderRadar(){
+  const sigF=$('#filterSignal').value,tierF=$('#filterTier').value,concF=$('#filterConc').value,ownF=$('#filterOwner').value.toLowerCase();
+  let data=CLUSTERS.filter(c=>{
+    if(sigF&&c.signal!==sigF)return false;
+    if(tierF&&c.tier!==tierF)return false;
+    if(concF&&c.conc!==concF)return false;
+    if(ownF&&!c.name.toLowerCase().includes(ownF))return false;
+    return true;
+  });
+  // Sort
+  const[field,dir]=radarSort.includes('_desc')?[radarSort.replace('_desc',''),'desc']:[radarSort,'asc'];
+  const cmp=(a,b)=>{
+    let va=a[field==='name'?'name':field],vb=b[field==='name'?'name':field];
+    if(typeof va==='string')return dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    return dir==='asc'?va-vb:vb-va;
+  };
+  data.sort(cmp);
+  // Stats
+  $('#rsCluster').textContent=data.length;
+  $('#rsLots').textContent=fmt(data.reduce((s,c)=>s+c.lots,0));
+  $('#rsSignal').textContent=data.filter(c=>c.signal==='HIGHEST'||c.signal==='HIGH').length;
+  $('#rsTierA').textContent=data.filter(c=>c.tier==='A').length;
+  // Table
+  $('#radarBody').innerHTML=data.map(c=>`
+    <tr class="${c.signal.toLowerCase()}" data-lat="${c.lat}" data-lng="${c.lng}">
+      <td style="font-weight:500;color:#ffffffa0">${c.name}<br><span style="font-size:10px;color:#ffffff25">${c.city} · ${c.type}</span></td>
+      <td>${c.lots}</td>
+      <td><span class="sig-badge ${c.signal.toLowerCase()}">${c.signal}</span></td>
+      <td><span class="tier-badge ${c.tier}">${c.tier}</span></td>
+      <td style="color:${parseFloat(c.margin)>=15?'var(--emerald)':parseFloat(c.margin)>0?'var(--amber)':'var(--crimson)'}">${c.margin}%</td>
+    </tr>`).join('');
+  // Map markers
+  radarMarkers.forEach(m=>radarMap.removeLayer(m));radarMarkers=[];
+  data.forEach(c=>{
+    const sigColor={HIGHEST:'#ff2d55',HIGH:'#f97316',MEDIUM:'#ffb800',LOW:'#6b7280',NONE:'#3b82f6'}[c.signal];
+    const radius=Math.max(6,Math.min(20,c.lots/3));
+    const m=L.circleMarker([c.lat,c.lng],{radius,fillColor:sigColor,fillOpacity:.7,color:c.conc==='TIGHT'?'#c9a44e':'#ffffff20',weight:c.conc==='TIGHT'?2:1})
+      .bindPopup(`<b style="color:var(--brass)">${c.name}</b><br>${c.lots} lots · ${fmt(c.acres)} ac<br>Signal: ${c.signal} · Tier ${c.tier}<br>Margin: ${c.margin}% · ${c.city}<br>Land: $${fmt(c.landVal)}`)
+      .addTo(radarMap);
+    radarMarkers.push(m);
+  });
+  // Row click → fly
+  $$('.radar-table tbody tr').forEach(row=>row.addEventListener('click',()=>{
+    radarMap.flyTo([+row.dataset.lat,+row.dataset.lng],14);
+  }));
+}
+
+// ══════════════════════════════
+// CLUSTERS TAB
+// ══════════════════════════════
+let clustersMap;
+function initClustersMap(){
+  clustersMap=L.map('clustersMap',{zoomControl:true,attributionControl:false}).setView([42.28,-83.75],10);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18}).addTo(clustersMap);
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:18}).addTo(clustersMap);
+  // Markers by type
+  const typeColors={owner:'#a855f7',subdivision:'#00f0ff',proximity:'#3b82f6',agent:'#00ff88',office:'#ffb800'};
+  CLUSTERS.forEach(c=>{
+    L.circleMarker([c.lat,c.lng],{radius:Math.max(5,Math.min(18,c.lots/4)),fillColor:typeColors[c.type],fillOpacity:.6,color:'#ffffff15',weight:1})
+      .bindPopup(`<b style="color:${typeColors[c.type]}">${c.name}</b><br>${c.type.toUpperCase()} · ${c.lots} lots<br>${fmt(c.acres)} ac · Score: ${c.score}`)
+      .addTo(clustersMap);
+  });
+  renderClustersPanel();
+}
+
+function renderClustersPanel(){
+  const top=CLUSTERS.slice(0,8);
+  $('#clustersList').innerHTML=top.map(c=>{
+    const circ=2*Math.PI*42,offset=circ-(c.score/100)*circ;
+    const scoreColor=c.score>=70?'var(--emerald)':c.score>=50?'var(--amber)':'var(--crimson)';
+    return`
+    <div class="cl-detail-card">
+      <div class="cl-detail-header">
+        <div class="cl-detail-icon">${c.type==='owner'?'👤':c.type==='subdivision'?'🏘️':c.type==='proximity'?'📍':c.type==='agent'?'🏷️':'🏢'}</div>
+        <div><div class="cl-detail-name">${c.name}</div><div class="cl-detail-type">${c.type.toUpperCase()} · ${c.city}</div></div>
+        <span class="sig-badge ${c.signal.toLowerCase()}" style="margin-left:auto">${c.signal}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div class="score-ring-wrap" style="padding:8px">
+          <div class="score-ring" style="width:80px;height:80px">
+            <svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" style="stroke:${scoreColor};stroke-dasharray:${circ};stroke-dashoffset:${offset}"/></svg>
+            <div class="score-ring-val" style="font-size:22px">${c.score}</div>
+          </div>
+        </div>
+        <div class="dim-bars">
+          ${[['Zoning',40+Math.random()*50],['Economics',30+Math.random()*60],['Infra',20+Math.random()*70],['Signal',c.signal==='HIGHEST'?90:c.signal==='HIGH'?70:c.signal==='MEDIUM'?50:30]].map(([l,v])=>`
+            <div class="dim-bar">
+              <div class="dim-bar-label">${l}</div>
+              <div class="dim-bar-track"><div class="dim-bar-fill" style="width:${v}%;background:${v>=70?'var(--emerald)':v>=50?'var(--amber)':'var(--crimson)'}"></div></div>
+              <div class="dim-bar-val">${Math.floor(v)}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="cl-detail-grid">
+        <div class="cl-dg"><div class="cl-dg-val">${c.lots}</div><div class="cl-dg-label">Lots</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">${fmt(c.acres)}</div><div class="cl-dg-label">Acres</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">$${(c.landVal/1000).toFixed(0)}K</div><div class="cl-dg-label">Land Value</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════
+// COMMAND TAB
+// ══════════════════════════════
+function renderCommand(){
+  const runners=[
+    {icon:'🔭',name:'Supply Intelligence Runner',desc:'Pulls listings from Spark MLS, scores parcels, routes events',status:'ready',statusLabel:'Ready',events:1247,rules:89,success:'96%',logs:[
+      {c:'ok',t:'[14:32:01] Spark ingestion complete — 95 listings normalized'},
+      {c:'ok',t:'[14:32:03] BBO signal scan: 12 fatigue, 8 package, 3 exit'},
+      {c:'info',t:'[14:32:05] 47 listings linked to parcel clusters'},
+      {c:'ok',t:'[14:32:06] Scoring pipeline: 67 parcels rescored (Δ≥0.05)'},
+      {c:'warn',t:'[14:31:45] Cooldown active: RJ (pkg_lang) — 6d 23h remaining'},
+    ]},
+    {icon:'🔮',name:'Cluster Detection Runner',desc:'Runs dual-detector across MLS listings and Regrid parcels',status:'ready',statusLabel:'Ready',events:892,rules:156,success:'99%',logs:[
+      {c:'ok',t:'[14:30:12] ParcelClusterDetector: 2,229 clusters (1,112 own / 81 sub / 1,036 prox)'},
+      {c:'ok',t:'[14:30:14] ClusterDetector: 23 agent groups, 11 office programs'},
+      {c:'info',t:'[14:30:15] 47 clusters with active listings cross-referenced'},
+      {c:'ok',t:'[14:30:16] Toll Brothers: 146 lots — HIGHEST signal'},
+      {c:'ok',t:'[14:30:17] Dormant supply: 76 clusters, 22,057 acres identified'},
+    ]},
+    {icon:'📡',name:'BBO Signal Discovery',desc:'Regex pattern matching on private remarks, CDOM, agent accumulation',status:'running',statusLabel:'Scanning',events:534,rules:67,success:'94%',logs:[
+      {c:'info',t:'[14:33:01] Scanning 95 active listings for BBO signals...'},
+      {c:'ok',t:'[14:33:02] CDOM thresholds: 18 listings ≥ 90 days'},
+      {c:'ok',t:'[14:33:03] Package language: 8 matches (bulk, portfolio, remaining lots)'},
+      {c:'warn',t:'[14:33:04] Fatigue language: 12 matches (motivated, bring offer, must sell)'},
+      {c:'err',t:'[14:33:05] Developer exit: 3 signals (expired, withdrawn, cancellation)'},
+    ]},
+    {icon:'🏛️',name:'Municipal Intelligence Runner',desc:'Cross-references clusters with municipal records, zoning, incentives',status:'idle',statusLabel:'Step 7',events:45,rules:12,success:'—',logs:[
+      {c:'info',t:'[—] Awaiting Step 7 implementation'},
+      {c:'info',t:'[—] Will scan: plat recordings, permits, zoning changes'},
+      {c:'info',t:'[—] Will detect: land bank packages, township surplus'},
+      {c:'warn',t:'[—] RC fires on cluster ≥3 — 12hr cooldown per cluster'},
+    ]},
+  ];
+  $('#cmdLayout').innerHTML=runners.map(r=>`
+    <div class="agent-runner">
+      <div class="ar-header">
+        <div class="ar-icon">${r.icon}</div>
+        <div><div class="ar-name">${r.name}</div><div class="ar-desc">${r.desc}</div></div>
+        <div class="ar-status ${r.status}"><span class="status-dot"></span>${r.statusLabel}</div>
+      </div>
+      <div class="ar-body">
+        <div class="ar-stats-row">
+          <div class="ar-stat"><div class="ar-stat-val">${fmt(r.events)}</div><div class="ar-stat-label">Events</div></div>
+          <div class="ar-stat"><div class="ar-stat-val">${r.rules}</div><div class="ar-stat-label">Rules</div></div>
+          <div class="ar-stat"><div class="ar-stat-val">${r.success}</div><div class="ar-stat-label">Success</div></div>
+        </div>
+        <div class="ar-log">${r.logs.map(l=>`<div class="${l.c}">${l.t}</div>`).join('')}</div>
+      </div>
+      <div class="ar-footer">
+        <button class="ar-btn primary" onclick="toast('⚡','${r.name} triggered')">▶ Run</button>
+        <button class="ar-btn secondary" onclick="toast('📋','Viewing ${r.name} logs')">Logs</button>
+        <button class="ar-btn secondary" onclick="toast('⚙️','${r.name} config opened')">Config</button>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════
+// ECONOMICS TAB
+// ══════════════════════════════
+function renderEconomics(){
+  const wfData=[
+    {l:'Factory Cost',v:89000,c:'var(--cyan)'},
+    {l:'Site Work',v:18000,c:'var(--blue)'},
+    {l:'Infrastructure',v:22000,c:'var(--purple)'},
+    {l:'Soft Costs',v:12000,c:'var(--amber)'},
+    {l:'Contingency (5%)',v:7050,c:'var(--orange)'},
+    {l:'Land Cost',v:35000,c:'var(--brass)'},
+    {l:'Closing (9%)',v:16470,c:'var(--crimson)'},
+  ];
+  const total=wfData.reduce((s,r)=>s+r.v,0);
+  const retail=279000;
+  const profit=retail-total;
+  const margin=(profit/retail*100).toFixed(1);
+  const maxV=Math.max(...wfData.map(r=>r.v));
+
+  $('#econLeft').innerHTML=`
+    <div class="econ-section">
+      <div class="econ-title">Cost Waterfall — Modular Home</div>
+      <div class="waterfall">
+        ${wfData.map(r=>`<div class="wf-row"><div class="wf-label">${r.l}</div><div class="wf-bar-wrap"><div class="wf-bar" style="width:${r.v/maxV*100}%;background:${r.c}"></div></div><div class="wf-val">$${fmt(r.v)}</div></div>`).join('')}
+        <div class="wf-row total"><div class="wf-label">Total Project Cost</div><div class="wf-bar-wrap"><div class="wf-bar" style="width:100%;background:var(--brass)"></div></div><div class="wf-val">$${fmt(total)}</div></div>
+        <div class="wf-row profit"><div class="wf-label">Profit / Unit</div><div class="wf-bar-wrap"><div class="wf-bar" style="width:${profit/retail*100}%;background:var(--emerald)"></div></div><div class="wf-val">$${fmt(profit)}</div></div>
+        <div class="wf-row"><div class="wf-label">Margin</div><div class="wf-bar-wrap"></div><div class="wf-val" style="color:var(--emerald)">${margin}%</div></div>
+      </div>
+    </div>
+    <div class="econ-section">
+      <div class="econ-title">Deal Sensitivity</div>
+      <div class="sensitivity-grid">
+        <div class="sg-cell header">Price</div><div class="sg-cell header">Profit</div><div class="sg-cell header">Margin</div><div class="sg-cell header">Tier</div><div class="sg-cell header">Portfolio (10)</div>
+        ${[239000,259000,279000,299000,319000].map(p=>{
+          const pr=p-total,mg=(pr/p*100).toFixed(1),pos=pr>0;
+          const tier=mg>=25?'A':mg>=15?'B':mg>0?'C':'X';
+          return`
+            <div class="sg-cell ${pos?'positive':'negative'} ${p===279000?'highlight':''}"><div class="sg-price">$${(p/1000).toFixed(0)}K</div></div>
+            <div class="sg-cell ${pos?'positive':'negative'} ${p===279000?'highlight':''}"><div class="sg-profit">${pos?'+':''}$${fmt(pr)}</div></div>
+            <div class="sg-cell ${pos?'positive':'negative'} ${p===279000?'highlight':''}"><div class="sg-margin">${mg}%</div></div>
+            <div class="sg-cell ${p===279000?'highlight':''}"><span class="tier-badge ${tier}">${tier}</span></div>
+            <div class="sg-cell ${pos?'positive':'negative'} ${p===279000?'highlight':''}"><div class="sg-profit">${pos?'+':''}$${fmt(pr*10)}</div></div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  $('#econRight').innerHTML=`
+    <div class="econ-section">
+      <div class="econ-title">Market Comparables</div>
+      <div class="comps-row">
+        <div class="comp-card"><div class="comp-card-title">New Construction</div><div class="comp-card-val">$312K</div><div class="comp-card-sub">Avg close · 45 DOM</div></div>
+        <div class="comp-card"><div class="comp-card-title">Existing Homes</div><div class="comp-card-val">$267K</div><div class="comp-card-sub">Avg close · 28 DOM</div></div>
+        <div class="comp-card"><div class="comp-card-title">Premium %</div><div class="comp-card-val" style="color:var(--emerald)">+16.9%</div><div class="comp-card-sub">New vs existing</div></div>
+      </div>
+    </div>
+    <div class="econ-section">
+      <div class="econ-title">Tier 1 Portfolio Value</div>
+      <div class="cl-detail-grid" style="grid-template-columns:1fr 1fr">
+        <div class="cl-dg"><div class="cl-dg-val">23</div><div class="cl-dg-label">Tier 1 Opps</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">$${((profit*23*10)/1e6).toFixed(1)}M</div><div class="cl-dg-label">Portfolio Profit (10 lots ea)</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">${margin}%</div><div class="cl-dg-label">Blended Margin</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">$${((retail*23*10)/1e6).toFixed(1)}M</div><div class="cl-dg-label">Total Revenue</div></div>
+      </div>
+    </div>
+    <div class="econ-section">
+      <div class="econ-title">Dormant Supply Economics</div>
+      <div class="cl-detail-grid">
+        <div class="cl-dg"><div class="cl-dg-val">76</div><div class="cl-dg-label">Dormant Clusters</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">22,057</div><div class="cl-dg-label">Acres</div></div>
+        <div class="cl-dg"><div class="cl-dg-val">$${((22057*35000)/1e6).toFixed(0)}M</div><div class="cl-dg-label">Est. Land Value</div></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="econ-title" style="font-size:13px">Top Dormant Holders</div>
+        ${[{n:'Toll Brothers',l:146,a:892},{n:'M/I Homes',l:99,a:567},{n:'Pulte Group',l:59,a:334},{n:'Lennar Corp',l:42,a:256},{n:'NVR Inc',l:38,a:213}].map(d=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #ffffff06">
+            <span style="color:#ffffffa0;font-size:12px;flex:1">${d.n}</span>
+            <span style="color:var(--brass-bright);font-weight:600;font-size:12px">${d.l} lots</span>
+            <span style="color:#ffffff30;font-size:11px">${fmt(d.a)} ac</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════
+// AGENT DETAIL PANEL
+// ══════════════════════════════
+function showDetail(id){
+  const a=AGENTS.find(x=>x.id===id);if(!a)return;
+  const o=$('#detailOverlay'),p=$('#detailPanel');
+  p.innerHTML=`
+    <button class="dp-close" onclick="document.getElementById('detailOverlay').classList.remove('visible')">×</button>
+    <div class="dp-icon" style="border-color:${a.color}30">${a.icon}</div>
+    <div class="dp-name">${a.name}</div>
+    <div class="dp-desc">${a.desc}</div>
+    <div class="dp-section"><div class="dp-section-title">Performance</div>
+      <div class="dp-stat-grid">
+        <div class="dp-stat"><div class="dp-stat-val">${fmt(a.stats.events)}</div><div class="dp-stat-label">Events</div></div>
+        <div class="dp-stat"><div class="dp-stat-val">${a.stats.rules}</div><div class="dp-stat-label">Rules Fired</div></div>
+        <div class="dp-stat"><div class="dp-stat-val">${a.stats.wake}</div><div class="dp-stat-label">Last Wake</div></div>
+        <div class="dp-stat"><div class="dp-stat-val">${a.wakeTypes.join(', ')}</div><div class="dp-stat-label">Wake Types</div></div>
+      </div>
+    </div>
+    <div class="dp-section"><div class="dp-section-title">Active Rules</div>
+      ${a.rules.map(rid=>{const r=RULES.find(x=>x.id===rid);return r?`<div class="dp-rule"><span class="dp-rule-id">${r.id}</span><span class="dp-rule-name">${r.name}</span><span class="dp-rule-status ${r.fires>5?'hot':r.fires>0?'warm':'cold'}">${r.fires>5?'HOT':r.fires>0?'WARM':'COLD'}</span></div>`:''}).join('')}
+    </div>
+    <div class="dp-section"><div class="dp-section-title">Agent Chat</div>
+      <div class="dp-chat">
+        <div class="dp-chat-msgs" id="chatMsgs"><div class="chat-msg agent">${a.name} ready. Monitoring ${a.rules.length} rules. Last scan ${a.stats.wake} ago.</div></div>
+        <div class="dp-chat-row"><input class="dp-chat-input" id="chatIn" placeholder="Message ${a.name}..."><button class="dp-chat-send" id="chatSend">Send</button></div>
+      </div>
+    </div>`;
+  o.classList.add('visible');
+  $('#detailBackdrop').onclick=()=>o.classList.remove('visible');
+  const responses=[`Processing. ${a.stats.rules} rules evaluated. All nominal.`,`Rescan running across ${a.rules.length} active rules.`,`${Math.floor(Math.random()*5+1)} new wake instructions generated. Priority: ${rand(['IMMEDIATE','STANDARD','BATCH'])}.`,`Found ${Math.floor(Math.random()*12+1)} convergence points. Routing to opportunity engine.`];
+  const send=()=>{const v=$('#chatIn').value.trim();if(!v)return;$('#chatMsgs').innerHTML+=`<div class="chat-msg user">${v}</div>`;$('#chatIn').value='';setTimeout(()=>{$('#chatMsgs').innerHTML+=`<div class="chat-msg agent">${rand(responses)}</div>`;$('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight},600+Math.random()*800)};
+  $('#chatSend').onclick=send;$('#chatIn').onkeydown=e=>{if(e.key==='Enter')send()};
+}
+
+// ══════════════════════════════
+// COMMAND PALETTE
+// ══════════════════════════════
+function initCmd(){
+  const o=$('#cmdOverlay'),inp=$('#cmdInput'),res=$('#cmdResults');
+  function render(f=''){
+    res.innerHTML=COMMANDS.map(g=>{
+      const items=g.items.filter(i=>i.l.toLowerCase().includes(f.toLowerCase()));
+      return items.length?`<div class="cmd-group-title">${g.g}</div>${items.map(i=>`<div class="cmd-item" data-a="${i.a}"><span class="cmd-item-icon">${i.i}</span><span class="cmd-item-label">${i.l}</span>${i.k?`<span class="cmd-item-shortcut"><kbd>${i.k}</kbd></span>`:''}</div>`).join('')}`:'';
+    }).join('');
+    res.querySelectorAll('.cmd-item').forEach(i=>i.onclick=()=>{o.classList.remove('visible');inp.value='';toast('⚡',i.querySelector('.cmd-item-label').textContent+' triggered')});
+  }
+  const open=()=>{o.classList.add('visible');inp.focus();render()};
+  const close=()=>{o.classList.remove('visible');inp.value=''};
+  $('#cmdTrigger').onclick=open;o.onclick=e=>{if(e.target===o)close()};inp.oninput=()=>render(inp.value);
+  document.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();open()}if(e.key==='Escape'){close();$('#detailOverlay').classList.remove('visible')}};
+}
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+function init(){
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+  renderAgents();renderSignals();renderRules();renderClusterPanel();renderCommand();renderEconomics();initCmd();
+  setTimeout(()=>{sparkline($('#sp1'),genSpark(90,5,24),'#00f0ff');sparkline($('#sp2'),genSpark(10000,200,24),'#3b82f6')},100);
+  setInterval(()=>{sparkline($('#sp1'),genSpark(90,5,24),'#00f0ff');sparkline($('#sp2'),genSpark(10000,200,24),'#3b82f6')},10000);
+  setInterval(()=>{$$('.wp').forEach(p=>{if(Math.random()>.85)p.classList.toggle('on')})},2000);
+  setInterval(()=>{AGENTS.forEach(a=>{const r=Math.random();a.status=r>.9?'scanning':r>.7?'online':r>.6?'cooldown':a.status;a.stats.events+=Math.floor(Math.random()*10);a.stats.rules+=Math.floor(Math.random()*2)});renderAgents()},5000);
+  requestAnimationFrame(animate);
+  setTimeout(()=>toast('⚡','NEXUS online — Event mesh operational'),500);
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
