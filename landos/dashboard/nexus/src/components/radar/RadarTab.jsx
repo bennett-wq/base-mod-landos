@@ -1,6 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, Polygon as LeafletPolygon, useMapEvents } from 'react-leaflet';
+import { openSpotlight, toggleDrawMode, setDrawnPolygon, clearPolygon, createMission } from '../../store/missionsSlice';
+import { addToast } from '../../store/meshSlice';
+import { AGENTS } from '../../data/agents';
 import 'leaflet/dist/leaflet.css';
 
 const SIG_COLORS = { HIGHEST: '#ff2d55', HIGH: '#f97316', MEDIUM: '#ffb800', LOW: '#6b7280', NONE: '#3b82f6' };
@@ -9,12 +12,117 @@ const TIER_BADGE = { A: 'bg-nexus-emerald/15 text-nexus-emerald', B: 'bg-nexus-c
 
 function FlyTo({ lat, lng }) {
   const map = useMap();
-  useEffect(() => { if (lat && lng) map.flyTo([lat, lng], 14); }, [lat, lng, map]);
+  useEffect(() => { if (lat && lng) map.flyTo([lat, lng], 14, { duration: 0.8 }); }, [lat, lng, map]);
   return null;
 }
 
+/* ── Polygon Drawing Tool ─────────────────────────────────────── */
+function PolygonDrawer({ active, onComplete }) {
+  const [points, setPoints] = useState([]);
+
+  useMapEvents({
+    click(e) {
+      if (!active) return;
+      setPoints(prev => [...prev, [e.latlng.lat, e.latlng.lng]]);
+    },
+    dblclick(e) {
+      if (!active || points.length < 3) return;
+      e.originalEvent.preventDefault();
+      onComplete(points);
+      setPoints([]);
+    },
+  });
+
+  useEffect(() => {
+    if (!active) setPoints([]);
+  }, [active]);
+
+  if (points.length < 2) return null;
+  return (
+    <LeafletPolygon
+      positions={points}
+      pathOptions={{ color: '#c9a44e', weight: 2, fillColor: '#c9a44e', fillOpacity: 0.1, dashArray: '6 4' }}
+    />
+  );
+}
+
+/* ── Deploy Panel (appears after polygon drawn) ───────────────── */
+function DeployPanel({ onDeploy, onCancel }) {
+  const [selectedAgents, setSelectedAgents] = useState(['supply_intelligence', 'cluster_detection']);
+  const [missionName, setMissionName] = useState('');
+
+  const toggleAgent = (id) => {
+    setSelectedAgents(prev =>
+      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="absolute top-4 right-4 w-[320px] bg-void-1/95 backdrop-blur-xl border border-white/8 rounded-2xl p-5 z-[1000] shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-lg bg-brass/10 border border-brass/20 flex items-center justify-center text-sm">🎯</div>
+        <div>
+          <div className="font-display text-[14px] font-bold text-[#e0e0e0]">Deploy Mission</div>
+          <div className="text-[10px] text-white/18">Select agents to scan this area</div>
+        </div>
+      </div>
+
+      <input
+        value={missionName}
+        onChange={e => setMissionName(e.target.value)}
+        placeholder="Mission name (optional)"
+        className="w-full bg-void-3 border border-white/6 rounded-lg px-3 py-2 text-[12px] text-[#e0e0e0] font-mono outline-none mb-3 focus:border-brass-dim transition-colors"
+      />
+
+      <div className="text-[9px] text-white/12 uppercase tracking-widest mb-2">Select Agents</div>
+      <div className="space-y-1 mb-4">
+        {AGENTS.filter(a => a.id !== 'listing_analysis' && a.id !== 'municipal_agent').map(a => (
+          <button
+            key={a.id}
+            onClick={() => toggleAgent(a.id)}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all text-left ${
+              selectedAgents.includes(a.id)
+                ? 'bg-void-3 border-white/10'
+                : 'border-transparent hover:bg-void-3'
+            }`}
+          >
+            <div
+              className="w-6 h-6 rounded-md flex items-center justify-center text-sm border"
+              style={{ borderColor: selectedAgents.includes(a.id) ? a.color + '40' : 'rgba(255,255,255,0.05)', background: selectedAgents.includes(a.id) ? a.color + '10' : 'transparent' }}
+            >
+              {a.icon}
+            </div>
+            <span className="text-[11px] text-white/45 flex-1">{a.name}</span>
+            {selectedAgents.includes(a.id) && (
+              <span className="w-4 h-4 rounded-full bg-nexus-emerald/20 text-nexus-emerald text-[10px] flex items-center justify-center">✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => onDeploy(selectedAgents, missionName)}
+          disabled={selectedAgents.length === 0}
+          className="flex-1 py-2.5 bg-brass text-void-0 rounded-lg font-display font-bold text-[12px] cursor-pointer hover:bg-brass-bright hover:shadow-[0_0_16px_var(--color-brass-glow)] transition-all border-none disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          🚀 Deploy {selectedAgents.length} Agent{selectedAgents.length !== 1 ? 's' : ''}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-4 py-2.5 bg-void-3 text-white/30 rounded-lg font-display font-bold text-[12px] border border-white/6 cursor-pointer hover:border-nexus-crimson/30 hover:text-nexus-crimson transition-all"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RadarTab() {
+  const dispatch = useDispatch();
   const clusters = useSelector(s => s.mesh.clusters);
+  const { drawMode, drawnPolygon } = useSelector(s => s.missions);
   const [sigFilter, setSigFilter] = useState('');
   const [tierFilter, setTierFilter] = useState('');
   const [concFilter, setConcFilter] = useState('');
@@ -48,19 +156,94 @@ export default function RadarTab() {
   const tierA = filtered.filter(c => c.tier === 'A').length;
   const totalLots = filtered.reduce((s, c) => s + c.lots, 0);
 
+  const handlePolygonComplete = useCallback((points) => {
+    dispatch(setDrawnPolygon(points));
+  }, [dispatch]);
+
+  const handleDeploy = useCallback((agents, name) => {
+    dispatch(createMission({
+      polygon: drawnPolygon,
+      agents,
+      name: name || `Polygon scan — ${new Date().toLocaleTimeString()}`,
+    }));
+    dispatch(addToast({ icon: '🚀', message: `Mission deployed with ${agents.length} agents` }));
+  }, [dispatch, drawnPolygon]);
+
+  const handleCancelDeploy = useCallback(() => {
+    dispatch(clearPolygon());
+  }, [dispatch]);
+
   return (
     <div className="grid grid-cols-[1fr_400px] h-full gap-px bg-white/4">
       {/* Map */}
       <div className="relative bg-void-0">
-        <MapContainer center={[42.28, -83.75]} zoom={10} className="w-full h-full" zoomControl={true} attributionControl={false}>
+        <MapContainer center={[42.28, -83.75]} zoom={10} className="w-full h-full" zoomControl={true} attributionControl={false} doubleClickZoom={!drawMode}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" maxZoom={18} />
           <FlyTo lat={flyTarget.lat} lng={flyTarget.lng} />
+
+          {/* Polygon draw tool */}
+          <PolygonDrawer active={drawMode} onComplete={handlePolygonComplete} />
+
+          {/* Drawn polygon */}
+          {drawnPolygon && (
+            <LeafletPolygon
+              positions={drawnPolygon}
+              pathOptions={{ color: '#c9a44e', weight: 2, fillColor: '#c9a44e', fillOpacity: 0.15 }}
+            />
+          )}
+
+          {/* Cluster markers */}
           {filtered.map(c => (
-            <CircleMarker key={c.id} center={[c.lat, c.lng]} radius={Math.max(6, Math.min(20, c.lots / 3))} pathOptions={{ fillColor: SIG_COLORS[c.signal], fillOpacity: 0.7, color: c.conc === 'TIGHT' ? '#c9a44e' : 'rgba(255,255,255,0.12)', weight: c.conc === 'TIGHT' ? 2 : 1 }}>
-              <Popup><b style={{ color: '#c9a44e' }}>{c.name}</b><br />{c.lots} lots · {c.acres.toLocaleString()} ac<br />Signal: {c.signal} · Tier {c.tier}<br />Margin: {c.margin}% · {c.city}</Popup>
+            <CircleMarker
+              key={c.id}
+              center={[c.lat, c.lng]}
+              radius={Math.max(6, Math.min(20, c.lots / 3))}
+              pathOptions={{
+                fillColor: SIG_COLORS[c.signal],
+                fillOpacity: 0.7,
+                color: c.conc === 'TIGHT' ? '#c9a44e' : 'rgba(255,255,255,0.12)',
+                weight: c.conc === 'TIGHT' ? 2 : 1,
+              }}
+              eventHandlers={{
+                click: () => dispatch(openSpotlight(c)),
+              }}
+            >
+              <Popup>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}>
+                  <b style={{ color: '#c9a44e' }}>{c.name}</b><br />
+                  {c.lots} lots · {c.acres.toLocaleString()} ac<br />
+                  Signal: {c.signal} · Tier {c.tier}<br />
+                  Margin: {c.margin}% · {c.city}<br />
+                  <span style={{ color: '#00ff88' }}>Click for Deal Spotlight</span>
+                </div>
+              </Popup>
             </CircleMarker>
           ))}
         </MapContainer>
+
+        {/* Map toolbar */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-[1000]">
+          <button
+            onClick={() => dispatch(toggleDrawMode())}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-display font-bold text-[12px] cursor-pointer transition-all shadow-lg ${
+              drawMode
+                ? 'bg-brass text-void-0 shadow-[0_0_20px_var(--color-brass-glow)] border-none'
+                : 'bg-void-1/90 backdrop-blur-xl text-white/45 border border-white/8 hover:text-brass hover:border-brass-dim'
+            }`}
+          >
+            {drawMode ? '✏️ Drawing... (dbl-click to close)' : '🗺️ Polygon Search'}
+          </button>
+          {drawMode && (
+            <div className="bg-void-1/90 backdrop-blur-xl rounded-lg px-3 py-2 text-[10px] text-white/30 border border-white/6">
+              Click to add points. Double-click to complete polygon and deploy agents.
+            </div>
+          )}
+        </div>
+
+        {/* Deploy panel */}
+        {drawnPolygon && !drawMode && (
+          <DeployPanel onDeploy={handleDeploy} onCancel={handleCancelDeploy} />
+        )}
       </div>
 
       {/* Sidebar */}
@@ -106,7 +289,12 @@ export default function RadarTab() {
             </thead>
             <tbody>
               {filtered.map(c => (
-                <tr key={c.id} onClick={() => setFlyTarget({ lat: c.lat, lng: c.lng })} className={`cursor-pointer border-l-[3px] ${c.signal === 'HIGHEST' ? 'border-l-nexus-crimson' : c.signal === 'HIGH' ? 'border-l-nexus-orange' : c.signal === 'MEDIUM' ? 'border-l-nexus-amber' : 'border-l-transparent'} hover:[&>td]:bg-void-3`}>
+                <tr
+                  key={c.id}
+                  onClick={() => dispatch(openSpotlight(c))}
+                  onDoubleClick={() => setFlyTarget({ lat: c.lat, lng: c.lng })}
+                  className={`cursor-pointer border-l-[3px] ${c.signal === 'HIGHEST' ? 'border-l-nexus-crimson' : c.signal === 'HIGH' ? 'border-l-nexus-orange' : c.signal === 'MEDIUM' ? 'border-l-nexus-amber' : 'border-l-transparent'} hover:[&>td]:bg-void-3`}
+                >
                   <td className="px-2.5 py-1.5 text-[11px] text-white/55 border-b border-white/4 transition-colors">
                     <span className="font-medium text-white/65">{c.name}</span>
                     <br /><span className="text-[10px] text-white/15">{c.city} · {c.type}</span>
