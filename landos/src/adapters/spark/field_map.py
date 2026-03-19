@@ -30,7 +30,6 @@ RESO_TO_LISTING: dict[str, str] = {
     "Latitude": "latitude",
     "Longitude": "longitude",
     "DaysOnMarket": "dom",
-    "CumulativeDaysOnMarket": "cdom",
     "ClosePrice": "close_price",
     "CloseDate": "close_date",
     "ListingContractDate": "list_date",
@@ -38,6 +37,62 @@ RESO_TO_LISTING: dict[str, str] = {
     "SubdivisionName": "subdivision_name_raw",
     # SellerName is non-standard across RETS providers; map defensively
     "SellerName": "seller_name_raw",
+    # Address — UnparsedAddress is the RESO standard composite field
+    "UnparsedAddress": "address_raw",
+    # ParcelNumber — needed for parcel-to-listing linkage in Step 5
+    "ParcelNumber": "parcel_number_raw",
+}
+
+# ── BBO private-role field → Listing model field ──────────────────────────
+
+BBO_TO_LISTING: dict[str, str] = {
+    # Family 1 — Developer Exit
+    "OffMarketDate":         "off_market_date",
+    "WithdrawalDate":        "withdrawal_date",
+    "CancellationDate":      "cancellation_date",
+    "MajorChangeTimestamp":  "major_change_timestamp",
+    "MajorChangeType":       "major_change_type",
+
+    # Family 2 — Listing Behavior
+    "CumulativeDaysOnMarket":  "cdom",
+    "PreviousListPrice":       "previous_list_price",
+    "OriginalEntryTimestamp":  "original_entry_timestamp",
+    "StatusChangeTimestamp":   "status_change_timestamp",
+    "PriceChangeTimestamp":    "price_change_timestamp",
+    "BackOnMarketDate":        "back_on_market_date",
+
+    # Family 3 — Language Intelligence
+    "PrivateRemarks":        "private_remarks",
+    "ShowingInstructions":   "showing_instructions",
+
+    # Family 4 — Agent/Office Clustering
+    "ListAgentKey":          "list_agent_key",
+    "CoListAgentKey":        "co_list_agent_key",
+    "CoListOfficeKey":       "co_list_office_key",
+    "BuyerAgentKey":         "buyer_agent_key",
+    "BuyerOfficeKey":        "buyer_office_key",
+
+    # Family 5 — Subdivision Remnant
+    "LegalDescription":      "legal_description",
+    "TaxLegalDescription":   "tax_legal_description",
+    "LotDimensions":         "lot_dimensions",
+    "FrontageLength":        "frontage_length",
+    "PossibleUse":           "possible_use",
+    "NumberOfLots":          "number_of_lots",
+
+    # Family 6 — Market Velocity
+    "PurchaseContractDate":  "purchase_contract_date",
+
+    # Land detail
+    "Zoning":                "zoning",
+    "ZoningDescription":     "zoning_description",
+    "LotFeatures":           "lot_features",
+    "RoadFrontageType":      "road_frontage_type",
+    "RoadSurfaceType":       "road_surface_type",
+    "Utilities":             "utilities",
+    "Sewer":                 "sewer",
+    "WaterSource":           "water_source",
+    "CurrentUse":            "current_use",
 }
 
 # ── RESO StandardStatus → StandardStatus enum value ───────────────────────

@@ -28,6 +28,7 @@ class Parcel(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # ── Optional fields ──────────────────────────────────────────────
+    address_raw: Optional[str] = None
     legal_description_raw: Optional[str] = None
     geometry: Optional[dict[str, Any]] = None  # GeoJSON
     centroid: Optional[dict[str, Any]] = None  # GeoJSON point

@@ -1,0 +1,28 @@
+plugins = []
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/landos/dashboard/nexus/dist"
+publishOrigin = "ui"
+commandOrigin = "ui"
+base = "/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/landos/dashboard/nexus"
+command = "npm run build"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
