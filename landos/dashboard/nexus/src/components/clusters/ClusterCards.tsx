@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { ScoreRing } from './ScoreRing'
 import { useClusters } from '@/hooks/useClusters'
 import { Skeleton } from '@/components/shared/Skeleton'
@@ -62,12 +63,15 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
           : clusters?.map((cluster, i) => {
               const isFeatured = i === 0
               return (
-                <article
+                <motion.article
                   key={cluster.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.3 }}
                   className={
                     isFeatured
-                      ? 'group relative overflow-hidden rounded-[1.25rem] border border-outline-variant/30 border-l-4 border-l-primary bg-surface-container-lowest p-7 shadow-sm'
-                      : 'group relative overflow-hidden rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-7 shadow-sm opacity-90 transition-opacity hover:opacity-100'
+                      ? 'group relative overflow-hidden rounded-[1.25rem] border border-outline-variant/30 border-l-4 border-l-primary bg-surface-container-lowest p-7 shadow-sm transition-shadow duration-200 hover:shadow-md'
+                      : 'group relative overflow-hidden rounded-[1.25rem] border border-outline-variant/30 bg-surface-container-lowest p-7 shadow-sm opacity-90 transition-all duration-200 hover:opacity-100 hover:shadow-md'
                   }
                 >
                   {/* Tier badge */}
@@ -116,7 +120,7 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
                   {/* CTA */}
                   <button
                     onClick={() => onViewIntel(cluster)}
-                    className="flex w-full items-center justify-center rounded-lg py-3 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+                    className="flex w-full items-center justify-center rounded-lg py-3 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 active:scale-[0.98]"
                     style={{ background: 'linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%)' }}
                   >
                     View Full Intel
@@ -124,7 +128,7 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                     </svg>
                   </button>
-                </article>
+                </motion.article>
               )
             })}
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Search,
   Pencil,
@@ -22,6 +23,7 @@ interface CommandItem {
   icon: React.ElementType
   label: string
   shortcut?: string
+  action?: () => void
 }
 
 interface CommandGroup {
@@ -29,44 +31,45 @@ interface CommandGroup {
   items: CommandItem[]
 }
 
-const groups: CommandGroup[] = [
-  {
-    title: 'MISSIONS',
-    items: [
-      { icon: Pencil, label: 'Launch Polygon Sweep', shortcut: '⌘P' },
-      { icon: RotateCcw, label: 'Resume Washtenaw Scan', shortcut: '⌘W' },
-    ],
-  },
-  {
-    title: 'PIPELINE',
-    items: [
-      { icon: Eye, label: 'View Tier 1 Clusters', shortcut: '⌘⇧C' },
-      { icon: FileSearch, label: 'Open Deal Tracker', shortcut: '⌘⇧D' },
-    ],
-  },
-  {
-    title: 'AGENTS',
-    items: [
-      { icon: Zap, label: 'Wake Scout Agent' },
-      { icon: Activity, label: 'Check Municipal Agent Status' },
-    ],
-  },
-  {
-    title: 'NAVIGATE',
-    items: [
-      { icon: Crosshair, label: 'Go to Radar', shortcut: '⌘2' },
-      { icon: DollarSign, label: 'Go to Economics', shortcut: '⌘4' },
-      { icon: Settings, label: 'Go to Config', shortcut: '⌘8' },
-    ],
-  },
-]
-
-const allItems = groups.flatMap((g) => g.items)
-
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
+
+  const groups: CommandGroup[] = [
+    {
+      title: 'MISSIONS',
+      items: [
+        { icon: Pencil, label: 'Launch Polygon Sweep', shortcut: '⌘P' },
+        { icon: RotateCcw, label: 'Resume Washtenaw Scan', shortcut: '⌘W' },
+      ],
+    },
+    {
+      title: 'PIPELINE',
+      items: [
+        { icon: Eye, label: 'View Tier 1 Clusters', shortcut: '⌘⇧C' },
+        { icon: FileSearch, label: 'Open Deal Tracker', shortcut: '⌘⇧D' },
+      ],
+    },
+    {
+      title: 'AGENTS',
+      items: [
+        { icon: Zap, label: 'Wake Scout Agent' },
+        { icon: Activity, label: 'Check Municipal Agent Status' },
+      ],
+    },
+    {
+      title: 'NAVIGATE',
+      items: [
+        { icon: Crosshair, label: 'Go to Radar', shortcut: '⌘2', action: () => navigate('/radar') },
+        { icon: DollarSign, label: 'Go to Economics', shortcut: '⌘4', action: () => navigate('/economics') },
+        { icon: Settings, label: 'Go to Config', shortcut: '⌘8', action: () => navigate('/config') },
+      ],
+    },
+  ]
+
+  const allItems = groups.flatMap((g) => g.items)
 
   // Reset state when opened
   useEffect(() => {
@@ -78,6 +81,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     }
   }, [open])
 
+  const executeItem = useCallback(
+    (item: CommandItem) => {
+      if (item.action) item.action()
+      onClose()
+    },
+    [onClose]
+  )
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
@@ -88,13 +99,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         setSelectedIndex((i) => (i - 1 + allItems.length) % allItems.length)
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        onClose()
+        executeItem(allItems[selectedIndex])
       } else if (e.key === 'Escape') {
         e.preventDefault()
         onClose()
       }
     },
-    [onClose]
+    [onClose, allItems, selectedIndex, executeItem]
   )
 
   if (!open) return null
@@ -151,7 +162,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                           : 'hover:bg-surface-container-low'
                       )}
                       onMouseEnter={() => setSelectedIndex(idx)}
-                      onClick={onClose}
+                      onClick={() => executeItem(item)}
                     >
                       <div className="flex items-center gap-4">
                         <Icon

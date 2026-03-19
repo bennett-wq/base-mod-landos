@@ -107,6 +107,20 @@
   scrollbar-width: none;
 }
 
+/* Animated mesh connection lines */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -24; }
+}
+.mesh-line-active {
+  animation: dash-flow 3s linear infinite;
+}
+
+/* Button press micro-interaction */
+.copper-gradient {
+  @apply active:scale-[0.98];
+  transition: transform 100ms ease;
+}
+
 /* Kanban horizontal scrollbar */
 .kanban-scroll::-webkit-scrollbar {
   height: 6px;

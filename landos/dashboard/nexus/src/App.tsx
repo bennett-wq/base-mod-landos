@@ -1,29 +1,32 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Shell } from './components/layout/Shell'
-import MeshPage from './pages/MeshPage'
-import RadarPage from './pages/RadarPage'
-import ClustersPage from './pages/ClustersPage'
-import EconomicsPage from './pages/EconomicsPage'
-import CommandPage from './pages/CommandPage'
-import PipelinePage from './pages/PipelinePage'
-import MissionsPage from './pages/MissionsPage'
-import ConfigPage from './pages/ConfigPage'
-import DeepAssessmentPage from './pages/DeepAssessmentPage'
+import { PageSkeleton } from './components/shared/PageSkeleton'
+
+const MeshPage = lazy(() => import('./pages/MeshPage'))
+const RadarPage = lazy(() => import('./pages/RadarPage'))
+const ClustersPage = lazy(() => import('./pages/ClustersPage'))
+const EconomicsPage = lazy(() => import('./pages/EconomicsPage'))
+const CommandPage = lazy(() => import('./pages/CommandPage'))
+const PipelinePage = lazy(() => import('./pages/PipelinePage'))
+const MissionsPage = lazy(() => import('./pages/MissionsPage'))
+const ConfigPage = lazy(() => import('./pages/ConfigPage'))
+const DeepAssessmentPage = lazy(() => import('./pages/DeepAssessmentPage'))
 
 export default function App() {
   return (
     <Routes>
       <Route element={<Shell />}>
         <Route index element={<Navigate to="/mesh" replace />} />
-        <Route path="mesh" element={<MeshPage />} />
-        <Route path="radar" element={<RadarPage />} />
-        <Route path="clusters" element={<ClustersPage />} />
-        <Route path="economics" element={<EconomicsPage />} />
-        <Route path="command" element={<CommandPage />} />
-        <Route path="pipeline" element={<PipelinePage />} />
-        <Route path="missions" element={<MissionsPage />} />
-        <Route path="config" element={<ConfigPage />} />
-        <Route path="assessment/:id" element={<DeepAssessmentPage />} />
+        <Route path="mesh" element={<Suspense fallback={<PageSkeleton />}><MeshPage /></Suspense>} />
+        <Route path="radar" element={<Suspense fallback={<PageSkeleton />}><RadarPage /></Suspense>} />
+        <Route path="clusters" element={<Suspense fallback={<PageSkeleton />}><ClustersPage /></Suspense>} />
+        <Route path="economics" element={<Suspense fallback={<PageSkeleton />}><EconomicsPage /></Suspense>} />
+        <Route path="command" element={<Suspense fallback={<PageSkeleton />}><CommandPage /></Suspense>} />
+        <Route path="pipeline" element={<Suspense fallback={<PageSkeleton />}><PipelinePage /></Suspense>} />
+        <Route path="missions" element={<Suspense fallback={<PageSkeleton />}><MissionsPage /></Suspense>} />
+        <Route path="config" element={<Suspense fallback={<PageSkeleton />}><ConfigPage /></Suspense>} />
+        <Route path="assessment/:id" element={<Suspense fallback={<PageSkeleton />}><DeepAssessmentPage /></Suspense>} />
       </Route>
     </Routes>
   )
