@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BaseMod LandOS NEXUS - Command Palette</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface-variant": "#504539",
+              "tertiary-fixed": "#85f8c4",
+              "on-error": "#ffffff",
+              "surface-variant": "#e4e2df",
+              "primary-fixed-dim": "#f7bb73",
+              "outline-variant": "#d4c4b4",
+              "on-primary": "#ffffff",
+              "on-primary-fixed": "#2a1700",
+              "primary-fixed": "#ffddb8",
+              "on-tertiary": "#ffffff",
+              "on-secondary-fixed-variant": "#3e4755",
+              "on-secondary-container": "#596372",
+              "secondary": "#555f6d",
+              "on-tertiary-fixed-variant": "#005137",
+              "on-secondary-fixed": "#121c28",
+              "on-secondary": "#ffffff",
+              "surface-tint": "#815516",
+              "on-primary-fixed-variant": "#653e00",
+              "on-tertiary-container": "#f5fff7",
+              "tertiary-container": "#00855d",
+              "outline": "#827567",
+              "on-background": "#1b1c1a",
+              "inverse-surface": "#30312f",
+              "inverse-on-surface": "#f2f0ed",
+              "surface-dim": "#dbdad7",
+              "primary-container": "#9b6b2a",
+              "surface-bright": "#fbf9f6",
+              "background": "#fbf9f6",
+              "secondary-fixed": "#d9e3f4",
+              "secondary-container": "#d6e0f1",
+              "on-tertiary-fixed": "#002114",
+              "inverse-primary": "#f7bb73",
+              "error-container": "#ffdad6",
+              "secondary-fixed-dim": "#bdc7d8",
+              "surface-container-high": "#eae8e5",
+              "on-primary-container": "#fffbff",
+              "error": "#ba1a1a",
+              "surface-container-low": "#f5f3f0",
+              "surface-container-lowest": "#ffffff",
+              "surface-container": "#efeeeb",
+              "surface": "#fbf9f6",
+              "primary": "#7f5313",
+              "on-surface": "#1b1c1a",
+              "on-error-container": "#93000a",
+              "tertiary-fixed-dim": "#68dba9",
+              "tertiary": "#006948",
+              "surface-container-highest": "#e4e2df"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .command-palette-overlay {
+            background-color: rgba(26, 26, 26, 0.4);
+        }
+        .glass-background {
+            background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex items-center justify-center">
+<!-- Shell SideNav (Immutable Aspect) -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col w-[240px] bg-white border-r border-stone-200">
+<div class="p-6">
+<h1 class="text-xl font-bold text-stone-900 tracking-tight">BaseMod</h1>
+<p class="text-[10px] font-bold text-primary tracking-[0.2em] mt-1 uppercase">NEXUS</p>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">bolt</span>
+<span class="text-sm font-medium">Mesh</span>
+</div>
+<!-- Radar is Active in the background context -->
+<div class="border-l-[3px] border-[#B07D3B] text-[#B07D3B] bg-[#B07D3B]/5 font-semibold flex items-center gap-3 px-3 py-2 cursor-pointer">
+<span class="material-symbols-outlined text-xl">track_changes</span>
+<span class="text-sm">Radar</span>
+</div>
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">domain</span>
+<span class="text-sm font-medium">Clusters</span>
+</div>
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">payments</span>
+<span class="text-sm font-medium">Economics</span>
+</div>
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">smart_toy</span>
+<span class="text-sm font-medium">Command</span>
+</div>
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">analytics</span>
+<span class="text-sm font-medium">Pipeline</span>
+</div>
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">rocket_launch</span>
+<span class="text-sm font-medium">Missions</span>
+</div>
+</nav>
+<div class="p-4 border-t border-stone-100">
+<div class="text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-xl">settings</span>
+<span class="text-sm font-medium">Config</span>
+</div>
+</div>
+</aside>
+<!-- Content Canvas (Background Map Interface) -->
+<main class="ml-[240px] w-full min-h-screen bg-surface relative">
+<!-- TopNavBar Shell -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-30 h-[56px] w-full bg-white/80 backdrop-blur-md border-b border-stone-100">
+<div class="flex items-center gap-4">
+<h2 class="text-sm font-semibold text-on-surface">Radar / Washtenaw County</h2>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<div class="h-8 w-8 rounded-full bg-secondary-fixed flex items-center justify-center text-xs font-bold text-on-secondary-fixed cursor-pointer">
+                    JD
+                </div>
+</div>
+</header>
+<!-- Placeholder Content to show Command Palette Overlay -->
+<div class="p-10 space-y-10">
+<div class="grid grid-cols-12 gap-6">
+<div class="col-span-12 h-96 rounded-xl bg-surface-container-low overflow-hidden relative">
+<img class="w-full h-full object-cover opacity-60" data-alt="Satellite view of urban landscape with data overlays" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnQ48fiNTs0Dr7A0Fbx44MUemic8Chjq6iJO4sm5sjDmQcWxRxAu0DsS01qX5MrgY1xivYhwtXKU7gyEN7c0QlBRhJJ_SPep2QQmPJbajPoGlYgV__PlQtdOp_ZCL1ak2WsOKQ9BbW3SXVXLI5tXWSoXsklV9SwxPuf62YNWIBu88S9WnH-z5Cb9HgB_a9rJH57YoLLQtZ0MGyEFzNiF63_rWRuXNEA1NpNOYVEWgoGUEVIBrOr4ATW5I2xZOTsR8pyUygZWpnkujw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+</div>
+</div>
+</div>
+<!-- Command Palette Overlay -->
+<div class="fixed inset-0 z-50 flex items-start justify-center pt-24 command-palette-overlay">
+<div class="w-full max-w-[640px] bg-white rounded-[16px] shadow-2xl overflow-hidden border border-outline-variant/20 flex flex-col">
+<!-- Search Input Section -->
+<div class="px-6 py-5 flex items-center gap-4 border-b border-stone-100">
+<span class="material-symbols-outlined text-stone-400 text-2xl">search</span>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-lg font-medium text-on-surface placeholder:text-stone-400" placeholder="Search commands, agents, clusters..." type="text"/>
+<div class="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-md">
+<span class="text-[10px] font-bold text-stone-500">⌘</span>
+<span class="text-[10px] font-bold text-stone-500">K</span>
+</div>
+</div>
+<!-- Commands List -->
+<div class="max-h-[480px] overflow-y-auto py-4">
+<!-- MISSIONS -->
+<section class="mb-4">
+<header class="px-6 py-2">
+<h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none">MISSIONS</h3>
+</header>
+<div class="space-y-0.5">
+<!-- Selected Item -->
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer border-l-[3px] border-[#B07D3B] bg-[#B07D3B]/5 transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#B07D3B]">draw</span>
+<span class="text-sm font-semibold text-[#B07D3B]">Polygon Search</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘P</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">upload_file</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Upload Data</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘U</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">hub</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Deploy All Agents</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘D</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">description</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Generate Signal Report</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘R</span>
+</div>
+</div>
+</div>
+</section>
+<!-- PIPELINE -->
+<section class="mb-4">
+<header class="px-6 py-2">
+<h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none">PIPELINE</h3>
+</header>
+<div class="space-y-0.5">
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">autoplay</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Run Full Pipeline</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘⇧P</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">database</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Ingest Spark MLS</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘⇧S</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">table_rows</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Ingest Regrid CSV</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘⇧R</span>
+</div>
+</div>
+</div>
+</section>
+<!-- AGENTS -->
+<section class="mb-4">
+<header class="px-6 py-2">
+<h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none">AGENTS</h3>
+</header>
+<div class="space-y-0.5">
+<div class="px-6 py-3 flex items-center gap-4 cursor-pointer hover:bg-stone-50 group transition-colors">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">notifications_active</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Wake All Agents</span>
+</div>
+<div class="px-6 py-3 flex items-center gap-4 cursor-pointer hover:bg-stone-50 group transition-colors">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">refresh</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Force Cluster Rescan</span>
+</div>
+<div class="px-6 py-3 flex items-center gap-4 cursor-pointer hover:bg-stone-50 group transition-colors">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">radar</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">BBO Signal Discovery</span>
+</div>
+</div>
+</section>
+<!-- NAVIGATE -->
+<section>
+<header class="px-6 py-2">
+<h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none">NAVIGATE</h3>
+</header>
+<div class="space-y-0.5">
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">bolt</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Go to Mesh</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘1</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">track_changes</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Go to Radar</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘2</span>
+</div>
+</div>
+<div class="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-500 group-hover:text-on-surface">domain</span>
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Go to Clusters</span>
+</div>
+<div class="flex items-center gap-1.5 text-stone-400">
+<span class="text-[11px] font-medium tracking-tight">⌘3</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer / Status Bar -->
+<div class="px-6 py-3 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 px-1.5 py-0.5 bg-white border border-stone-200 rounded shadow-sm text-[9px] font-bold text-stone-500">ESC</span>
+<span class="text-[11px] font-medium text-stone-500">Close</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex flex-col items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px] text-stone-500">keyboard_arrow_up</span>
+<span class="material-symbols-outlined text-[14px] text-stone-500">keyboard_arrow_down</span>
+</div>
+<span class="text-[11px] font-medium text-stone-500">Navigate</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-medium text-stone-400">NEXUS v4.2.1 Stable</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BaseMod NEXUS | Radar - Map Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-error-container": "#93000a",
+              "primary": "#7f5313",
+              "on-primary-fixed-variant": "#653e00",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#d9e3f4",
+              "primary-fixed-dim": "#f7bb73",
+              "on-tertiary-container": "#f5fff7",
+              "outline": "#827567",
+              "inverse-surface": "#30312f",
+              "background": "#fbf9f6",
+              "primary-fixed": "#ffddb8",
+              "surface": "#fbf9f6",
+              "surface-container-high": "#eae8e5",
+              "secondary-container": "#d6e0f1",
+              "on-tertiary-fixed-variant": "#005137",
+              "on-primary-container": "#fffbff",
+              "secondary-fixed-dim": "#bdc7d8",
+              "on-surface-variant": "#504539",
+              "primary-container": "#9b6b2a",
+              "on-background": "#1b1c1a",
+              "on-secondary-container": "#596372",
+              "error": "#ba1a1a",
+              "tertiary-container": "#00855d",
+              "tertiary-fixed-dim": "#68dba9",
+              "surface-dim": "#dbdad7",
+              "secondary": "#555f6d",
+              "on-tertiary": "#ffffff",
+              "on-error": "#ffffff",
+              "surface-container": "#efeeeb",
+              "on-secondary-fixed": "#121c28",
+              "on-tertiary-fixed": "#002114",
+              "inverse-primary": "#f7bb73",
+              "tertiary-fixed": "#85f8c4",
+              "on-secondary": "#ffffff",
+              "surface-bright": "#fbf9f6",
+              "on-primary-fixed": "#2a1700",
+              "inverse-on-surface": "#f2f0ed",
+              "on-surface": "#1b1c1a",
+              "tertiary": "#006948",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed-variant": "#3e4755",
+              "surface-tint": "#815516",
+              "error-container": "#ffdad6",
+              "surface-container-low": "#f5f3f0",
+              "surface-variant": "#e4e2df",
+              "outline-variant": "#d4c4b4",
+              "surface-container-highest": "#e4e2df"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      .custom-map-bg {
+        background-color: #f2f0ed;
+        background-image: 
+          radial-gradient(circle at 2px 2px, #d4c4b4 1px, transparent 0);
+        background-size: 40px 40px;
+      }
+      .micro-gradient {
+        background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+      }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface-variant overflow-hidden">
+<!-- Side Navigation Rail -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col w-[240px] bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 micro-gradient rounded flex items-center justify-center text-white font-bold">B</div>
+<div>
+<h1 class="text-xl font-bold text-stone-900 dark:text-white leading-none">BaseMod</h1>
+<p class="text-[10px] tracking-[0.2em] font-bold text-primary uppercase mt-1">NEXUS</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span> Mesh
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 border-l-[3px] border-[#B07D3B] text-[#B07D3B] bg-[#B07D3B]/5 font-semibold transition-all duration-200 rounded-r-lg text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="track_changes" style="font-variation-settings: 'FILL' 1;">track_changes</span> Radar
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="domain">domain</span> Clusters
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span> Economics
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span> Command
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span> Pipeline
+      </a>
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span> Missions
+      </a>
+</nav>
+<div class="p-4 border-t border-stone-100 dark:border-stone-800">
+<a class="flex items-center gap-3 px-4 py-3 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors rounded-lg font-medium text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span> Config
+      </a>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-30 ml-[240px] w-[calc(100%-240px)] h-[56px] bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-100 dark:border-stone-800">
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/20">
+<span class="material-symbols-outlined text-stone-400 text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs w-64 placeholder:text-stone-400" placeholder="Search parcels, owners, or coordinates..." type="text"/>
+</div>
+<div class="h-4 w-px bg-stone-200"></div>
+<h2 class="font-medium text-sm text-stone-900">Radar / Washtenaw County</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-500">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
+        JD
+      </div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-[240px] relative h-[calc(100vh-56px)] flex overflow-hidden">
+<!-- Map Canvas (Leaflet Mockup) -->
+<div class="flex-1 relative custom-map-bg overflow-hidden">
+<!-- Simulated Map Content -->
+<img class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-multiply" data-alt="Warm muted satellite map of suburban development area" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH7SEGyR8GVzQKcb7d6nAfj7LtsowSzl6rQK-4i5sf9S6iobQJB9qIN1lVZNG_EXpE4x_9rx7wJCH9040MuNY29Jv7ExTdplxU4Im5SUlEbv1bPtEkuqahZkEwnEq5YCM_ltQt_qBfAxdvqXcgftlDd2tjlsIn33H4x8fBmZQVmyiDfXStmPGZ3uLoYiraRogTfbGiRFjCkrRZMs3D2vu4RoK6U1JDoArYanBsOasmmna9olh9hYKAHmAswnrAW_WjDOkvJSfZlPvO"/>
+<!-- Polygon Drawing Simulation -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none">
+<polygon fill="rgba(127, 83, 19, 0.1)" points="400,300 650,280 700,500 450,550" stroke="#7f5313" stroke-dasharray="4" stroke-width="2"></polygon>
+</svg>
+<!-- Map Clusters -->
+<!-- HIGHEST -->
+<div class="absolute top-[320px] left-[520px] w-12 h-12 rounded-full micro-gradient flex items-center justify-center text-white font-bold text-xs shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+        146
+      </div>
+<!-- HIGH -->
+<div class="absolute top-[450px] left-[420px] w-10 h-10 rounded-full bg-primary/60 flex items-center justify-center text-white font-bold text-xs shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+        99
+      </div>
+<!-- MEDIUM -->
+<div class="absolute top-[280px] left-[700px] w-8 h-8 rounded-full bg-[#9CA3AF] flex items-center justify-center text-white font-bold text-[10px] shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+        42
+      </div>
+<!-- LOW -->
+<div class="absolute top-[520px] left-[630px] w-6 h-6 rounded-full bg-[#D1D5DB] flex items-center justify-center text-white font-bold text-[8px] shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+        12
+      </div>
+<!-- Map Popup Card (Active) -->
+<div class="absolute top-[320px] left-[580px] w-[280px] bg-white rounded-xl shadow-2xl p-5 z-20 border border-stone-100">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="font-bold text-stone-900 leading-tight">Toll Brothers Holdings</h3>
+<p class="text-[10px] font-bold text-stone-400 uppercase tracking-wider mt-0.5">OWNER • Augusta Twp</p>
+</div>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded">HIGHEST</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="text-[10px] text-stone-400 uppercase font-bold tracking-tighter">Lots</p>
+<p class="text-sm font-semibold text-stone-900">146</p>
+</div>
+<div>
+<p class="text-[10px] text-stone-400 uppercase font-bold tracking-tighter">Score</p>
+<p class="text-sm font-semibold text-stone-900">67</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 text-[11px] font-bold text-primary py-2 border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">View Intel →</button>
+<button class="flex-1 text-[11px] font-bold bg-stone-900 text-white py-2 rounded-lg hover:bg-stone-800 transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="rocket_launch" style="font-variation-settings: 'FILL' 1;">rocket_launch</span> Mission
+          </button>
+</div>
+</div>
+<!-- Floating Map Actions -->
+<button class="absolute bottom-8 left-8 micro-gradient text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-2 font-bold text-sm hover:translate-y-[-2px] transition-all">
+<span class="material-symbols-outlined" data-icon="draw">draw</span>
+        Draw Territory
+      </button>
+<!-- Launch Mission Bar -->
+<div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-30">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="rocket_launch" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+<div class="text-sm">
+<span class="font-bold">Launch Mission</span>
+<span class="text-stone-400 ml-2">Scan 847 parcels in 3 townships</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="bg-primary hover:bg-primary-container text-white px-4 py-1.5 rounded-full text-xs font-bold transition-colors">Launch →</button>
+<button class="text-stone-400 hover:text-white px-3 py-1.5 text-xs font-bold transition-colors">Clear</button>
+</div>
+</div>
+</div>
+<!-- Intelligence Sidebar -->
+<aside class="w-[380px] h-full bg-white border-l border-stone-200 flex flex-col z-30">
+<div class="p-6 overflow-y-auto custom-scrollbar">
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-px bg-stone-100 rounded-xl overflow-hidden border border-stone-100 mb-8">
+<div class="bg-white p-4">
+<p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Clusters</p>
+<p class="text-2xl font-bold text-stone-900">60</p>
+</div>
+<div class="bg-white p-4">
+<p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Total Lots</p>
+<p class="text-2xl font-bold text-stone-900">1,553</p>
+</div>
+<div class="bg-white p-4">
+<p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">High Signal</p>
+<p class="text-2xl font-bold text-primary">12</p>
+</div>
+<div class="bg-white p-4">
+<p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Tier 1 Opps</p>
+<p class="text-2xl font-bold text-stone-900">5</p>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="space-y-6 mb-8">
+<h4 class="text-[11px] font-bold text-stone-900 uppercase tracking-[0.15em] border-b border-stone-100 pb-2">Analysis Filters</h4>
+<div>
+<label class="text-[10px] font-bold text-stone-400 uppercase mb-3 block">Signal Intensity</label>
+<div class="flex p-1 bg-surface-container-low rounded-lg gap-1">
+<button class="flex-1 py-1.5 text-[10px] font-bold rounded bg-white shadow-sm text-stone-900">All</button>
+<button class="flex-1 py-1.5 text-[10px] font-bold rounded text-stone-500 hover:bg-white/50">Highest</button>
+<button class="flex-1 py-1.5 text-[10px] font-bold rounded text-stone-500 hover:bg-white/50">High</button>
+<button class="flex-1 py-1.5 text-[10px] font-bold rounded text-stone-500 hover:bg-white/50">Med</button>
+<button class="flex-1 py-1.5 text-[10px] font-bold rounded text-stone-500 hover:bg-white/50">Low</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="text-[10px] font-bold text-stone-400 uppercase mb-2 block">Tier</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg text-xs font-medium focus:ring-primary/20">
+<option>Alpha (A)</option>
+<option>Beta (B)</option>
+</select>
+</div>
+<div>
+<label class="text-[10px] font-bold text-stone-400 uppercase mb-2 block">Concentration</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg text-xs font-medium focus:ring-primary/20">
+<option>&gt; 50 Lots</option>
+<option>&gt; 100 Lots</option>
+</select>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-stone-400 uppercase mb-2 block">Owner Search</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg text-xs font-medium pl-9 focus:ring-primary/20 py-2.5" placeholder="Filter by entity..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Results Table -->
+<div class="space-y-4">
+<h4 class="text-[11px] font-bold text-stone-900 uppercase tracking-[0.15em] border-b border-stone-100 pb-2 flex justify-between">
+                Targets <span>(128)</span>
+</h4>
+<div class="overflow-hidden">
+<table class="w-full text-left border-separate border-spacing-y-2">
+<thead>
+<tr class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
+<th class="pb-1">Owner</th>
+<th class="pb-1 text-center">Lots</th>
+<th class="pb-1 text-center">Signal</th>
+<th class="pb-1 text-center">Tier</th>
+<th class="pb-1 text-right">Margin</th>
+</tr>
+</thead>
+<tbody class="text-xs">
+<tr class="group cursor-pointer">
+<td class="py-3 font-semibold text-stone-900 group-hover:text-primary transition-colors">Toll Brothers</td>
+<td class="py-3 text-center text-stone-500">146</td>
+<td class="py-3 text-center"><span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">HIGHEST</span></td>
+<td class="py-3 text-center text-stone-500">A</td>
+<td class="py-3 text-right font-bold text-primary">33.0%</td>
+</tr>
+<tr class="group cursor-pointer">
+<td class="py-3 font-semibold text-stone-900 group-hover:text-primary transition-colors">M/I Homes LLC</td>
+<td class="py-3 text-center text-stone-500">99</td>
+<td class="py-3 text-center"><span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">HIGHEST</span></td>
+<td class="py-3 text-center text-stone-500">A</td>
+<td class="py-3 text-right font-bold text-primary">38.7%</td>
+</tr>
+<tr class="group cursor-pointer">
+<td class="py-3 font-semibold text-stone-900 group-hover:text-primary transition-colors">Pulte Group</td>
+<td class="py-3 text-center text-stone-500">84</td>
+<td class="py-3 text-center"><span class="px-1.5 py-0.5 rounded bg-primary/60 text-white text-[9px] font-bold uppercase">High</span></td>
+<td class="py-3 text-center text-stone-500">B</td>
+<td class="py-3 text-right font-bold text-primary">24.2%</td>
+</tr>
+<tr class="group cursor-pointer">
+<td class="py-3 font-semibold text-stone-900 group-hover:text-primary transition-colors">Lennar Corp</td>
+<td class="py-3 text-center text-stone-500">112</td>
+<td class="py-3 text-center"><span class="px-1.5 py-0.5 rounded bg-stone-100 text-stone-400 text-[9px] font-bold uppercase">Med</span></td>
+<td class="py-3 text-center text-stone-500">A</td>
+<td class="py-3 text-right font-bold text-stone-400">18.5%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

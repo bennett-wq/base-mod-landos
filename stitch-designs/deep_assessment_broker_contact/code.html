@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deep Assessment | HORSESHOE LAKE CORPORATION</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#7f5313",
+              "primary-container": "#9b6b2a",
+              "on-primary": "#ffffff",
+              "secondary": "#555f6d",
+              "on-surface": "#1b1c1a",
+              "on-surface-variant": "#504539",
+              "surface": "#fbf9f6",
+              "surface-container-low": "#f5f3f0",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#eae8e5",
+              "outline-variant": "#d4c4b4",
+              "error": "#ba1a1a",
+            },
+            fontFamily: {
+              "headline": ["Inter", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Inter", "sans-serif"],
+              "mono": ["JetBrains Mono", "monospace"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .micro-gradient {
+            background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(212, 196, 180, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1c1917;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #44403c;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface-variant antialiased">
+<!-- TopNavBar from Shared Components -->
+<nav class="bg-[#fbf9f6] dark:bg-stone-950 flex justify-between items-center px-8 py-4 w-full docked full-width top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#1b1c1a] dark:text-[#fbf9f6]">BaseMod LandOS</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-[#7f5313] font-semibold border-b-2 border-[#7f5313] pb-1 font-['Inter'] leading-relaxed" href="#">Portfolio</a>
+<a class="text-[#504539] hover:text-[#7f5313] transition-colors font-['Inter'] leading-relaxed" href="#">Feasibility</a>
+<a class="text-[#504539] hover:text-[#7f5313] transition-colors font-['Inter'] leading-relaxed" href="#">Financials</a>
+<a class="text-[#504539] hover:text-[#7f5313] transition-colors font-['Inter'] leading-relaxed" href="#">Environmental</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#f5f3f0] dark:hover:bg-stone-800 rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#f5f3f0] dark:hover:bg-stone-800 rounded-full transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high overflow-hidden ghost-border">
+<img alt="User profile" data-alt="Corporate professional user avatar portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNBlje-CaTMAe6F_oVAwlKZhOcyW1X1b2uINgqhYLcwsEtYyB8O8ev6qQAAIXUFzoXR4g1UjsgLVp9xkMDeIOCWHSFji6fDXdW7SE2XFr1hkal5GCW3uYMXVQdjoYE6ifCip9Ik6KernXRAtPWH8tupaQ6q5LnEVjko0b99V2IBaBQGe6iezlRnpRw0SDBv-u1a7gq3Pj_CLQZK8elQdWHb0kMtNaHRyiTmAAwzipZFqCsryLSG0fihlQKrf-WdsdEJYMYF_Nm9t2G"/>
+</div>
+</div>
+</nav>
+<div class="bg-[#f5f3f0] dark:bg-stone-900 h-[1px] w-full"></div>
+<div class="flex min-h-screen">
+<!-- SideNavBar from Shared Components -->
+<aside class="bg-[#ffffff] dark:bg-stone-900 border-r border-[#d4c4b4]/20 shadow-[12px_0_32px_rgba(27,28,26,0.04)] hidden md:flex flex-col h-auto w-64 py-6 sticky top-[73px]">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-[#1b1c1a]">Site Feasibility</h2>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Project #882-BA</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 border-l-4 border-[#7f5313] text-[#7f5313] font-semibold bg-[#fbf9f6] transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Assessment</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#504539] hover:bg-[#f5f3f0] transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Financials</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#504539] hover:bg-[#f5f3f0] transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="text-sm font-medium">Zoning</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#504539] hover:bg-[#f5f3f0] transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">eco</span>
+<span class="text-sm font-medium">Environmental</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#504539] hover:bg-[#f5f3f0] transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="text-sm font-medium">Agent Logs</span>
+</a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full micro-gradient text-white py-3 rounded-lg font-bold text-sm shadow-md transition-all active:scale-[0.98]">
+                    Export Report
+                </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 p-8 md:p-12 overflow-hidden">
+<header class="mb-10">
+<div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary mb-2">
+<span>Active Entity</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+<span class="text-on-surface">Horseshoe Lake Corporation</span>
+</div>
+<h1 class="text-4xl font-extrabold tracking-tight text-on-surface">Deep Assessment <span class="text-on-surface-variant font-light">(Layer 2)</span></h1>
+</header>
+<!-- 3-Column Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+<!-- Column 1: Assessment Score -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm ghost-border flex flex-col">
+<h3 class="text-[0.75rem] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-6">Assessment Score</h3>
+<div class="flex flex-col items-center justify-center flex-1 py-4">
+<div class="relative w-40 h-40 flex items-center justify-center">
+<!-- Circular Progress Ring -->
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-low" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-width="8"></circle>
+<circle cx="80" cy="80" fill="transparent" r="70" stroke="#EAB308" stroke-dasharray="440" stroke-dashoffset="158.4" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-5xl font-extrabold text-on-surface leading-none">64</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-yellow-600 mt-1">Review</span>
+</div>
+</div>
+</div>
+<div class="space-y-4 mt-8">
+<div>
+<div class="flex justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
+<span>Zoning Fit</span>
+<span>82%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[82%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
+<span>Lot Economics</span>
+<span>45%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-yellow-500 w-[45%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
+<span>Infrastructure</span>
+<span>68%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[68%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] font-bold uppercase tracking-wider mb-1.5">
+<span>Market Signal</span>
+<span>91%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[91%] rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Column 2: Cost Waterfall -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm ghost-border">
+<div class="flex justify-between items-start mb-6">
+<h3 class="text-[0.75rem] font-bold uppercase tracking-[0.05em] text-on-surface-variant">Cost Waterfall</h3>
+<span class="px-2 py-0.5 bg-primary-container/10 text-primary text-[10px] font-bold rounded">Hawthorne MOD</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Factory</span>
+<span class="text-sm font-mono text-on-surface">$412,000</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Site Work</span>
+<span class="text-sm font-mono text-on-surface">$88,500</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Infrastructure</span>
+<span class="text-sm font-mono text-on-surface">$42,000</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Soft Costs</span>
+<span class="text-sm font-mono text-on-surface">$18,200</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Contingency</span>
+<span class="text-sm font-mono text-on-surface">$25,000</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/10">
+<span class="text-sm font-medium">Land / Lot</span>
+<span class="text-sm font-mono text-on-surface">$165,000</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-sm font-medium">Closing</span>
+<span class="text-sm font-mono text-on-surface">$4,500</span>
+</div>
+</div>
+<div class="mt-10 p-4 bg-surface-container-low rounded-lg border-l-4 border-primary">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Portfolio Value</span>
+<span class="text-2xl font-bold text-on-surface font-headline">$755,200</span>
+</div>
+</section>
+<!-- Column 3: Contact & Environmental -->
+<div class="flex flex-col gap-8">
+<!-- Primary Broker Contact -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm ghost-border">
+<h3 class="text-[0.75rem] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-6">Primary Broker Contact</h3>
+<div class="flex items-start gap-4 mb-6">
+<div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden ghost-border flex-shrink-0">
+<img alt="Samuel Vail" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Samuel+Vail&amp;background=9b6b2a&amp;color=fff'" src="https://lh3.googleusercontent.com/aida-public/ALi74_2fD6R_m2pG6-s5Z0L49M7h-W_D_iT5-R9-M9_v-S-D-A-P_V-E-X_Q-U-A-L-I-T-Y-v-1"/>
+</div>
+<div>
+<p class="text-base font-bold text-on-surface">Samuel Vail</p>
+<p class="text-xs font-semibold text-primary">RE/MAX Platinum</p>
+</div>
+</div>
+<div class="space-y-3 mb-8">
+<div class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-primary text-lg">call</span>
+<span class="text-on-surface-variant font-medium">(734) 555-0192</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-primary text-lg">mail</span>
+<span class="text-on-surface-variant font-medium">svail@remax-platinum.com</span>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<button class="w-full micro-gradient text-white py-3 rounded-lg font-bold text-sm shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">call</span>
+                                Call Broker
+                            </button>
+<button class="w-full bg-transparent border border-outline-variant/30 hover:bg-surface-container-low text-on-surface py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">chat</span>
+                                Message Agent
+                            </button>
+</div>
+</section>
+<!-- Environmental & Zoning -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm ghost-border flex-1">
+<h3 class="text-[0.75rem] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-6">Environmental &amp; Zoning</h3>
+<div class="grid grid-cols-2 gap-4 mb-10">
+<div class="p-4 bg-surface-container-low rounded-lg flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-green-600 mb-2">water_drop</span>
+<span class="text-[11px] font-bold uppercase mb-1">Sewer</span>
+<span class="text-xs text-green-700 font-semibold">AVAILABLE</span>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-green-600 mb-2">faucet</span>
+<span class="text-[11px] font-bold uppercase mb-1">Water</span>
+<span class="text-xs text-green-700 font-semibold">AVAILABLE</span>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-yellow-600 mb-2">local_fire_department</span>
+<span class="text-[11px] font-bold uppercase mb-1">Gas</span>
+<span class="text-xs text-yellow-700 font-semibold">PENDING</span>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-green-600 mb-2">bolt</span>
+<span class="text-[11px] font-bold uppercase mb-1">Electric</span>
+<span class="text-xs text-green-700 font-semibold">AVAILABLE</span>
+</div>
+</div>
+<h4 class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">link</span>
+                            External Data Links
+                        </h4>
+<ul class="space-y-2">
+<li>
+<a class="flex items-center justify-between group p-3 rounded-md hover:bg-surface-container-low transition-colors" href="#">
+<span class="text-sm font-medium">County Soil Map (GIS)</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">open_in_new</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between group p-3 rounded-md hover:bg-surface-container-low transition-colors" href="#">
+<span class="text-sm font-medium">EPA Flood Zone Record</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">open_in_new</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between group p-3 rounded-md hover:bg-surface-container-low transition-colors" href="#">
+<span class="text-sm font-medium">Historical Plat Archives</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">open_in_new</span>
+</a>
+</li>
+</ul>
+</section>
+</div>
+</div>
+<!-- Agent Terminal Section -->
+<section class="bg-stone-950 text-stone-300 rounded-xl overflow-hidden shadow-2xl">
+<div class="bg-stone-900 px-6 py-3 flex items-center justify-between border-b border-stone-800">
+<div class="flex items-center gap-2">
+<div class="flex gap-1.5 mr-4">
+<div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+</div>
+<span class="material-symbols-outlined text-sm text-stone-500">terminal</span>
+<span class="text-[11px] font-bold uppercase tracking-[0.1em] text-stone-500">Agent Terminal — Live Thinking</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-mono text-stone-500">SYSTEM: ACTIVE</span>
+<div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+</div>
+</div>
+<div class="p-6 font-mono text-sm leading-relaxed space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+<div class="flex gap-4">
+<span class="text-stone-600 shrink-0">[14:22:05]</span>
+<p><span class="text-primary-container font-bold">MUNICIPAL AGENT:</span> Scanning 2026 Plat recordings for easement conflicts...</p>
+</div>
+<div class="flex gap-4">
+<span class="text-stone-600 shrink-0">[14:22:12]</span>
+<p><span class="text-yellow-600 font-bold">ZONING AUDITOR:</span> RE-CALCULATING: Setback deviation detected on Scio Ridge Rd.</p>
+</div>
+<div class="flex gap-4">
+<span class="text-stone-600 shrink-0">[14:22:18]</span>
+<p><span class="text-blue-400 font-bold">SUPPLY INTEL:</span> Syncing latest MLS listings for pricing velocity benchmark...</p>
+</div>
+<div class="flex gap-4">
+<span class="text-stone-600 shrink-0">[14:22:31]</span>
+<p><span class="text-stone-500 italic">SYSTEM:</span> Core thread optimization complete. Ready for manual override.</p>
+</div>
+<div class="flex gap-4">
+<span class="text-stone-600 shrink-0">[14:22:45]</span>
+<p><span class="text-primary-container font-bold">MUNICIPAL AGENT:</span> Cross-referencing environmental buffer requirements (Parcel 44-B)...</p>
+</div>
+<div class="flex gap-4 items-center">
+<span class="text-stone-600 shrink-0">[14:22:50]</span>
+<span class="w-2 h-4 bg-primary animate-pulse inline-block"></span>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Responsive Footer for Mobile -->
+<footer class="md:hidden bg-surface-container-lowest border-t border-outline-variant/20 fixed bottom-0 left-0 w-full flex justify-around py-3 px-4 z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-[10px] font-bold uppercase">Assess</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px] font-bold uppercase">Finance</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">gavel</span>
+<span class="text-[10px] font-bold uppercase">Zoning</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">terminal</span>
+<span class="text-[10px] font-bold uppercase">Logs</span>
+</button>
+</footer>
+</body></html>

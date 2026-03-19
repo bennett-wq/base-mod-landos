@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed": "#002114",
+              "primary-fixed-dim": "#f7bb73",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed": "#121c28",
+              "tertiary-fixed": "#85f8c4",
+              "on-primary-fixed-variant": "#653e00",
+              "on-error": "#ffffff",
+              "surface-dim": "#dbdad7",
+              "surface-variant": "#e4e2df",
+              "on-secondary-fixed-variant": "#3e4755",
+              "background": "#fbf9f6",
+              "tertiary-container": "#00855d",
+              "primary-fixed": "#ffddb8",
+              "tertiary-fixed-dim": "#68dba9",
+              "primary": "#7f5313",
+              "on-secondary": "#ffffff",
+              "primary-container": "#9b6b2a",
+              "on-surface-variant": "#504539",
+              "secondary": "#555f6d",
+              "on-error-container": "#93000a",
+              "surface-container-low": "#f5f3f0",
+              "inverse-primary": "#f7bb73",
+              "surface-container": "#efeeeb",
+              "secondary-fixed-dim": "#bdc7d8",
+              "secondary-container": "#d6e0f1",
+              "outline": "#827567",
+              "on-secondary-container": "#596372",
+              "surface-container-highest": "#e4e2df",
+              "surface-container-high": "#eae8e5",
+              "inverse-on-surface": "#f2f0ed",
+              "on-primary-container": "#fffbff",
+              "on-tertiary-container": "#f5fff7",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#005137",
+              "on-primary-fixed": "#2a1700",
+              "tertiary": "#006948",
+              "surface": "#fbf9f6",
+              "inverse-surface": "#30312f",
+              "surface-bright": "#fbf9f6",
+              "error-container": "#ffdad6",
+              "on-surface": "#1b1c1a",
+              "on-background": "#1b1c1a",
+              "secondary-fixed": "#d9e3f4",
+              "surface-tint": "#815516",
+              "outline-variant": "#d4c4b4",
+              "error": "#ba1a1a"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .copper-gradient {
+            background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .row-alt:nth-child(even) { background-color: #FAF8F5; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-50 flex flex-col py-6 px-4 gap-y-2 bg-surface-container-lowest border-r border-outline-variant/20">
+<div class="mb-8 px-4">
+<h1 class="text-lg font-bold tracking-[0.05em] uppercase text-primary">ARCHIVIST</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Real Estate Intelligence</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 border-l-[3px] border-primary font-semibold text-on-surface bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+<span class="text-sm">Mesh</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">radar</span>
+<span class="text-sm">Radar</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<span class="text-sm">Clusters</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">query_stats</span>
+<span class="text-sm">Economics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span class="text-sm">Command</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span class="text-sm">Pipeline</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+<span class="text-sm">Missions</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant font-medium hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant/20 flex items-center justify-between px-8">
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-lowest border border-outline-variant/30 rounded-full text-sm w-80 focus:ring-1 focus:ring-primary/40 focus:outline-none transition-all" placeholder="Search HORSESHOE LAKE..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+</div>
+<button class="copper-gradient text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity">
+            Launch Swarm
+        </button>
+<img class="w-8 h-8 rounded-full border border-primary/20 object-cover" data-alt="Professional user profile headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfPOoDC6pnOM2kB-nWkdctgwoTDokWP0zjLe2CSgdqF817veN6eyPfJeJU1APeYAU10mdK4LFkjiiprnZmSgJEUcnI68cueptTdZeo8CmbcWchXpjF3ZLaG1kQiw1KCKphv5LGJR1urF3KUEDRexTmKcruiJAJXHFsm71t8pIwPTCOct8hDKtYIYHIFTKQ6ozYCscd2ygrilJ5TUlr9zZ4lNRBr3CuR0YKqZtlUP2Wz0gJpCKfQHdUMb46DgIRx_iEL169ilu_uXFP"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 pb-32 px-10 min-h-screen bg-surface">
+<!-- Header / Identity -->
+<section class="mb-10 flex justify-between items-end">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold tracking-widest rounded uppercase">Layer 2 Assessment</span>
+<span class="text-on-surface-variant text-sm font-medium">Asset ID: 8829-HL</span>
+</div>
+<h2 class="text-4xl font-extrabold text-on-surface tracking-tight">HORSESHOE LAKE CORPORATION</h2>
+<p class="text-on-surface-variant mt-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">location_on</span> 
+                4402 Industrial Pkwy, Horseshoe Lake, MI 48103
+            </p>
+</div>
+<div class="flex gap-4">
+<button class="flex items-center gap-2 px-6 py-3 border border-primary text-primary font-bold rounded-lg hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-[20px]">call</span>
+                Call Broker
+            </button>
+<button class="flex items-center gap-2 px-6 py-3 copper-gradient text-white font-bold rounded-lg shadow-md hover:scale-[1.02] transition-all">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+                Message Agent
+            </button>
+</div>
+</section>
+<!-- Intelligence Grid -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Circular Score Ring -->
+<div class="col-span-3 bg-surface-container-lowest rounded-xl p-8 flex flex-col items-center justify-center text-center">
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-6">Aggregate Trust Score</h3>
+<div class="relative w-40 h-40 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-surface-container" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-primary" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-dasharray="440" stroke-dashoffset="158" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-4xl font-black text-on-surface">64</span>
+<span class="text-[10px] font-bold text-primary uppercase tracking-tighter">Review</span>
+</div>
+</div>
+<p class="mt-6 text-sm text-on-surface-variant leading-relaxed px-2">
+                Score impacted by high environmental remediation liability.
+            </p>
+</div>
+<!-- Cost Waterfall -->
+<div class="col-span-6 bg-surface-container-lowest rounded-xl p-8">
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-8">Detailed Cost Waterfall ($M)</h3>
+<div class="space-y-6">
+<div class="flex items-center gap-4">
+<div class="w-24 text-[11px] font-bold text-on-surface-variant uppercase">Acquisition</div>
+<div class="flex-1 h-8 bg-surface-container-low rounded-sm relative overflow-hidden">
+<div class="absolute inset-y-0 left-0 bg-primary/40 w-[60%]"></div>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold">$12.4</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-24 text-[11px] font-bold text-on-surface-variant uppercase">Remediation</div>
+<div class="flex-1 h-8 bg-surface-container-low rounded-sm relative overflow-hidden">
+<div class="absolute inset-y-0 left-0 bg-error/30 w-[15%]"></div>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-error">$3.1</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-24 text-[11px] font-bold text-on-surface-variant uppercase">Entitlement</div>
+<div class="flex-1 h-8 bg-surface-container-low rounded-sm relative overflow-hidden">
+<div class="absolute inset-y-0 left-0 bg-primary/20 w-[8%]"></div>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold">$1.8</span>
+</div>
+</div>
+<div class="flex items-center gap-4 border-t border-outline-variant/10 pt-4">
+<div class="w-24 text-[11px] font-bold text-on-surface uppercase">Total CapEx</div>
+<div class="flex-1 h-10 copper-gradient rounded-sm relative overflow-hidden">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-black text-white">$17.3M</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Environmental & Zoning Checklist -->
+<div class="col-span-3 bg-surface-container-lowest rounded-xl p-8">
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-6">Compliance Status</h3>
+<ul class="space-y-4">
+<li class="flex items-center justify-between">
+<span class="text-sm font-medium">Phase 1 ESA</span>
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="text-sm font-medium">Wetlands Delineation</span>
+<span class="material-symbols-outlined text-primary">warning</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="text-sm font-medium">Title Encumbrances</span>
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="text-sm font-medium">Zoning Variance (M-1)</span>
+<span class="material-symbols-outlined text-error">cancel</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="text-sm font-medium">Floodplain (100yr)</span>
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</li>
+</ul>
+</div>
+<!-- Per-Parcel Inventory Section -->
+<div class="col-span-12 bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="px-8 py-5 border-b border-outline-variant/10">
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Per-Parcel Inventory</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Parcel ID</th>
+<th class="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Lot Size (Ac)</th>
+<th class="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
+<th class="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Agent Findings</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="row-alt">
+<td class="px-8 py-4 text-sm font-bold text-primary tracking-tight">8829-HL-01</td>
+<td class="px-8 py-4 text-sm font-medium">12.4</td>
+<td class="px-8 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-bold uppercase">Vacant</span>
+</td>
+<td class="px-8 py-4 text-sm italic text-on-surface-variant leading-relaxed">Slight slope to North; optimal for Hawthorne model.</td>
+</tr>
+<tr class="row-alt">
+<td class="px-8 py-4 text-sm font-bold text-primary tracking-tight">8829-HL-02</td>
+<td class="px-8 py-4 text-sm font-medium">8.1</td>
+<td class="px-8 py-4">
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase">Listed</span>
+</td>
+<td class="px-8 py-4 text-sm italic text-on-surface-variant leading-relaxed">Includes existing retention pond; high ecological value.</td>
+</tr>
+<tr class="row-alt">
+<td class="px-8 py-4 text-sm font-bold text-primary tracking-tight">8829-HL-03</td>
+<td class="px-8 py-4 text-sm font-medium">15.2</td>
+<td class="px-8 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-bold uppercase">Vacant</span>
+</td>
+<td class="px-8 py-4 text-sm italic text-on-surface-variant leading-relaxed">Direct rail access point; requires soil stabilization.</td>
+</tr>
+<tr class="row-alt">
+<td class="px-8 py-4 text-sm font-bold text-primary tracking-tight">8829-HL-04</td>
+<td class="px-8 py-4 text-sm font-medium">4.5</td>
+<td class="px-8 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-bold uppercase">Vacant</span>
+</td>
+<td class="px-8 py-4 text-sm italic text-on-surface-variant leading-relaxed">Utility easement bisects parcel; limits vertical build.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Broker Intelligence Notes -->
+<div class="col-span-12 bg-surface-container-lowest rounded-xl p-8">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Broker Intelligence Notes</h3>
+<div class="flex gap-2">
+<span class="px-2 py-1 text-[10px] font-bold bg-error/10 text-error rounded">PRIVATE DISCLOSURE</span>
+<span class="px-2 py-1 text-[10px] font-bold bg-surface-container text-on-surface-variant rounded">PUBLIC RECORD</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="bg-surface-container-low/50 p-6 rounded-lg border-l-4 border-error/50">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-error text-[18px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-xs font-bold text-on-surface uppercase">Private Leak</span>
+</div>
+<p class="text-sm italic text-on-surface-variant leading-relaxed">
+                        "Seller is under pressure from a bridge loan expiring in 45 days. They are quietly entertaining offers 10% below market if the buyer can close in cash. Environmental reports show unmitigated runoff from the northern chemical processing plant."
+                    </p>
+</div>
+<div class="bg-surface-container-low/50 p-6 rounded-lg border-l-4 border-outline-variant">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">public</span>
+<span class="text-xs font-bold text-on-surface uppercase">Market Context</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                        "Horseshoe Lake has seen a 22% increase in industrial absorption since the Q3 logistics hub announcement. Parcel 8829-HL is the last remaining M-1 zoned site with rail access in this corridor."
+                    </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Live Thinking Terminal -->
+<footer class="fixed bottom-0 left-64 right-0 bg-on-surface text-surface-container-low p-4 border-t border-primary/20 z-50">
+<div class="flex items-center justify-between px-6">
+<div class="flex items-center gap-4 overflow-hidden">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-primary">Live Terminal</span>
+</div>
+<div class="h-4 w-px bg-surface-container/20"></div>
+<div class="flex gap-4 text-[11px] font-mono whitespace-nowrap overflow-hidden">
+<span class="opacity-80">[ARCHIVIST_AGENT_01]: Fetching municipal records from Michigan.gov... DONE</span>
+<span class="opacity-40">/</span>
+<span class="opacity-80">[ARCHIVIST_AGENT_04]: Cross-referencing flood maps for Parcel 8829-HL... PENDING</span>
+<span class="opacity-40">/</span>
+<span class="text-primary font-bold">Scanning zoning variances in real-time...</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">Swarm Health</span>
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-primary opacity-30"></div>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
