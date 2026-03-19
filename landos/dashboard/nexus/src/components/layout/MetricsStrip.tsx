@@ -1,18 +1,13 @@
 import { Terminal } from 'lucide-react'
-
-const metrics: { label: string; value: string; highlight?: boolean }[] = [
-  { label: 'Active Listings', value: '95' },
-  { label: 'Vacant Parcels', value: '10,266' },
-  { label: 'Clusters', value: '2,229' },
-  { label: 'Tier 1 Opps', value: '23', highlight: true },
-  { label: 'Dormant Acres', value: '22,057' },
-]
+import { useMetrics } from '@/hooks/useMetrics'
 
 export function MetricsStrip() {
+  const { data: metrics } = useMetrics()
+
   return (
     <footer className="fixed bottom-0 left-0 z-30 ml-[240px] flex h-[56px] w-[calc(100%-240px)] items-center justify-between border-t border-outline-variant/10 bg-white px-8">
       <div className="flex items-center gap-12">
-        {metrics.map((m) => (
+        {metrics?.map((m) => (
           <div key={m.label} className="flex flex-col">
             <span
               className={`text-[9px] font-bold uppercase tracking-widest ${

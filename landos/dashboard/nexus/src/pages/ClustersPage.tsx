@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { ClusterMap } from '../components/clusters/ClusterMap'
-import { ClusterCards, CLUSTER_DATA } from '../components/clusters/ClusterCards'
+import { ClusterCards } from '../components/clusters/ClusterCards'
 import { ClusterDetailModal } from '../components/clusters/ClusterDetailModal'
-import type { ClusterData } from '../components/clusters/ClusterCards'
+import { useClusters } from '@/hooks/useClusters'
+import type { Cluster } from '@/data/mockData'
 
 export default function ClustersPage() {
-  const [selectedCluster, setSelectedCluster] = useState<ClusterData | null>(null)
-  const firstOwner = CLUSTER_DATA[0]?.owner ?? ''
+  const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null)
+  const { data: clusters } = useClusters()
+  const firstOwner = clusters?.[0]?.owner ?? ''
 
   return (
     <>

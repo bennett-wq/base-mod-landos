@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { Sparkles, X, FileText, Package, Map, Rocket } from 'lucide-react'
-import type { ClusterData } from './ClusterCards'
+import type { Cluster } from '@/data/mockData'
 
 interface ClusterDetailModalProps {
-  cluster: ClusterData
+  cluster: Cluster
   onClose: () => void
 }
 
