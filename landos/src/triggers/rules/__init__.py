@@ -22,6 +22,7 @@ from src.triggers.rules.listing_rules import RA, RB, RE
 from src.triggers.rules.municipal_rules import RV, RW, RX
 from src.triggers.rules.parcel_rules import RF, RG, RH
 from src.triggers.rules.phase2_placeholders import RD
+from src.triggers.rules.stallout_rules import STA, STB, STC, STD, STE, STF, STG
 
 # ── Executable registry ───────────────────────────────────────────────
 # Only fully wired, tested rules belong here. The engine is constructed
@@ -39,6 +40,8 @@ ALL_RULES: list[TriggerRule] = [
     RS, RT, RU1, RU2,
     # Step 7 — municipal scan rules
     RV, RW, RX,
+    # Step 8 — stallout detection rules
+    STA, STB, STC, STD, STE, STF, STG,
 ]
 
 # ── Planning catalog (not active) ─────────────────────────────────────
@@ -92,4 +95,5 @@ __all__ = [
     "RO", "RP", "RQ", "RR",
     "RS", "RT", "RU1", "RU2",
     "RV", "RW", "RX",
+    "STA", "STB", "STC", "STD", "STE", "STF", "STG",
 ]
