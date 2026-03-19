@@ -7,7 +7,7 @@ import {
   Bot,
   BarChart3,
   Rocket,
-  Settings,
+  Mail,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -73,8 +73,8 @@ export function Sidebar() {
             )
           }
         >
-          <Settings size={16} strokeWidth={2} />
-          Config
+          <Mail size={16} strokeWidth={2} />
+          Outreach
         </NavLink>
       </div>
     </aside>

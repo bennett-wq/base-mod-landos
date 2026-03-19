@@ -1,12 +1,15 @@
+import { useState } from 'react'
+import { OutreachHeader } from '@/components/outreach/OutreachHeader'
+import { SMSTemplateEditor } from '@/components/outreach/SMSTemplateEditor'
+import { EmailTemplateEditor } from '@/components/outreach/EmailTemplateEditor'
+
 export default function ConfigPage() {
+  const [activeTab, setActiveTab] = useState<'sms' | 'email'>('sms')
+
   return (
-    <div>
-      <h1 className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
-        Config — Settings
-      </h1>
-      <div className="rounded-[1rem] bg-white p-7 shadow-ambient">
-        <p className="text-sm text-on-surface-variant">Configuration settings coming soon.</p>
-      </div>
+    <div className="-m-8 flex h-[calc(100vh-var(--topnav-h,0px))] flex-col overflow-hidden">
+      <OutreachHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      {activeTab === 'sms' ? <SMSTemplateEditor /> : <EmailTemplateEditor />}
     </div>
   )
 }
