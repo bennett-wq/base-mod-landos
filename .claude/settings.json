@@ -1,0 +1,12 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "PreToolUse":    [{"hooks": [{"type": "command", "command": "python3 '/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/.claude/hooks/pre_tool_use.py'"}]}],
+    "PostToolUse":   [{"hooks": [{"type": "command", "command": "python3 '/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/.claude/hooks/post_tool_use.py'"}]}],
+    "Stop":          [{"hooks": [{"type": "command", "command": "python3 '/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/.claude/hooks/stop.py'"}]}],
+    "SubagentStop":  [{"hooks": [{"type": "command", "command": "python3 '/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/.claude/hooks/subagent_stop.py'"}]}],
+    "TaskCompleted": [{"hooks": [{"type": "command", "command": "python3 '/Users/bennett2026/Desktop/Kingdom LandOS/BaseMod LandOS/.claude/hooks/task_completed.py'"}]}]
+  }
+}

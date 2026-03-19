@@ -74,7 +74,7 @@ def build_listing_added(listing: Listing, now: datetime | None = None) -> EventE
             "list_price": listing.list_price,
             "property_type": listing.property_type,
             "acreage": listing.lot_size_acres,
-            "address_raw": None,          # Not in Listing model; resolved in Step 5
+            "address_raw": listing.address_raw,
             "listing_agent_id": listing.listing_agent_id,
             "listing_office_id": listing.listing_office_id,
         },
@@ -226,6 +226,181 @@ def build_listing_relisted(
             "previous_status": old.standard_status.value,
             "gap_days": gap_days,
             "price_change": price_change,
+        },
+    )
+
+
+# ── BBO signal event builders ─────────────────────────────────────────────
+
+def build_listing_bbo_cdom_threshold_crossed(
+    listing: Listing,
+    cdom: int,
+    threshold: int,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build a listing_bbo_cdom_threshold_crossed event (Rule RI)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="listing_bbo_cdom_threshold_crossed",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "listing_key": listing.listing_key,
+            "cdom": cdom,
+            "threshold": threshold,
+            "list_agent_key": listing.list_agent_key,
+            "list_office_name": listing.listing_office_name,
+            "subdivision_name_raw": listing.subdivision_name_raw,
+        },
+    )
+
+
+def build_listing_private_remarks_signal_detected(
+    listing: Listing,
+    detected_categories: list[str],
+    remarks_excerpt: str,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build a listing_private_remarks_signal_detected event (Rules RJ/RK)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="listing_private_remarks_signal_detected",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "listing_key": listing.listing_key,
+            "detected_categories": detected_categories,
+            "remarks_excerpt": remarks_excerpt[:200],  # NEVER full remarks
+            "list_agent_key": listing.list_agent_key,
+            "list_office_name": listing.listing_office_name,
+        },
+    )
+
+
+def build_agent_land_accumulation_detected(
+    listing: Listing,
+    agent_listing_count: int,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build an agent_land_accumulation_detected event (Rule RL)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="agent_land_accumulation_detected",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "list_agent_key": listing.list_agent_key,
+            "listing_agent_name": listing.listing_agent_name,
+            "listing_agent_id": listing.listing_agent_id,
+            "list_office_name": listing.listing_office_name,
+            "agent_listing_count": agent_listing_count,
+            "triggering_listing_key": listing.listing_key,
+        },
+    )
+
+
+def build_office_land_program_detected(
+    listing: Listing,
+    office_listing_count: int,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build an office_land_program_detected event (Rule RM)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="office_land_program_detected",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "listing_office_id": listing.listing_office_id,
+            "list_office_name": listing.listing_office_name,
+            "office_listing_count": office_listing_count,
+            "triggering_listing_key": listing.listing_key,
+        },
+    )
+
+
+def build_subdivision_remnant_detected(
+    listing: Listing,
+    reason: str,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build a subdivision_remnant_detected event (Rule RT)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="subdivision_remnant_detected",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "listing_key": listing.listing_key,
+            "subdivision_name_raw": listing.subdivision_name_raw,
+            "legal_description": listing.legal_description,
+            "number_of_lots": listing.number_of_lots,
+            "cdom": listing.cdom,
+            "reason": reason,
+        },
+    )
+
+
+def build_developer_exit_signal_detected(
+    listing: Listing,
+    reason: str,
+    now: datetime | None = None,
+) -> EventEnvelope:
+    """Build a developer_exit_signal_detected event (Rules RN/RS)."""
+    if now is None:
+        now = _now_utc()
+
+    return EventEnvelope(
+        event_type="developer_exit_signal_detected",
+        event_family=EventFamily.LISTING,
+        event_class=EventClass.RAW,
+        occurred_at=now,
+        observed_at=now,
+        source_system="spark_rets",
+        source_record_id=listing.listing_key,
+        entity_refs=_entity_refs(listing),
+        payload={
+            "listing_key": listing.listing_key,
+            "list_agent_key": listing.list_agent_key,
+            "list_office_name": listing.listing_office_name,
+            "cdom": listing.cdom,
+            "off_market_date": listing.off_market_date.isoformat() if listing.off_market_date else None,
+            "reason": reason,
         },
     )
 
