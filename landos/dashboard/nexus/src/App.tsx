@@ -8,6 +8,7 @@ import CommandPage from './pages/CommandPage'
 import PipelinePage from './pages/PipelinePage'
 import MissionsPage from './pages/MissionsPage'
 import ConfigPage from './pages/ConfigPage'
+import DeepAssessmentPage from './pages/DeepAssessmentPage'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="pipeline" element={<PipelinePage />} />
         <Route path="missions" element={<MissionsPage />} />
         <Route path="config" element={<ConfigPage />} />
+        <Route path="assessment/:id" element={<DeepAssessmentPage />} />
       </Route>
     </Routes>
   )
