@@ -1,12 +1,46 @@
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
+import { KanbanBoard, TOTAL_DEALS } from '../components/pipeline/KanbanBoard'
+
 export default function PipelinePage() {
+  const [showTooltip, setShowTooltip] = useState(false)
+
   return (
-    <div>
-      <h1 className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
-        Pipeline — Deal Tracker
-      </h1>
-      <div className="rounded-[1rem] bg-white p-7 shadow-ambient">
-        <p className="text-sm text-on-surface-variant">Deal tracker pipeline coming soon.</p>
+    <>
+      {/* Full-bleed breakout */}
+      <div className="-m-8 min-h-[calc(100vh-56px)] bg-surface p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-on-surface">
+              Pipeline — Deal Tracker
+            </h2>
+            <p className="text-on-surface-variant mt-1 text-sm">
+              {TOTAL_DEALS} active deals across all stages
+            </p>
+          </div>
+          <button className="copper-gradient text-on-primary text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity">
+            Add Lead
+          </button>
+        </div>
+
+        {/* Kanban board */}
+        <KanbanBoard />
       </div>
-    </div>
+
+      {/* FAB — fixed bottom-right */}
+      <button
+        className="fixed bottom-8 right-8 z-20 w-14 h-14 copper-gradient text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all group"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        <Plus className="w-6 h-6" />
+        {showTooltip && (
+          <span className="absolute right-full mr-4 bg-inverse-surface text-white text-[9px] font-bold py-2 px-3 rounded-lg whitespace-nowrap uppercase tracking-widest">
+            Add New Lead
+          </span>
+        )}
+      </button>
+    </>
   )
 }

@@ -106,3 +106,15 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Kanban horizontal scrollbar */
+.kanban-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background-color: #d4c4b4;
+  border-radius: 9999px;
+}
