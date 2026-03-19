@@ -1,12 +1,18 @@
+import { useState } from 'react'
+import { AgentRoster } from '../components/mesh/AgentRoster'
+import { MeshCanvas } from '../components/mesh/MeshCanvas'
+import { IntelFeed } from '../components/mesh/IntelFeed'
+import { AgentDetailPanel } from '../components/mesh/AgentDetailPanel'
+
 export default function MeshPage() {
+  const [selectedNode, setSelectedNode] = useState<number | null>(null)
+
   return (
-    <div>
-      <h1 className="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
-        Mesh — Event Nerve Center
-      </h1>
-      <div className="rounded-[1rem] bg-white p-7 shadow-ambient">
-        <p className="text-sm text-on-surface-variant">Event mesh visualization coming soon.</p>
-      </div>
+    <div className="-m-8 flex h-[calc(100vh-56px-56px)] overflow-hidden relative">
+      <AgentRoster />
+      <MeshCanvas onNodeClick={(i) => setSelectedNode(i)} />
+      <IntelFeed />
+      <AgentDetailPanel nodeIndex={selectedNode} onClose={() => setSelectedNode(null)} />
     </div>
   )
 }
