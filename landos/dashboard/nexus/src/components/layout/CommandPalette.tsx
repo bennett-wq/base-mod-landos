@@ -99,7 +99,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         setSelectedIndex((i) => (i - 1 + allItems.length) % allItems.length)
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        executeItem(allItems[selectedIndex])
+        const item = allItems[selectedIndex]
+        if (item) executeItem(item)
       } else if (e.key === 'Escape') {
         e.preventDefault()
         onClose()
