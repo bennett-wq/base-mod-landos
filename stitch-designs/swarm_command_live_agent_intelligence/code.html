@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BaseMod NEXUS - Command &amp; Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-error-container": "#93000a",
+              "primary": "#7f5313",
+              "on-primary-fixed-variant": "#653e00",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#d9e3f4",
+              "primary-fixed-dim": "#f7bb73",
+              "on-tertiary-container": "#f5fff7",
+              "outline": "#827567",
+              "inverse-surface": "#30312f",
+              "background": "#fbf9f6",
+              "primary-fixed": "#ffddb8",
+              "surface": "#fbf9f6",
+              "surface-container-high": "#eae8e5",
+              "secondary-container": "#d6e0f1",
+              "on-tertiary-fixed-variant": "#005137",
+              "on-primary-container": "#fffbff",
+              "secondary-fixed-dim": "#bdc7d8",
+              "on-surface-variant": "#504539",
+              "primary-container": "#9b6b2a",
+              "on-background": "#1b1c1a",
+              "on-secondary-container": "#596372",
+              "error": "#ba1a1a",
+              "tertiary-container": "#00855d",
+              "tertiary-fixed-dim": "#68dba9",
+              "surface-dim": "#dbdad7",
+              "secondary": "#555f6d",
+              "on-tertiary": "#ffffff",
+              "on-error": "#ffffff",
+              "surface-container": "#efeeeb",
+              "on-secondary-fixed": "#121c28",
+              "on-tertiary-fixed": "#002114",
+              "inverse-primary": "#f7bb73",
+              "tertiary-fixed": "#85f8c4",
+              "on-secondary": "#ffffff",
+              "surface-bright": "#fbf9f6",
+              "on-primary-fixed": "#2a1700",
+              "inverse-on-surface": "#f2f0ed",
+              "on-surface": "#1b1c1a",
+              "tertiary": "#006948",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed-variant": "#3e4755",
+              "surface-tint": "#815516",
+              "error-container": "#ffdad6",
+              "surface-container-low": "#f5f3f0",
+              "surface-variant": "#e4e2df",
+              "outline-variant": "#d4c4b4",
+              "surface-container-highest": "#e4e2df"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .copper-gradient {
+            background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+        }
+        .mesh-line {
+            stroke: #d4c4b4;
+            stroke-width: 1;
+            stroke-dasharray: 4;
+        }
+        .neural-glow {
+            box-shadow: 0 0 20px rgba(127, 83, 19, 0.4), 0 0 40px rgba(127, 83, 19, 0.2);
+        }
+        .agent-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(127, 83, 19, 0.4); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(127, 83, 19, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(127, 83, 19, 0); }
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 0%, rgba(127, 83, 19, 0.05) 50%, transparent 100%);
+            background-size: 100% 4px;
+            animation: scan 10s linear infinite;
+        }
+        @keyframes scan {
+            from { background-position: 0 0; }
+            to { background-position: 0 100%; }
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col w-[240px] bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800">
+<div class="p-6">
+<h1 class="text-xl font-bold text-stone-900 dark:text-white tracking-tight">BaseMod</h1>
+<p class="text-[10px] font-bold tracking-[0.2em] text-primary opacity-80 mt-1 uppercase">NEXUS</p>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center px-4 py-3 rounded-lg border-l-[3px] border-[#B07D3B] text-[#B07D3B] bg-[#B07D3B]/5 font-semibold transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="hub">hub</span>
+<span class="text-sm tracking-tight">Command</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="track_changes">track_changes</span>
+<span class="text-sm tracking-tight">Radar</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="domain">domain</span>
+<span class="text-sm tracking-tight">Clusters</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="payments">payments</span>
+<span class="text-sm tracking-tight">Economics</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="analytics">analytics</span>
+<span class="text-sm tracking-tight">Pipeline</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="rocket_launch">rocket_launch</span>
+<span class="text-sm tracking-tight">Missions</span>
+</a>
+</nav>
+<div class="p-4 border-t border-stone-100 dark:border-stone-800">
+<a class="flex items-center px-4 py-3 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+<span class="text-sm tracking-tight">Config</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-30 ml-[240px] w-[calc(100%-240px)] h-[56px] bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-100 dark:border-stone-800">
+<div class="flex items-center space-x-4">
+<span class="text-[#B07D3B] font-bold text-sm tracking-tight">SWARM CONTROL / WASHTENAW</span>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/10">
+<span class="material-symbols-outlined text-xs mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none text-xs focus:ring-0 p-0 w-48 placeholder-on-surface-variant/50" placeholder="Search intel swarm..." type="text"/>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-stone-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="flex items-center space-x-2 bg-surface-container-low py-1 px-1 pr-3 rounded-full border border-outline-variant/20">
+<div class="w-7 h-7 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold">JD</div>
+<span class="text-xs font-semibold text-on-surface">Washtenaw Ops</span>
+</div>
+</div>
+</header>
+<main class="ml-[240px] h-[calc(100vh-56px)] flex flex-col bg-[#FAF8F5] relative">
+<div class="flex flex-1 overflow-hidden">
+<!-- Agent Roster (Left) -->
+<section class="w-[300px] flex flex-col border-r border-outline-variant/10 p-4 space-y-4 overflow-y-auto bg-white/40">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">Command Swarm</span>
+<span class="text-[10px] font-medium text-on-surface-variant/60">ACTIVE: 08</span>
+</div>
+<div class="space-y-3">
+<!-- Agent Card 1 -->
+<div class="p-4 bg-white rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-all group">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold text-on-surface">Supply Intel</span>
+<div class="w-2 h-2 rounded-full bg-[#059669]"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant/80 mb-3 leading-relaxed">
+<span class="font-bold text-primary">STATUS:</span> Calculating all-in waterfalls for 12 new clusters...
+                    </p>
+<div class="flex gap-2">
+<button class="flex-1 py-1.5 bg-surface-container-low hover:bg-primary/5 text-[10px] font-bold text-primary rounded-md border border-primary/10 transition-colors uppercase tracking-tight">Schedule</button>
+<button class="px-2 py-1.5 bg-surface-container-low hover:bg-primary/5 text-primary rounded-md border border-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="chat_bubble">chat_bubble</span>
+</button>
+</div>
+</div>
+<!-- Agent Card 2 -->
+<div class="p-4 bg-white rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold text-on-surface">Municipal Agent</span>
+<div class="w-2 h-2 rounded-full bg-[#B07D3B] agent-pulse"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant/80 mb-3 leading-relaxed">
+<span class="font-bold text-primary">STATUS:</span> Scanning 2026 Plat recordings in Scio Twp...
+                    </p>
+<div class="flex gap-2">
+<button class="flex-1 py-1.5 bg-surface-container-low hover:bg-primary/5 text-[10px] font-bold text-primary rounded-md border border-primary/10 transition-colors uppercase tracking-tight">Schedule</button>
+<button class="px-2 py-1.5 bg-surface-container-low hover:bg-primary/5 text-primary rounded-md border border-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="chat_bubble">chat_bubble</span>
+</button>
+</div>
+</div>
+<!-- Agent Card 3 -->
+<div class="p-4 bg-white rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold text-on-surface">Zoning Auditor</span>
+<div class="w-2 h-2 rounded-full bg-[#D97706]"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant/80 mb-3 leading-relaxed">
+<span class="font-bold text-primary">STATUS:</span> Analyzing 142 parcels in Scio Twp for density...
+                    </p>
+<div class="flex gap-2">
+<button class="flex-1 py-1.5 bg-surface-container-low hover:bg-primary/5 text-[10px] font-bold text-primary rounded-md border border-primary/10 transition-colors uppercase tracking-tight">Schedule</button>
+<button class="px-2 py-1.5 bg-surface-container-low hover:bg-primary/5 text-primary rounded-md border border-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="chat_bubble">chat_bubble</span>
+</button>
+</div>
+</div>
+<!-- Simple Agent Cards -->
+<div class="p-3 bg-white/60 rounded-xl border border-outline-variant/10 opacity-70">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-on-surface">GIS Liaison</span>
+<span class="text-[9px] font-bold text-[#059669]">IDLE</span>
+</div>
+</div>
+<div class="p-3 bg-white/60 rounded-xl border border-outline-variant/10 opacity-70">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-on-surface">Macro Harvester</span>
+<span class="text-[9px] font-bold text-[#059669]">SYNCING</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Central Canvas -->
+<section class="flex-1 relative overflow-hidden flex items-center justify-center bg-surface">
+<div class="absolute inset-0 z-0 pointer-events-none opacity-10 scanline" style="background-image: radial-gradient(#d4c4b4 1px, transparent 1px); background-size: 32px 32px;"></div>
+<svg class="absolute inset-0 w-full h-full z-10" xmlns="http://www.w3.org/2000/svg">
+<circle cx="50%" cy="50%" fill="none" opacity="0.3" r="180" stroke="#d4c4b4" stroke-dasharray="8 4" stroke-width="1"></circle>
+<circle cx="50%" cy="50%" fill="none" opacity="0.1" r="280" stroke="#d4c4b4" stroke-dasharray="4 8" stroke-width="1"></circle>
+<line class="mesh-line" x1="50%" x2="35%" y1="50%" y2="30%"></line>
+<line class="mesh-line" x1="50%" x2="65%" y1="50%" y2="30%"></line>
+<line class="mesh-line" x1="50%" x2="75%" y1="50%" y2="50%"></line>
+<line class="mesh-line" x1="50%" x2="65%" y1="50%" y2="70%"></line>
+<line class="mesh-line" x1="50%" x2="35%" y1="50%" y2="70%"></line>
+<line class="mesh-line" x1="50%" x2="25%" y1="50%" y2="50%"></line>
+</svg>
+<!-- Neural Core -->
+<div class="relative z-20 flex flex-col items-center">
+<div class="w-[88px] h-[88px] rounded-full copper-gradient flex items-center justify-center border-4 border-white shadow-xl neural-glow relative overflow-hidden">
+<div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+<span class="material-symbols-outlined text-white text-4xl relative z-10" data-icon="psychology">psychology</span>
+</div>
+<div class="mt-4 bg-white/95 backdrop-blur-md px-5 py-2 rounded-full border border-primary/20 shadow-lg">
+<span class="text-[11px] font-extrabold tracking-[0.2em] text-primary uppercase">Neural Core Alpha</span>
+</div>
+</div>
+<!-- Active Intelligence Floating Window -->
+<div class="absolute top-12 left-1/2 -translate-x-1/2 w-[340px] z-30 pointer-events-auto">
+<div class="bg-white/90 backdrop-blur-xl border border-primary/30 rounded-2xl p-4 shadow-2xl neural-glow">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="verified_user">verified_user</span>
+<span class="text-[10px] font-bold text-primary uppercase tracking-widest">Live Discovery</span>
+</div>
+<span class="text-[9px] text-on-surface-variant font-mono">ID: NW-2024-X</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-2 rounded-lg bg-surface-container-low/50">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">SV</div>
+<div class="flex-1">
+<p class="text-[10px] text-on-surface-variant font-bold uppercase">Primary Owner</p>
+<p class="text-sm font-bold text-on-surface leading-tight">Samuel Vail</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="p-2 rounded-lg bg-white/50 border border-outline-variant/10">
+<p class="text-[9px] text-on-surface-variant font-bold uppercase">Phone</p>
+<p class="text-xs font-semibold">(734) 555-0192</p>
+</div>
+<div class="p-2 rounded-lg bg-white/50 border border-outline-variant/10 overflow-hidden">
+<p class="text-[9px] text-on-surface-variant font-bold uppercase">Email</p>
+<p class="text-xs font-semibold truncate">svail@remax-platinum.com</p>
+</div>
+</div>
+<div class="p-2 rounded-lg bg-primary/5 border border-primary/10">
+<p class="text-[9px] text-primary font-bold uppercase">Listing Broker / Trust</p>
+<div class="flex justify-between items-center mt-0.5">
+<p class="text-xs font-bold text-on-surface">Julian Francis Trust</p>
+<p class="text-[10px] font-mono font-bold text-primary">(734) 555-0481</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Orbiting Nodes (Static for UI composition) -->
+<div class="absolute inset-0 z-20 pointer-events-none">
+<div class="absolute top-[28%] left-[33%]"><div class="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shadow-lg"><span class="material-symbols-outlined text-primary text-lg" data-icon="inventory_2">inventory_2</span></div></div>
+<div class="absolute top-[28%] left-[63%]"><div class="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shadow-lg"><span class="material-symbols-outlined text-primary text-lg" data-icon="account_balance">account_balance</span></div></div>
+<div class="absolute top-[67%] left-[63%]"><div class="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shadow-lg"><span class="material-symbols-outlined text-primary text-lg" data-icon="map">map</span></div></div>
+<div class="absolute top-[67%] left-[33%]"><div class="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shadow-lg"><span class="material-symbols-outlined text-primary text-lg" data-icon="auto_awesome">auto_awesome</span></div></div>
+</div>
+</section>
+<!-- Intel Feed (Right) -->
+<section class="w-[320px] bg-white border-l border-outline-variant/10 flex flex-col z-40">
+<div class="px-4 py-4 border-b border-outline-variant/10">
+<h2 class="text-[10px] font-bold tracking-[0.2em] text-on-surface uppercase mb-4">Live Intel Stream</h2>
+<div class="flex gap-4">
+<button class="flex-1 py-1 text-[10px] font-bold text-primary border-b-2 border-primary">SIGNALS</button>
+<button class="flex-1 py-1 text-[10px] font-bold text-on-surface-variant/40">RULES</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Intel Card -->
+<div class="p-4 bg-surface-container-low/50 rounded-xl border border-outline-variant/10 shadow-sm relative group overflow-hidden">
+<div class="absolute top-0 right-0 p-2 opacity-30 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-xs" data-icon="more_vert">more_vert</span>
+</div>
+<div class="flex justify-between items-start mb-2">
+<span class="text-[9px] font-extrabold bg-primary/10 text-primary px-2 py-0.5 rounded tracking-tighter">SUBDIVISION REMNANT</span>
+<span class="text-[9px] text-on-surface-variant/50 font-mono">2m ago</span>
+</div>
+<p class="text-sm font-bold text-on-surface">Ann Arbor NW Cluster</p>
+<p class="text-xs text-on-surface-variant mt-1 mb-4 leading-relaxed">Detected 14.5 acre split candidate from historical deeds.</p>
+<button class="w-full py-2 bg-white border border-primary/20 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="contacts">contacts</span>
+<span class="text-[10px] font-bold text-primary uppercase">Contact Owner</span>
+</button>
+</div>
+<!-- Intel Card -->
+<div class="p-4 bg-surface-container-low/50 rounded-xl border border-outline-variant/10 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[9px] font-extrabold bg-[#059669]/10 text-[#059669] px-2 py-0.5 rounded tracking-tighter">ZONING SHIFT</span>
+<span class="text-[9px] text-on-surface-variant/50 font-mono">14m ago</span>
+</div>
+<p class="text-sm font-bold text-on-surface">Dexter Village Rezoning</p>
+<p class="text-xs text-on-surface-variant mt-1 mb-4 leading-relaxed">Public hearing notice for R-3 conversion on Baker Rd.</p>
+<button class="w-full py-2 bg-white border border-primary/20 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="contacts">contacts</span>
+<span class="text-[10px] font-bold text-primary uppercase">Contact Broker</span>
+</button>
+</div>
+<!-- Autonomy Card -->
+<div class="p-4 bg-primary/5 rounded-xl border border-primary/10">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold text-primary uppercase">Swarm Autonomy</span>
+<span class="text-[10px] font-bold text-primary">82%</span>
+</div>
+<div class="w-full h-1.5 bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[82%]"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom Agent Terminal / Slide-over (Messaging Interface) -->
+<div class="absolute bottom-16 right-[336px] w-[400px] z-50">
+<div class="bg-white border border-outline-variant/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[320px]">
+<div class="bg-surface-container-low p-3 border-b border-outline-variant/10 flex items-center justify-between"><div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">terminal</span>
+<span class="text-[10px] font-bold text-on-surface uppercase tracking-widest">Agent Terminal</span>
+</div>
+<span class="text-[8px] font-medium text-on-surface-variant/60 uppercase tracking-tighter mt-0.5">Live Swarm Reasoning Pipeline</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></div>
+<span class="text-[9px] font-bold text-on-surface-variant uppercase">Swarm Ready</span>
+</div></div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAF8F5]"><div class="space-y-2.5 font-mono">
+<!-- Log Entry 1 -->
+<div class="flex items-start gap-2 border-l-2 border-primary/20 pl-2">
+<span class="text-[9px] text-on-surface-variant/50 shrink-0 font-medium">[14:22:01]</span>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-primary uppercase leading-none mb-1">Scout Agent</span>
+<p class="text-[11px] text-on-surface leading-tight">Evaluating 142 parcels in Scio Twp for immediate density arbitrage...</p>
+</div>
+</div>
+<!-- Log Entry 2 -->
+<div class="flex items-start gap-2 border-l-2 border-primary/20 pl-2">
+<span class="text-[9px] text-on-surface-variant/50 shrink-0 font-medium">[14:22:05]</span>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-primary uppercase leading-none mb-1">Municipal Agent</span>
+<p class="text-[11px] text-on-surface leading-tight">Scanning 2026 Plat recordings for easement conflicts on parcel group B...</p>
+</div>
+</div>
+<!-- Log Entry 3 -->
+<div class="flex items-start gap-2 border-l-2 border-[#059669]/30 pl-2 bg-[#059669]/5 rounded-r">
+<span class="text-[9px] text-[#059669]/60 shrink-0 font-medium">[14:22:12]</span>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-[#059669] uppercase leading-none mb-1">Zoning Auditor</span>
+<p class="text-[11px] text-on-surface leading-tight italic">RE-CALCULATING: Setback deviation detected on Scio Ridge Rd. Adjusting yield models.</p>
+</div>
+</div>
+<!-- Log Entry 4 (Active) -->
+<div class="flex items-start gap-2 border-l-2 border-primary/40 pl-2">
+<span class="text-[9px] text-on-surface-variant/50 shrink-0 font-medium">[14:22:18]</span>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-primary uppercase leading-none mb-1">Supply Intel</span>
+<div class="flex items-center gap-1.5">
+<p class="text-[11px] text-on-surface leading-tight">Syncing latest MLS listings for pricing velocity benchmark...</p>
+<span class="w-1 h-1 bg-primary rounded-full animate-bounce"></span>
+</div>
+</div>
+</div>
+</div></div>
+<div class="p-3 bg-white border-t border-outline-variant/10">
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low border-none rounded-lg text-xs py-2.5 pl-3 pr-10 focus:ring-1 focus:ring-primary/30 placeholder-on-surface-variant/40" placeholder="Send swarm instructions..." type="text"/>
+<button class="absolute right-2 text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Metrics Strip -->
+<footer class="h-[64px] w-full bg-white border-t border-outline-variant/10 flex items-center px-8 relative z-40">
+<div class="flex w-full items-center justify-between">
+<div class="flex items-center space-x-10">
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">Lead Velocity</span>
+<span class="text-sm font-extrabold text-primary">+14.2 / hr</span>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant/10"></div>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">Active Listings</span>
+<span class="text-sm font-extrabold text-on-surface">95</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">Vacant Parcels</span>
+<span class="text-sm font-extrabold text-on-surface">10,266</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-primary uppercase tracking-widest">Tier 1 Opps</span>
+<span class="text-sm font-extrabold text-primary">23</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">Swarm Coverage</span>
+<span class="text-sm font-extrabold text-on-surface">94.8%</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low px-4 py-2 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm mr-2 text-primary" data-icon="account_tree">account_tree</span>
+<span class="text-[10px] font-bold text-on-surface uppercase tracking-widest">Mesh Nodes: 1,402</span>
+</div>
+<div class="flex items-center bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
+<span class="material-symbols-outlined text-sm mr-2 text-primary" data-icon="bolt">bolt</span>
+<span class="text-[10px] font-bold text-primary uppercase tracking-widest">Triggered: 31</span>
+</div>
+</div>
+</div>
+</footer>
+</main>
+<!-- Ghost Gradients -->
+<div class="fixed top-0 right-0 w-1/3 h-1/4 pointer-events-none opacity-40 mix-blend-multiply" style="background: radial-gradient(circle at 100% 0%, #ffddb8 0%, transparent 70%);"></div>
+<div class="fixed bottom-0 left-0 w-1/4 h-1/3 pointer-events-none opacity-10 mix-blend-multiply" style="background: radial-gradient(circle at 0% 100%, #9b6b2a 0%, transparent 70%);"></div>
+</body></html>

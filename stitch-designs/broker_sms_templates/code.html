@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EstateIntel - Broker SMS Templates</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "on-background": "#1b1c1a",
+              "error": "#ba1a1a",
+              "surface-tint": "#815516",
+              "surface-container": "#efeeeb",
+              "tertiary-container": "#00855d",
+              "surface": "#fbf9f6",
+              "surface-bright": "#fbf9f6",
+              "secondary-fixed-dim": "#bdc7d8",
+              "primary-container": "#9b6b2a",
+              "on-primary-fixed": "#2a1700",
+              "on-error-container": "#93000a",
+              "secondary-fixed": "#d9e3f4",
+              "surface-container-highest": "#e4e2df",
+              "primary-fixed": "#ffddb8",
+              "tertiary-fixed-dim": "#68dba9",
+              "on-tertiary-fixed": "#002114",
+              "on-tertiary-fixed-variant": "#005137",
+              "inverse-on-surface": "#f2f0ed",
+              "on-error": "#ffffff",
+              "primary-fixed-dim": "#f7bb73",
+              "inverse-primary": "#f7bb73",
+              "background": "#fbf9f6",
+              "on-secondary-container": "#596372",
+              "surface-variant": "#e4e2df",
+              "error-container": "#ffdad6",
+              "secondary": "#555f6d",
+              "on-surface": "#1b1c1a",
+              "tertiary-fixed": "#85f8c4",
+              "on-secondary-fixed": "#121c28",
+              "surface-dim": "#dbdad7",
+              "on-secondary": "#ffffff",
+              "surface-container-low": "#f5f3f0",
+              "tertiary": "#006948",
+              "primary": "#7f5313",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#30312f",
+              "outline-variant": "#d4c4b4",
+              "outline": "#827567",
+              "on-tertiary-container": "#f5fff7",
+              "on-primary-container": "#fffbff",
+              "surface-container-lowest": "#ffffff",
+              "secondary-container": "#d6e0f1",
+              "on-secondary-fixed-variant": "#3e4755",
+              "surface-container-high": "#eae8e5",
+              "on-surface-variant": "#504539",
+              "on-primary-fixed-variant": "#653e00"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d4c4b4;
+        border-radius: 10px;
+      }
+      .copper-gradient {
+        background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+      }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopNavBar -->
+<header class="bg-[#fbf9f6] dark:bg-stone-900 font-['Inter'] antialiased text-[#504539] dark:text-stone-400 docked full-width top-0 z-50 flex justify-between items-center px-8 h-16 w-full fixed">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#1b1c1a] dark:text-stone-100">EstateIntel</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-[#504539] hover:text-[#7f5313] dark:text-stone-400 dark:hover:text-stone-200 transition-colors duration-200" href="#">Dashboard</a>
+<a class="text-[#504539] hover:text-[#7f5313] dark:text-stone-400 dark:hover:text-stone-200 transition-colors duration-200" href="#">Inventory</a>
+<a class="text-[#7f5313] border-b-2 border-[#7f5313] pb-1 dark:text-[#9b6b2a] dark:border-[#9b6b2a]" href="#">Outreach</a>
+<a class="text-[#504539] hover:text-[#7f5313] dark:text-stone-400 dark:hover:text-stone-200 transition-colors duration-200" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#f5f3f0] dark:hover:bg-stone-800 transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#f5f3f0] dark:hover:bg-stone-800 transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User profile" data-alt="Portrait of broker Samuel Vail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1_YcU5PrYwp3sx2UvnW76kDeBc9TWFaINnM1ZeFqvZyvvoSty2P-aEGhzu8bptdE85hfYHmQsynNFOwW12XT5zHvz3N4un1VGynel67onugmvfbsi1gD4N9WNY1qBpvNjXi23UD9YzSizaRL3_5zngrO56MTKfHfx5s-n405c6zx70DGvdVxAnngW_yn7uz0VDMySaFCaoZ4HLEwRBgS9dRTFPqPSa5m4CZlm1RKPy90YMjd7v7zOaROeADZEdu2Kgg9L-Sv-9g_E"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="bg-[#ffffff] dark:bg-stone-950 font-['Inter'] font-medium text-sm tracking-wide fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r border-[#f5f3f0] dark:border-stone-800 flex flex-col py-6 space-y-2">
+<div class="px-6 mb-8">
+<h2 class="text-[#1b1c1a] dark:text-stone-100 text-lg font-bold">Outreach Hub</h2>
+<p class="text-[#504539] dark:text-stone-400 text-xs">SMS Management</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] dark:hover:bg-stone-900 hover:text-[#7f5313] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span>Campaigns</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-[#1b1c1a] dark:text-stone-100 border-l-4 border-[#7f5313] bg-[#fbf9f6] dark:bg-stone-900" href="#">
+<span class="material-symbols-outlined" data-icon="sticky_note_2">sticky_note_2</span>
+<span>Templates</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] dark:hover:bg-stone-900 hover:text-[#7f5313] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Contacts</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] dark:hover:bg-stone-900 hover:text-[#7f5313] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+<span>Automation</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] dark:hover:bg-stone-900 hover:text-[#7f5313] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span>Reporting</span>
+</a>
+</nav>
+<div class="px-4 py-4">
+<button class="w-full py-3 px-4 copper-gradient text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-md">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Template
+            </button>
+</div>
+<div class="mt-auto border-t border-surface-container pt-4">
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-[#504539] dark:text-stone-400 hover:bg-[#fbf9f6] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span>Account</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-16 h-screen flex flex-col bg-surface">
+<!-- Top Toolbar / Context -->
+<div class="h-14 px-8 border-b border-surface-container flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-4">
+<span class="text-xs font-bold text-on-surface-variant tracking-widest uppercase">Target Asset:</span>
+<span class="text-sm font-semibold text-primary">Horseshoe Lake Corporation</span>
+<span class="h-1 w-1 rounded-full bg-outline"></span>
+<span class="text-xs text-on-surface-variant font-medium">Willis, MI Cluster</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-on-surface-variant">Broker: <strong>Samuel Vail</strong></span>
+</div>
+</div>
+<!-- Editor/Library Split -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left: Template Library -->
+<div class="w-1/3 flex flex-col border-r border-surface-container bg-surface-container-low">
+<div class="p-6">
+<h3 class="text-sm font-bold text-on-surface uppercase tracking-widest mb-4">Template Library</h3>
+<div class="relative mb-6">
+<input class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-sm focus:ring-1 focus:ring-primary/40 placeholder:text-on-surface-variant/50" placeholder="Search templates..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2 text-on-surface-variant/50 text-xl">search</span>
+</div>
+<div class="space-y-6 overflow-y-auto custom-scrollbar pr-2" style="max-height: calc(100vh - 350px);">
+<!-- Category -->
+<div>
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter mb-2 block">Follow-up Sequences</span>
+<div class="space-y-3">
+<div class="p-4 bg-surface-container-lowest rounded-xl border-l-4 border-primary shadow-sm cursor-pointer hover:bg-white transition-all">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-bold text-on-surface">First Outreach (Cold)</h4>
+<span class="text-[9px] bg-tertiary/10 text-tertiary px-2 py-0.5 rounded font-bold uppercase">Active</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Hi {{OwnerName}}, I'm looking at {{LotID}} near Willis. Are you interested in discussing a...</p>
+</div>
+<div class="p-4 bg-surface-container-lowest/50 rounded-xl border-l-4 border-transparent cursor-pointer hover:bg-surface-container-lowest transition-all">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-bold text-on-surface">24h Sticky Note</h4>
+<span class="text-[9px] bg-outline-variant/30 text-on-surface-variant px-2 py-0.5 rounded font-bold uppercase">Draft</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Just left a note at the site. Wanted to confirm you received my text earlier about...</p>
+</div>
+</div>
+</div>
+<!-- Category -->
+<div>
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter mb-2 block">Pricing adjustments</span>
+<div class="space-y-3">
+<div class="p-4 bg-surface-container-lowest/50 rounded-xl border-l-4 border-transparent cursor-pointer hover:bg-surface-container-lowest transition-all">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-bold text-on-surface">Premium Offer Drop</h4>
+<span class="text-[9px] bg-outline-variant/30 text-on-surface-variant px-2 py-0.5 rounded font-bold uppercase">Ready</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">New assessment for {{ModelName}} fit on {{LotID}} came in. We can push the offer to...</p>
+</div>
+</div>
+</div>
+<!-- Category -->
+<div>
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter mb-2 block">New Model Match</span>
+<div class="space-y-3">
+<div class="p-4 bg-surface-container-lowest/50 rounded-xl border-l-4 border-transparent cursor-pointer hover:bg-surface-container-lowest transition-all">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-bold text-on-surface">BaseMod Fit Update</h4>
+<span class="text-[9px] bg-outline-variant/30 text-on-surface-variant px-2 py-0.5 rounded font-bold uppercase">Ready</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Good news, we've verified the {{ModelName}} modular footprint fits your parcel perfectly...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: SMS Editor & Preview -->
+<div class="flex-1 flex flex-col md:flex-row bg-surface-container-lowest">
+<!-- Composition Area -->
+<div class="flex-1 p-8 border-r border-surface-container-low overflow-y-auto">
+<div class="max-w-xl mx-auto space-y-8">
+<div>
+<h2 class="text-2xl font-bold text-on-surface tracking-tight mb-2">Compose Template</h2>
+<p class="text-sm text-on-surface-variant">Editing: <span class="font-semibold text-on-surface">First Outreach (Cold)</span></p>
+</div>
+<div class="space-y-4">
+<label class="text-xs font-bold text-on-surface uppercase tracking-widest block">SMS Body</label>
+<div class="relative group">
+<textarea class="w-full h-48 bg-surface border border-outline-variant/40 rounded-2xl p-6 text-on-surface-variant leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none font-medium" placeholder="Type your message here...">Hi {{OwnerName}}, Samuel Vail here from EstateIntel. We've identified {{LotID}} as a prime candidate for our upcoming {{ModelName}} development in Willis. Are you open to a cash offer this week?</textarea>
+<div class="absolute bottom-4 right-6 flex items-center gap-3">
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded">142 / 160 chars</span>
+<span class="text-[10px] font-bold text-on-surface-variant/40">1 Message Segment</span>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<label class="text-xs font-bold text-on-surface uppercase tracking-widest block">Dynamic Placeholders</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 bg-surface-container-low text-on-surface text-xs font-semibold rounded-full border border-outline-variant/20 hover:border-primary transition-all">{{OwnerName}}</button>
+<button class="px-3 py-1.5 bg-surface-container-low text-on-surface text-xs font-semibold rounded-full border border-outline-variant/20 hover:border-primary transition-all">{{LotID}}</button>
+<button class="px-3 py-1.5 bg-surface-container-low text-on-surface text-xs font-semibold rounded-full border border-outline-variant/20 hover:border-primary transition-all">{{ModelName}}</button>
+<button class="px-3 py-1.5 bg-surface-container-low text-on-surface text-xs font-semibold rounded-full border border-outline-variant/20 hover:border-primary transition-all">{{CurrentOffer}}</button>
+<button class="px-3 py-1.5 bg-surface-container-low text-on-surface text-xs font-semibold rounded-full border border-outline-variant/20 hover:border-primary transition-all">{{BrokerPhone}}</button>
+</div>
+</div>
+<div class="pt-6 flex gap-4">
+<button class="flex-1 py-4 copper-gradient text-on-primary font-bold rounded-xl shadow-lg flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">send</span>
+                                Send SMS
+                            </button>
+<button class="px-6 py-4 border border-outline-variant/40 text-on-surface-variant font-bold rounded-xl hover:bg-surface transition-all">
+                                Save Draft
+                            </button>
+</div>
+</div>
+</div>
+<!-- Phone Preview Area -->
+<div class="w-[380px] bg-surface-container-low p-8 flex flex-col items-center">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-8">Recipient Preview</span>
+<!-- iPhone Mockup -->
+<div class="relative w-[280px] h-[580px] bg-[#111] rounded-[3rem] border-[8px] border-[#333] shadow-2xl p-4 overflow-hidden">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#333] rounded-b-2xl z-10"></div>
+<div class="bg-[#f2f2f7] w-full h-full rounded-[2rem] flex flex-col pt-8 overflow-hidden">
+<!-- iOS Header -->
+<div class="px-4 pb-4 flex flex-col items-center border-b border-gray-300">
+<div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center mb-1">
+<span class="material-symbols-outlined text-white">person</span>
+</div>
+<span class="text-[10px] font-semibold text-gray-800">Samuel Vail (EstateIntel)</span>
+</div>
+<!-- Chat Area -->
+<div class="flex-1 p-3 flex flex-col gap-4">
+<div class="self-center bg-gray-200/50 px-3 py-1 rounded-full">
+<span class="text-[9px] text-gray-500 font-medium">Today 2:42 PM</span>
+</div>
+<!-- The Bubble -->
+<div class="bg-[#E9E9EB] text-[#000] p-3 rounded-2xl rounded-bl-none text-xs leading-snug self-start max-w-[85%]">
+                                    Hi Michael, Samuel Vail here from EstateIntel. We've identified Lot #442-B as a prime candidate for our upcoming Highland modular development in Willis. Are you open to a cash offer this week?
+                                </div>
+</div>
+<!-- iOS Keyboard / Input Placeholder -->
+<div class="p-3 bg-white border-t border-gray-200">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-gray-400 text-lg">camera_alt</span>
+<div class="flex-1 bg-white border border-gray-300 rounded-full h-8 px-3 flex items-center">
+<span class="text-[10px] text-gray-300">iMessage</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">arrow_upward</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Agent Terminal (Bottom) -->
+<footer class="h-28 bg-[#1b1c1a] text-[#85f8c4] font-mono text-[11px] p-4 flex gap-6 border-t-2 border-primary overflow-hidden">
+<div class="flex flex-col gap-1 w-48 shrink-0">
+<div class="flex items-center gap-2 text-primary-fixed">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-bold uppercase tracking-widest">Swarm Intel</span>
+</div>
+<div class="text-white/40 leading-tight">
+                    Cluster: Willis_MI_09<br/>
+                    Target: Horseshoe Lake Corp<br/>
+                    Strategy: Direct_Action
+                </div>
+</div>
+<div class="flex-1 space-y-1 overflow-hidden">
+<div class="flex gap-4">
+<span class="text-white/20">[14:42:01]</span>
+<span>Analyzing owner "Michael Rossi" behavioral profile...</span>
+</div>
+<div class="flex gap-4">
+<span class="text-white/20">[14:42:05]</span>
+<span class="text-primary-fixed">OPTIMIZED: Template "First Outreach" selected. SMS channel verified active for 0.94 response probability.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-white/20">[14:42:09]</span>
+<span>Synthesizing Willis modular zoning data for model Highland-A3... Match Confirmed.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-white/20">[14:42:12]</span>
+<span class="animate-pulse">_waiting for broker execute command... system primed.</span>
+</div>
+</div>
+<div class="w-64 border-l border-white/10 pl-6 hidden lg:block">
+<div class="text-white/60 mb-1">Local Response Delta</div>
+<div class="flex items-end gap-3">
+<div class="h-10 w-2 bg-primary"></div>
+<div class="h-6 w-2 bg-white/10"></div>
+<div class="h-8 w-2 bg-white/10"></div>
+<div class="h-12 w-2 bg-primary/40"></div>
+<div class="ml-auto text-xl font-bold text-white">+12.4%</div>
+</div>
+</div>
+</footer>
+</main>
+</body></html>

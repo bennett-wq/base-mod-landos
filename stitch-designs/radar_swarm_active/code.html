@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Archivist Intelligence | Radar Live</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#002114",
+                        "primary-fixed-dim": "#f7bb73",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#121c28",
+                        "tertiary-fixed": "#85f8c4",
+                        "on-primary-fixed-variant": "#653e00",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#dbdad7",
+                        "surface-variant": "#e4e2df",
+                        "on-secondary-fixed-variant": "#3e4755",
+                        "background": "#fbf9f6",
+                        "tertiary-container": "#00855d",
+                        "primary-fixed": "#ffddb8",
+                        "tertiary-fixed-dim": "#68dba9",
+                        "primary": "#7f5313",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#9b6b2a",
+                        "on-surface-variant": "#504539",
+                        "secondary": "#555f6d",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f5f3f0",
+                        "inverse-primary": "#f7bb73",
+                        "surface-container": "#efeeeb",
+                        "secondary-fixed-dim": "#bdc7d8",
+                        "secondary-container": "#d6e0f1",
+                        "outline": "#827567",
+                        "on-secondary-container": "#596372",
+                        "surface-container-highest": "#e4e2df",
+                        "surface-container-high": "#eae8e5",
+                        "inverse-on-surface": "#f2f0ed",
+                        "on-primary-container": "#fffbff",
+                        "on-tertiary-container": "#f5fff7",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005137",
+                        "on-primary-fixed": "#2a1700",
+                        "tertiary": "#006948",
+                        "surface": "#fbf9f6",
+                        "inverse-surface": "#30312f",
+                        "surface-bright": "#fbf9f6",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1b1c1a",
+                        "on-background": "#1b1c1a",
+                        "secondary-fixed": "#d9e3f4",
+                        "surface-tint": "#815516",
+                        "outline-variant": "#d4c4b4",
+                        "error": "#ba1a1a"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .copper-gradient-cta {
+            background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+        }
+        .radar-pulse {
+            box-shadow: 0 0 0 0 rgba(127, 83, 19, 0.4);
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(.33); }
+            80%, 100% { opacity: 0; }
+        }
+        .mask-fade-bottom {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface-variant antialiased overflow-hidden">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-50 bg-[#ffffff] flex flex-col py-6 px-4 gap-y-2">
+<div class="mb-8 px-4">
+<h1 class="text-lg font-bold tracking-[0.05em] uppercase text-[#7f5313]">ARCHIVIST</h1>
+<p class="text-[10px] tracking-[0.1em] text-on-surface-variant font-medium opacity-70 uppercase">Real Estate Intelligence</p>
+</div>
+<nav class="flex-1 flex flex-col gap-y-1">
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+<span>Mesh</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 border-l-[3px] border-[#7f5313] font-semibold text-[#1b1c1a] bg-[#fbf9f6]" href="#">
+<span class="material-symbols-outlined text-[20px]">radar</span>
+<span>Radar</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<span>Clusters</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">query_stats</span>
+<span>Economics</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span>Command</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span>Pipeline</span>
+</a>
+<a class="flex items-center gap-x-3 py-2.5 px-4 text-[#504539] font-medium hover:bg-[#f5f3f0] transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+<span>Missions</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-4 bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-x-3">
+<div class="w-8 h-8 rounded-full bg-outline-variant/30 flex items-center justify-center">
+<img alt="User Profile Avatar" class="w-full h-full rounded-full" data-alt="Stylized human avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNBMSFu2nlbF6VslbJpR6plIxpwlM0Zrdk6WfaB_9Uy0ZWt8GaTjEXI8q_n7NfuFAZ3ffyYZBZLgbhu-lXN0_cld-xbVBDmcZhmHYRnava_tdlUnKzxB1cvZVjCw61MpUz2LrFcraAn3orvFoa4wsTz99UArCDDqURuKDGvmrNcVCf-PhMZAHhD9TACmOKKAgi9bkfjqZDkdmXiP4erhYNZfFzEIc_vS0Bb0vfZpZN1BpvP-KJhZbZhXqgfyCyI15dtZ2U7-KnsatV"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-on-surface truncate">Admin Terminal</p>
+<p class="text-[10px] text-primary truncate">Premium Access</p>
+</div>
+<a class="ml-auto text-on-surface-variant hover:text-primary" href="#">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-[#fbf9f6]/80 backdrop-blur-md border-b border-[#d4c4b4]/20 flex items-center justify-between px-8">
+<div class="flex items-center gap-x-8">
+<div class="flex items-center gap-x-2 bg-surface-container-lowest border border-outline-variant/20 px-3 py-1.5 rounded-full w-64 shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-outline">search</span>
+<input class="bg-transparent border-none text-[13px] focus:ring-0 p-0 w-full placeholder:text-outline-variant" placeholder="Search parcels, owners..." type="text"/>
+</div>
+<nav class="flex gap-x-6">
+<span class="text-[#7f5313] font-bold text-[14px] cursor-pointer">Radar Live</span>
+<span class="text-[#504539] font-medium text-[14px] hover:text-[#9b6b2a] cursor-pointer transition-colors">Satellite View</span>
+<span class="text-[#504539] font-medium text-[14px] hover:text-[#9b6b2a] cursor-pointer transition-colors">Topography</span>
+</nav>
+</div>
+<div class="flex items-center gap-x-4">
+<div class="flex items-center gap-x-2 px-3 py-1 bg-primary/10 rounded-full">
+<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[11px] font-bold text-primary tracking-wider uppercase">Live Feed</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">history_edu</button>
+<button class="copper-gradient-cta text-white text-[13px] font-bold px-5 py-2 rounded-lg shadow-md hover:opacity-90 transition-all active:scale-95">
+                Launch Swarm
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 h-[calc(100vh-64px)] relative flex">
+<!-- Map Visualization Space -->
+<div class="flex-1 relative bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover opacity-40 grayscale-[0.5]" data-alt="Abstract satellite topographic map with architectural grid lines" data-location="Austin, TX" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBg3CtKO1bw9Kw1JdLgdcLTTdheLd93pUx1wlPxLbj-HURULfsIh6bM-RVRvErF1fDHH-kyv3KIxzbn4tf-D9fV-NYsdn2ZPBJDQQFsrs59x0rCGs3w-nMkhnoFZYjnXWKwGGX4PDmAl20-vO7kOtzGCKVa0TgMItUtItQG2_B7tdP7_WqtZs5QL8vmSdk3KBTiXinaaqknKRWqePhQEcBMsQDP1W53kPC_t1YiJe0NeEAYovzJylX_HcOoCI9jg-5TsNCirrQu_KgD"/>
+<!-- SVG Overlay for Copper Polygon and Bubbles -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none">
+<!-- Active Polygon Area -->
+<polygon fill="rgba(127, 83, 19, 0.08)" points="400,200 800,150 950,500 600,650 350,550" stroke="#7f5313" stroke-dasharray="8,4" stroke-width="2"></polygon>
+<!-- Glowing Bubbles -->
+<circle class="animate-pulse" cx="550" cy="350" fill="rgba(155, 107, 42, 0.4)" r="40"></circle>
+<circle cx="720" cy="420" fill="rgba(155, 107, 42, 0.3)" r="30"></circle>
+<circle cx="480" cy="520" fill="rgba(155, 107, 42, 0.2)" r="55"></circle>
+<circle cx="820" cy="280" fill="rgba(155, 107, 42, 0.5)" r="25"></circle>
+</svg>
+<!-- Real-time Pulsing Marker -->
+<div class="absolute left-[710px] top-[410px]">
+<div class="relative flex items-center justify-center">
+<div class="absolute w-12 h-12 radar-pulse rounded-full border-2 border-primary/40"></div>
+<div class="w-4 h-4 bg-primary rounded-full shadow-lg border-2 border-white relative z-10"></div>
+</div>
+</div>
+<!-- High Value Lead Popup -->
+<div class="absolute left-[740px] top-[320px] z-20 w-64 bg-surface-container-lowest rounded-xl shadow-2xl p-5 border border-primary/10">
+<div class="flex justify-between items-start mb-3"><div class="flex flex-col gap-1">
+<span class="w-fit text-[10px] font-bold text-white bg-primary px-2 py-0.5 rounded uppercase tracking-widest">High Value</span>
+<div class="flex items-center gap-1.5 opacity-60">
+<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[9px] font-bold text-on-surface uppercase tracking-tight">Swarm Monitoring</span>
+</div>
+</div>
+<button class="material-symbols-outlined text-outline-variant hover:text-error text-[18px] transition-colors">close</button></div>
+<h4 class="font-bold text-on-surface leading-tight mb-1">Pecan Grove Estate II</h4>
+<p class="text-xs text-on-surface-variant mb-4">42.4 Acres • Zoning: Residential-C</p>
+<div class="pt-4 border-t border-outline-variant/10">
+<div class="flex justify-between items-end mb-4">
+<div>
+<p class="text-[10px] text-outline-variant uppercase font-semibold">Projected Yield</p>
+<p class="text-sm font-bold text-primary">184 Units</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-outline-variant uppercase font-semibold">Confidence</p>
+<p class="text-sm font-bold text-on-surface">92%</p>
+</div>
+</div>
+<button class="w-full copper-gradient-cta text-white py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2" onclick="window.location.href='{{DATA:SCREEN:SCREEN_20}}'">
+        View Intel
+        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Floating Progress Bar -->
+<div class="absolute top-8 left-1/2 -translate-x-1/2 z-30 w-96">
+<div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg border border-primary/20 flex items-center gap-x-4">
+<span class="text-[13px] font-bold text-on-surface whitespace-nowrap">🚀 Swarm Active <span class="text-primary-container">— 3 of 7 agents deployed</span></span>
+<div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[42%] rounded-full shadow-[0_0_8px_rgba(127,83,19,0.5)]"></div>
+</div>
+</div>
+</div>
+<!-- Live Thinking Terminal Docked at Bottom -->
+<div class="absolute bottom-6 left-6 right-6 z-30">
+<div class="bg-[#1b1c1a]/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/5 h-36 flex flex-col">
+<div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+<div class="flex items-center gap-x-2">
+<span class="material-symbols-outlined text-[#7f5313] text-[18px]">terminal</span>
+<span class="text-[10px] font-bold text-white tracking-widest uppercase opacity-80">Swarm Cognitive Stream</span>
+</div>
+<div class="flex gap-x-3">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto font-mono text-[12px] leading-loose mask-fade-bottom">
+<div class="flex gap-x-3 text-white/40">
+<span class="text-primary/70">[00:01:22]</span>
+<span class="text-primary-fixed-dim">SCOUT_ALPHA:</span>
+<span class="text-white/80">Identifying property clusters in Travis County...</span>
+</div>
+<div class="flex gap-x-3 text-white/40">
+<span class="text-primary/70">[00:01:28]</span>
+<span class="text-primary-fixed-dim">GEO_EPSILON:</span>
+<span class="text-white/80">Hydrology maps updated. 4 parcels flagged for flood zone encroachment.</span>
+</div>
+<div class="flex gap-x-3 text-white/40">
+<span class="text-primary/70">[00:01:34]</span>
+<span class="text-primary-fixed-dim">LEGAL_CORE:</span>
+<span class="text-white/80">Cross-referencing ownership entities. Linked 3 shells to Toll Brothers.</span>
+</div>
+<div class="flex gap-x-3 text-white/40">
+<span class="text-primary/70">[00:01:39]</span>
+<span class="text-primary-fixed-dim">SWARM_MASTER:</span>
+<span class="text-white/80 animate-pulse cursor-default">Infiltrating municipal permit archives...</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side Data Panel -->
+<aside class="w-[380px] h-full bg-surface-container-low border-l border-outline-variant/10 flex flex-col">
+<div class="p-6 bg-surface-container-lowest">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-bold text-on-surface text-lg">Cluster Analysis</h3>
+<span class="text-[11px] font-bold text-primary-container bg-primary-container/10 px-2 py-0.5 rounded">AUTO-REFRESH</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Active monitoring of polygon 'Travis-NW-Sector'. 14 opportunities identified.</p>
+</div>
+<!-- Owners Table -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h4 class="text-[11px] font-bold text-outline uppercase tracking-wider">Identified Owners</h4>
+<span class="material-symbols-outlined text-[18px] text-outline cursor-pointer hover:text-primary">filter_list</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-x-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">TB</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Toll Brothers</p>
+<p class="text-[11px] text-on-surface-variant">8 Parcels • 412 Acres</p>
+</div>
+</div>
+<span class="text-[12px] font-bold text-primary group-hover:translate-x-1 transition-transform">94% Fit</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-x-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">MH</div>
+<div>
+<p class="text-sm font-bold text-on-surface">M/I Homes</p>
+<p class="text-[11px] text-on-surface-variant">3 Parcels • 185 Acres</p>
+</div>
+</div>
+<span class="text-[12px] font-bold text-on-surface-variant group-hover:translate-x-1 transition-transform">82% Fit</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-x-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">LH</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Lennar Homes</p>
+<p class="text-[11px] text-on-surface-variant">5 Parcels • 290 Acres</p>
+</div>
+</div>
+<span class="text-[12px] font-bold text-on-surface-variant group-hover:translate-x-1 transition-transform">77% Fit</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<div class="flex items-center gap-x-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">PH</div>
+<div>
+<p class="text-sm font-bold text-on-surface">PulteGroup</p>
+<p class="text-[11px] text-on-surface-variant">2 Parcels • 98 Acres</p>
+</div>
+</div>
+<span class="text-[12px] font-bold text-on-surface-variant group-hover:translate-x-1 transition-transform">64% Fit</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-primary/5">
+<h4 class="text-[11px] font-bold text-outline uppercase tracking-wider mb-4">Economic Pulse</h4>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface p-3 rounded-lg">
+<p class="text-[10px] text-on-surface-variant font-medium uppercase mb-1">Growth Index</p>
+<p class="text-xl font-bold text-on-surface">+12.4%</p>
+</div>
+<div class="bg-surface p-3 rounded-lg">
+<p class="text-[10px] text-on-surface-variant font-medium uppercase mb-1">Permit Vol</p>
+<p class="text-xl font-bold text-on-surface">2.4k</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10">
+<button class="w-full text-center py-2 text-[12px] font-bold text-primary hover:bg-primary/5 rounded-lg transition-colors uppercase tracking-widest">
+                            Export Intelligence Report
+                        </button>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

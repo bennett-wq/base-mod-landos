@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Missions Control — BaseMod LandOS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for institutional feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f5f3f0; }
+        ::-webkit-scrollbar-thumb { background: #d4c4b4; border-radius: 10px; }
+        .copper-gradient-text {
+            background: linear-gradient(155deg, #7f5313, #9b6b2a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "surface-variant": "#e4e2df",
+                "background": "#fbf9f6",
+                "surface-container-highest": "#e4e2df",
+                "primary-container": "#9b6b2a",
+                "surface-bright": "#fbf9f6",
+                "surface": "#fbf9f6",
+                "on-background": "#1b1c1a",
+                "on-surface-variant": "#504539",
+                "surface-container-high": "#eae8e5",
+                "surface-container-lowest": "#ffffff",
+                "outline": "#827567",
+                "outline-variant": "#d4c4b4",
+                "on-primary": "#ffffff",
+                "primary": "#7f5313",
+                "surface-container-low": "#f5f3f0",
+                "on-surface": "#1b1c1a",
+              },
+              fontFamily: {
+                "headline": ["Inter"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- TopAppBar Shell -->
+<header class="w-full h-16 sticky top-0 z-40 bg-surface flex items-center justify-between px-6">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold tracking-tight text-on-surface uppercase">Missions Control</span>
+<div class="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-outline" placeholder="Search mission archives..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="settings">settings</span>
+</div>
+<div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-highest">
+<img class="object-cover w-full h-full" data-alt="Agent profile professional headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtt8idgAGvBpLWh4kaoqsO74CKLME2584LkAXH7Ol9-kRsUoauAOsfpQusZri3PJK_JFOIIzbo8JiB7lcvxEX5ihk8wr5y4m9lhXDnzTmzVqVd6SIjztl5m_yYg9M9GqPyDzU8imLkkYix1xWDOJTZilx0yLqvJmChMzgeLmgav5o2BDcAERmIHApr_YyGh_tH1VlO317At5CNhZW1Y_BgCfC2mwuFS2F9b28QpJGIwKK2BfOp0jX5l4JqC9hlXkKW_zAscIJzWgyx"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-50 bg-surface-container-lowest border-r-0 shadow-sm hidden md:flex flex-col py-8">
+<div class="px-6 mb-10">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-white text-xl" data-icon="hub">hub</span>
+</div>
+<div>
+<h1 class="text-xl font-black text-on-surface">Acquisition HQ</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Strategic Control</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 py-3 px-6 cursor-pointer border-l-[3px] border-transparent text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-6 cursor-pointer border-l-[3px] border-transparent text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span class="font-medium text-sm">Land Swarm</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-6 cursor-pointer border-l-[3px] border-primary text-primary font-semibold bg-surface-container-low" href="#">
+<span class="material-symbols-outlined" data-icon="location_searching">location_searching</span>
+<span class="font-medium text-sm">Agent Tracking</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-6 cursor-pointer border-l-[3px] border-transparent text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-medium text-sm">Mission Archives</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-6 cursor-pointer border-l-[3px] border-transparent text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+<span class="font-medium text-sm">Analytics</span>
+</a>
+</nav>
+<div class="px-6 mt-auto space-y-4">
+<button class="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform">
+                Wake the Swarm
+            </button>
+<div class="pt-6 border-t border-outline-variant/20">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-all text-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="contact_support">contact_support</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-all text-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="logout">logout</span>
+<span>Sign Out</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="md:pl-64 min-h-screen">
+<div class="max-w-[1400px] mx-auto p-6 lg:p-10">
+<!-- 1. Action Bar (Top) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer group">
+<div class="bg-surface-container-low w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white" data-icon="upload_file">upload_file</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Upload Data</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Import CSV/Excel property manifests for swarm analysis.</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer group">
+<div class="bg-surface-container-low w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white" data-icon="polyline">polyline</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Polygon Search</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Draw geographic bounds directly on the acquisition map.</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer group">
+<div class="bg-surface-container-low w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white" data-icon="person_add">person_add</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Deploy Agent</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Launch customized scanning agents for specific criteria.</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-transparent hover:border-outline-variant/30 transition-all cursor-pointer group">
+<div class="bg-surface-container-low w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white" data-icon="article">article</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Generate Report</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">Compile active mission data into a strategic intel brief.</p>
+</div>
+</section>
+<div class="grid grid-cols-12 gap-8">
+<!-- 2. Mission List (Left) -->
+<aside class="col-span-12 lg:col-span-4 space-y-4">
+<div class="flex items-center justify-between mb-2 px-2">
+<h2 class="text-xs font-black uppercase tracking-widest text-on-surface-variant">Mission Archives</h2>
+<span class="text-[10px] text-primary font-bold">VIEW ALL</span>
+</div>
+<div class="h-[750px] overflow-y-auto pr-2 space-y-4">
+<!-- Mission Card -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-outline-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<h4 class="font-bold text-on-surface">Washtenaw County Sweep</h4>
+<span class="bg-surface-container-high text-[10px] font-bold px-2 py-0.5 rounded uppercase">Completed</span>
+</div>
+<div class="grid grid-cols-2 gap-y-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="calendar_today">calendar_today</span>
+<span class="text-xs text-on-surface-variant">Oct 12, 2023</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="groups">groups</span>
+<span class="text-xs text-on-surface-variant">12 Agents</span>
+</div>
+<div class="col-span-2 bg-surface-container px-3 py-2 rounded-lg flex justify-between items-center mt-1">
+<div class="text-center">
+<p class="text-[10px] font-bold text-outline uppercase">Clusters</p>
+<p class="text-sm font-black text-on-surface">2,229</p>
+</div>
+<div class="h-6 w-px bg-outline-variant/30"></div>
+<div class="text-center">
+<p class="text-[10px] font-bold text-primary uppercase">Tier 1</p>
+<p class="text-sm font-black text-primary">23</p>
+</div>
+<div class="h-6 w-px bg-outline-variant/30"></div>
+<div class="text-center">
+<p class="text-[10px] font-bold text-outline uppercase">Duration</p>
+<p class="text-sm font-black text-on-surface">14m 22s</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Mission Card -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-outline-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<h4 class="font-bold text-on-surface">Scio Twp Phase 2</h4>
+<span class="bg-surface-container-high text-[10px] font-bold px-2 py-0.5 rounded uppercase">Completed</span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 text-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="calendar_today">calendar_today</span>
+<span class="text-on-surface-variant">Oct 10, 2023</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="groups">groups</span>
+<span class="text-on-surface-variant">8 Agents</span>
+</div>
+<div class="col-span-2 bg-surface-container px-3 py-2 rounded-lg flex justify-between items-center mt-1">
+<div class="text-center">
+<p class="text-[10px] font-bold text-outline uppercase">Clusters</p>
+<p class="text-sm font-black text-on-surface">841</p>
+</div>
+<div class="h-6 w-px bg-outline-variant/30"></div>
+<div class="text-center">
+<p class="text-[10px] font-bold text-primary uppercase">Tier 1</p>
+<p class="text-sm font-black text-primary">12</p>
+</div>
+<div class="h-6 w-px bg-outline-variant/30"></div>
+<div class="text-center">
+<p class="text-[10px] font-bold text-outline uppercase">Duration</p>
+<p class="text-sm font-black text-on-surface">08m 10s</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Repeat/Fill -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-outline-variant opacity-60 grayscale">
+<div class="flex justify-between items-start mb-3">
+<h4 class="font-bold text-on-surface">Dexter Overlay Scan</h4>
+<span class="bg-surface-container-high text-[10px] font-bold px-2 py-0.5 rounded uppercase">Completed</span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 text-xs">
+<div class="flex items-center gap-2"><span class="material-symbols-outlined text-xs" data-icon="calendar_today">calendar_today</span> Oct 08</div>
+<div class="flex items-center gap-2"><span class="material-symbols-outlined text-xs" data-icon="groups">groups</span> 5 Agents</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- 3. Active Mission (Main) -->
+<main class="col-span-12 lg:col-span-8 space-y-6">
+<section class="bg-surface-container-lowest rounded-[2rem] p-8 shadow-sm relative overflow-hidden">
+<!-- Decorative Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 border-b border-outline-variant/20 pb-8">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-primary text-[10px] font-black uppercase tracking-[0.2em]">Live Mission Deployment</span>
+</div>
+<h2 class="text-3xl font-black text-on-surface flex items-center gap-3">
+                                    🚀 Mission Active — Washtenaw County
+                                </h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="text-right">
+<p class="text-[10px] font-bold text-outline uppercase">Elapsed Time</p>
+<p class="text-xl font-black copper-gradient-text tracking-tight">1m 42s</p>
+</div>
+<button class="bg-on-surface text-white px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-primary transition-colors">
+                                    Abort Mission
+                                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<!-- Agent Deployment Status -->
+<div class="space-y-6">
+<h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="bolt">bolt</span> Agent Swarm Status
+                                </h3>
+<div class="space-y-5">
+<!-- Agent 1 -->
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-on-surface">Scout Agent — Scanning 847 parcels</span>
+<span class="text-primary font-black">68%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 68%"></div>
+</div>
+</div>
+<!-- Agent 2 -->
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-on-surface">Municipal Agent — Checking plat records</span>
+<span class="text-primary font-black">42%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 42%"></div>
+</div>
+</div>
+<!-- Agent 3 -->
+<div class="space-y-2 opacity-50">
+<div class="flex justify-between items-center text-xs">
+<span class="font-medium text-on-surface">Tax Assessor — Verification</span>
+<span class="text-outline italic">Waiting for Scout results</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-outline-variant" style="width: 0%"></div>
+</div>
+</div>
+<!-- Additional Agents Loop -->
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-on-surface">Geospatial Agent — Hydrology checks</span>
+<span class="text-primary font-black">91%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 91%"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-on-surface">Zoning Agent — Industrial overlap</span>
+<span class="text-primary font-black">15%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 15%"></div>
+</div>
+</div>
+<div class="space-y-2 opacity-50">
+<div class="flex justify-between items-center text-xs text-on-surface italic">
+<span>Tier 1 Validation — Deep Search</span>
+<span class="text-outline">Queued</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full"></div>
+</div>
+<div class="space-y-2 opacity-50">
+<div class="flex justify-between items-center text-xs text-on-surface italic">
+<span>Ownership Agent — Chain of title</span>
+<span class="text-outline">Queued</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Results Stream -->
+<div class="space-y-6">
+<h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="troubleshoot">troubleshoot</span> Live Discovery
+                                </h3>
+<div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20">
+<div class="flex justify-center mb-6">
+<div class="relative flex items-center justify-center">
+<svg class="w-32 h-32 transform -rotate-90">
+<circle class="text-surface-container-high" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-dasharray="364.4" stroke-dashoffset="36.4" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-black text-on-surface">92</span>
+<span class="text-[8px] font-bold text-outline uppercase">Match Rank</span>
+</div>
+</div>
+</div>
+<div class="text-center space-y-2 mb-6">
+<p class="text-[10px] font-bold text-primary uppercase tracking-widest">High-Value Target Found</p>
+<h4 class="text-xl font-bold text-on-surface leading-tight">12.4 AC — Dexter-Ann Arbor Rd</h4>
+<p class="text-sm text-on-surface-variant">Owner: Greenfield Acquisitions LLC</p>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+<p class="text-[8px] font-bold text-outline uppercase mb-1">Tax Status</p>
+<p class="text-xs font-bold text-green-700">Delinquent</p>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+<p class="text-[8px] font-bold text-outline uppercase mb-1">Zoning</p>
+<p class="text-xs font-bold text-on-surface">Agri-Res</p>
+</div>
+</div>
+<button class="w-full bg-surface-container-lowest text-primary border border-primary/20 py-3 rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95">
+                                        View Full Assessment
+                                    </button>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="text-center p-3 bg-surface-container-low rounded-2xl">
+<p class="text-[10px] font-bold text-outline uppercase">Listings</p>
+<p class="text-lg font-black text-on-surface">95</p>
+</div>
+<div class="text-center p-3 bg-surface-container-low rounded-2xl">
+<p class="text-[10px] font-bold text-outline uppercase">Vacant</p>
+<p class="text-lg font-black text-on-surface">10,266</p>
+</div>
+<div class="text-center p-3 bg-surface-container-low rounded-2xl">
+<p class="text-[10px] font-bold text-outline uppercase">Tier 1</p>
+<p class="text-lg font-black text-primary">23</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Agent Terminal (Bottom) -->
+<div class="mt-10 pt-8 border-t border-outline-variant/20">
+<h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span> Swarm Thought Process — Live Reasoning
+                            </h3>
+<div class="bg-on-surface text-surface-container-low p-6 rounded-2xl font-mono text-[11px] leading-relaxed h-48 overflow-y-auto shadow-inner">
+<div class="mb-2"><span class="text-primary-container">[00:01:22]</span> SCOUT_ALPHA: Identifying property clusters with &gt;10 acres and recent zoning revisions.</div>
+<div class="mb-2"><span class="text-primary-container">[00:01:28]</span> GEO_EPSILON: Hydrology maps updated. 43 parcels removed due to wetland overlap &gt; 40%.</div>
+<div class="mb-2"><span class="text-primary-container">[00:01:34]</span> MUNI_DELTA: Fetching plat records for Sector 4... 12 records retrieved. Parsing legal descriptions.</div>
+<div class="mb-2"><span class="text-primary-container">[00:01:39]</span> CORE_OS: Cross-referencing Dexter-Ann Arbor Rd target with active listing data. Match found. Listing price $1.2M.</div>
+<div class="mb-2"><span class="text-primary-container">[00:01:41]</span> SCOUT_BETA: Evaluating ingress/egress for cluster 2,229. Road frontage confirmed.</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-3 bg-primary-container animate-pulse"></span>
+<span class="text-outline italic">Swarm is thinking...</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+</main>
+</body></html>
