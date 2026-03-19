@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    @apply bg-surface text-on-surface antialiased;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .copper-gradient {
+    background: linear-gradient(155deg, #7f5313 0%, #9b6b2a 100%);
+  }
+
+  .ghost-border {
+    outline: 1px solid rgba(212, 196, 180, 0.2);
+  }
+}
+
+/* Agent pulse animation */
+@keyframes agent-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(127, 83, 19, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(127, 83, 19, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(127, 83, 19, 0);
+  }
+}
+
+.agent-pulse {
+  animation: agent-pulse 2s ease-in-out infinite;
+}
+
+/* Scanline animation */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(127, 83, 19, 0.03) 50%,
+    transparent 100%
+  );
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d4c4b4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #827567;
+}
