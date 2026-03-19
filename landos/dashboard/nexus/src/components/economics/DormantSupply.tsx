@@ -1,17 +1,10 @@
 import { ArrowRight } from 'lucide-react'
-
-const OWNERS = [
-  { name: 'Toll Brothers', lots: 146 },
-  { name: 'M/I Homes', lots: 99 },
-  { name: 'PulteGroup', lots: 82 },
-  { name: 'Lennar Corp', lots: 74 },
-  { name: 'KB Home', lots: 61 },
-  { name: 'NVR Inc', lots: 54 },
-  { name: 'Taylor Morrison', lots: 38 },
-  { name: 'Century', lots: 29 },
-]
+import { useDormantOwners } from '@/hooks/useDormantSupply'
+import { Skeleton } from '@/components/shared/Skeleton'
 
 export function DormantSupply() {
+  const { data: owners, isLoading } = useDormantOwners()
+
   return (
     <div className="relative col-span-12 overflow-hidden rounded-xl bg-white p-8 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
       {/* Header */}
@@ -42,20 +35,24 @@ export function DormantSupply() {
 
       {/* Owner cards grid */}
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-6">
-        {OWNERS.map((owner) => (
-          <div
-            key={owner.name}
-            className="rounded-lg border border-outline-variant/10 bg-surface p-4"
-          >
-            <h5 className="mb-1 text-[10px] font-bold uppercase text-on-surface-variant">
-              {owner.name}
-            </h5>
-            <p className="text-xl font-bold text-primary">
-              {owner.lots}{' '}
-              <span className="text-[10px] font-medium text-on-surface-variant/40">units</span>
-            </p>
-          </div>
-        ))}
+        {isLoading
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} height="80px" className="rounded-lg" />
+            ))
+          : owners?.map((owner) => (
+              <div
+                key={owner.name}
+                className="rounded-lg border border-outline-variant/10 bg-surface p-4"
+              >
+                <h5 className="mb-1 text-[10px] font-bold uppercase text-on-surface-variant">
+                  {owner.name}
+                </h5>
+                <p className="text-xl font-bold text-primary">
+                  {owner.lots}{' '}
+                  <span className="text-[10px] font-medium text-on-surface-variant/40">units</span>
+                </p>
+              </div>
+            ))}
       </div>
     </div>
   )

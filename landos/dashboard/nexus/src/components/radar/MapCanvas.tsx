@@ -1,16 +1,7 @@
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-
-type Signal = 'HIGHEST' | 'HIGH' | 'MEDIUM' | 'LOW'
-
-interface ClusterMarker {
-  owner: string
-  township: string
-  position: [number, number]
-  signal: Signal
-  lots: number
-  score: number
-}
+import { useClusters } from '@/hooks/useClusters'
+import type { Signal } from '@/data/mockData'
 
 const SIGNAL_STYLE: Record<Signal, { radius: number; fillColor: string; fillOpacity: number }> = {
   HIGHEST: { radius: 12, fillColor: '#7f5313', fillOpacity: 0.8 },
@@ -19,15 +10,9 @@ const SIGNAL_STYLE: Record<Signal, { radius: number; fillColor: string; fillOpac
   LOW:     { radius: 6,  fillColor: '#D1D5DB', fillOpacity: 0.4 },
 }
 
-const CLUSTERS: ClusterMarker[] = [
-  { owner: 'Horseshoe Lake Corp',    township: 'Saline Twp',   position: [42.165, -83.83],  signal: 'HIGHEST', lots: 88,  score: 91 },
-  { owner: 'Julian Francis Trust',    township: 'Lima Twp',     position: [42.238, -83.612], signal: 'HIGHEST', lots: 12,  score: 84 },
-  { owner: 'Toll Brothers Holdings',  township: 'Augusta Twp',  position: [42.338, -83.862], signal: 'HIGH',    lots: 146, score: 67 },
-  { owner: 'M/I Homes LLC',           township: 'Ann Arbor Twp',position: [42.248, -83.729], signal: 'MEDIUM',  lots: 99,  score: 52 },
-  { owner: 'PulteGroup',              township: 'Ypsilanti Twp',position: [42.189, -83.777], signal: 'LOW',     lots: 82,  score: 34 },
-]
-
 export function MapCanvas() {
+  const { data: clusters } = useClusters()
+
   return (
     <MapContainer
       center={[42.2808, -83.7430]}
@@ -39,7 +24,7 @@ export function MapCanvas() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {CLUSTERS.map((c) => {
+      {clusters?.map((c) => {
         const style = SIGNAL_STYLE[c.signal]
         return (
           <CircleMarker

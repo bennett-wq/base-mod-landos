@@ -1,42 +1,8 @@
-interface MissionData {
-  title: string
-  date: string
-  agents: number
-  clusters: number
-  tier1: number
-  duration: string
-  dimmed?: boolean
-}
+import { useMissions } from '@/hooks/useMissions'
+import { Skeleton } from '@/components/shared/Skeleton'
+import type { Mission } from '@/data/mockData'
 
-const missions: MissionData[] = [
-  {
-    title: 'Washtenaw County Sweep',
-    date: 'Oct 12, 2023',
-    agents: 12,
-    clusters: 2229,
-    tier1: 23,
-    duration: '14m 22s',
-  },
-  {
-    title: 'Scio Twp Phase 2',
-    date: 'Oct 10, 2023',
-    agents: 8,
-    clusters: 841,
-    tier1: 12,
-    duration: '08m 10s',
-  },
-  {
-    title: 'Dexter Overlay Scan',
-    date: 'Oct 08, 2023',
-    agents: 5,
-    clusters: 312,
-    tier1: 4,
-    duration: '03m 45s',
-    dimmed: true,
-  },
-]
-
-function MissionCard({ mission }: { mission: MissionData }) {
+function MissionCard({ mission }: { mission: Mission }) {
   return (
     <div
       className={`cursor-pointer rounded-xl border-l-4 border-outline-variant bg-white p-5 shadow-ambient transition-colors hover:bg-surface-container-low ${
@@ -90,6 +56,8 @@ function MissionCard({ mission }: { mission: MissionData }) {
 }
 
 export function MissionList() {
+  const { data: missions, isLoading } = useMissions()
+
   return (
     <aside className="col-span-12 space-y-4 lg:col-span-4">
       <div className="mb-2 flex items-center justify-between px-2">
@@ -99,9 +67,13 @@ export function MissionList() {
         <span className="cursor-pointer text-[10px] font-bold text-primary">VIEW ALL</span>
       </div>
       <div className="space-y-4 overflow-y-auto pr-2" style={{ maxHeight: '750px' }}>
-        {missions.map((mission) => (
-          <MissionCard key={mission.title} mission={mission} />
-        ))}
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} height="160px" className="rounded-xl" />
+            ))
+          : missions?.map((mission) => (
+              <MissionCard key={mission.title} mission={mission} />
+            ))}
       </div>
     </aside>
   )

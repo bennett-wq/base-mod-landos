@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { KanbanBoard, TOTAL_DEALS } from '../components/pipeline/KanbanBoard'
+import { KanbanBoard, useTotalDeals } from '../components/pipeline/KanbanBoard'
 
 export default function PipelinePage() {
   const [showTooltip, setShowTooltip] = useState(false)
+  const totalDeals = useTotalDeals()
 
   return (
     <>
@@ -16,7 +17,7 @@ export default function PipelinePage() {
               Pipeline — Deal Tracker
             </h2>
             <p className="text-on-surface-variant mt-1 text-sm">
-              {TOTAL_DEALS} active deals across all stages
+              {totalDeals} active deals across all stages
             </p>
           </div>
           <button className="copper-gradient text-on-primary text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity">
