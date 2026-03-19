@@ -19,6 +19,7 @@ from src.triggers.rules.bbo_rules import (
 )
 from src.triggers.rules.cluster_rules import RC
 from src.triggers.rules.listing_rules import RA, RB, RE
+from src.triggers.rules.municipal_rules import RV, RW, RX
 from src.triggers.rules.parcel_rules import RF, RG, RH
 from src.triggers.rules.phase2_placeholders import RD
 
@@ -36,6 +37,8 @@ ALL_RULES: list[TriggerRule] = [
     RO, RP, RQ, RR,
     # Step 4.5 — opportunity routing
     RS, RT, RU1, RU2,
+    # Step 7 — municipal scan rules
+    RV, RW, RX,
 ]
 
 # ── Planning catalog (not active) ─────────────────────────────────────
@@ -44,6 +47,7 @@ ALL_RULES: list[TriggerRule] = [
 # relevant step (6–8) once the condition is properly wired.
 # Note: PLANNED__listing_expired__cluster_reassessment was activated as RE in Step 4.
 # Note: PLANNED__parcel_linked_to_listing__rescore was activated as RF in Step 5.
+# Note: PLANNED__municipality_rule_now_supports_split__rescore_parcels activated as RX in Step 7.
 
 PLANNED_RULES: list[TriggerRule] = [
     TriggerRule(
@@ -72,23 +76,6 @@ PLANNED_RULES: list[TriggerRule] = [
         cooldown_key_builder=None,
         description="PLANNED — wire cluster scan required wake in Step 6 (cluster detection).",
     ),
-    TriggerRule(
-        rule_id="PLANNED__municipality_rule_now_supports_split__rescore_parcels",
-        event_type="municipality_rule_now_supports_split",
-        wake_target="supply_intelligence_team",
-        wake_type=WakeType.RESCORE,
-        phase=PhaseGate.PHASE_1,
-        priority=4,
-        routing_class=RoutingClass.IMMEDIATE,
-        condition=lambda e, ctx: False,
-        cooldown_seconds=None,
-        cooldown_key_builder=None,
-        max_fan_out=500,
-        description=(
-            "PLANNED — wire municipality rule-change → jurisdiction-wide parcel rescore in Step 7. "
-            "Max fan-out: 500 parcels/batch per trigger matrix."
-        ),
-    ),
 ]
 
 # ── Startup safety: reject duplicate rule_ids ─────────────────────────
@@ -104,4 +91,5 @@ __all__ = [
     "RI", "RJ", "RK", "RL", "RM", "RN1", "RN2",
     "RO", "RP", "RQ", "RR",
     "RS", "RT", "RU1", "RU2",
+    "RV", "RW", "RX",
 ]
