@@ -36,6 +36,7 @@ landos/data/
 # Node / Dashboard build artifacts
 node_modules/
 dist/
+.vite/
 
 # Planning & strategy docs (live in Obsidian vault)
 00_START_HERE.md
