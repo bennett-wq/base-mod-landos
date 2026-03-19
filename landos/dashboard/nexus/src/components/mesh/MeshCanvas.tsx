@@ -88,6 +88,7 @@ export function MeshCanvas({ onNodeClick }: MeshCanvasProps) {
               strokeWidth="1"
               strokeDasharray="4"
               opacity="0.3"
+              className="mesh-line-active"
             />
           )
         })}

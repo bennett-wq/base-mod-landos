@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { DealCard } from './DealCard'
 import { EmptyColumn } from './EmptyColumn'
 import type { Deal } from './DealCard'
@@ -33,8 +34,15 @@ export function KanbanColumn({ name, deals }: KanbanColumnProps) {
       {isClosedEmpty ? (
         <EmptyColumn />
       ) : (
-        deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} stage={name} />
+        deals.map((deal, i) => (
+          <motion.div
+            key={deal.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08, duration: 0.3 }}
+          >
+            <DealCard deal={deal} stage={name} />
+          </motion.div>
         ))
       )}
     </div>

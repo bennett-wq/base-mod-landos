@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { ExternalLink } from 'lucide-react'
 import { useSignals } from '@/hooks/useSignals'
 import { useClusterSummaries } from '@/hooks/useClusters'
@@ -41,9 +42,12 @@ export function IntelFeed() {
                 <Skeleton key={i} height="120px" className="rounded-xl" />
               ))
             : signals?.map((signal, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.3 }}
+                  className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm transition-shadow duration-200 hover:shadow-md"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">
@@ -68,7 +72,7 @@ export function IntelFeed() {
                     </div>
                     <ExternalLink size={12} className="text-on-surface-variant/40" />
                   </div>
-                </div>
+                </motion.div>
               )))}
 
         {activeTab === 'RULES' &&
