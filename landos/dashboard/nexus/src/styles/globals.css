@@ -88,6 +88,16 @@
   background-color: #827567;
 }
 
+/* Terminal blink cursor */
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.terminal-blink {
+  animation: terminal-blink 1s step-end infinite;
+}
+
 /* Hide scrollbar utility */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
