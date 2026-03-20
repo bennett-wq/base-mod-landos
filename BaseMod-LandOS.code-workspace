@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "name": "LandOS Code",
+      "path": "."
+    },
+    {
+      "name": "Obsidian Vault",
+      "path": "../../../Documents/BaseMod LandOS"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.DS_Store": true
+    },
+    "search.exclude": {
+      "**/.obsidian/workspace*.json": true
+    }
+  }
+}
