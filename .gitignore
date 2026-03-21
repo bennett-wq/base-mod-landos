@@ -15,9 +15,13 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Local environment files
+# Local environment files and secrets
 .env
 .env.*
+*.secret
+*.key
+credentials.*
+!credentials.example.*
 
 # VS Code local state
 .vscode/settings.json
