@@ -133,18 +133,18 @@ def normalize(record: dict, now: datetime | None = None) -> Listing:
 # ── BBO field mapper ──────────────────────────────────────────────────────
 
 # Fields that need integer coercion
-_BBO_INT_FIELDS = {"cdom", "number_of_lots"}
+_BBO_INT_FIELDS = {"cdom", "number_of_lots", "documents_count", "photos_count"}
 # Fields that need float coercion
 _BBO_FLOAT_FIELDS = {"previous_list_price", "frontage_length"}
 # Fields that need date coercion
 _BBO_DATE_FIELDS = {
     "back_on_market_date", "off_market_date", "withdrawal_date",
-    "cancellation_date", "purchase_contract_date",
+    "cancellation_date", "purchase_contract_date", "contract_status_change_date",
 }
 # Fields that need datetime coercion (ISO 8601 with time component)
 _BBO_DATETIME_FIELDS = {
     "original_entry_timestamp", "status_change_timestamp",
-    "price_change_timestamp", "major_change_timestamp",
+    "price_change_timestamp", "major_change_timestamp", "pending_timestamp",
 }
 
 

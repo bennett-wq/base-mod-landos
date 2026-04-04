@@ -78,7 +78,7 @@ export function EmailTemplateEditor() {
 
       {/* Right — Email Editor */}
       <div className="flex flex-1 flex-col overflow-y-auto p-6">
-        <div className="rounded-xl bg-white p-6 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
+        <div className="rounded-xl bg-white p-6 shadow-ambient">
           {/* Recipient header */}
           <div className="mb-6 flex items-center gap-4 border-b border-surface-container pb-5">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container">

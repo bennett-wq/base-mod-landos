@@ -16,6 +16,7 @@ from src.triggers.enums import PhaseGate, WakeType
 from src.triggers.rule import TriggerRule
 from src.triggers.rules.bbo_rules import (
     RI, RJ, RK, RL, RM, RN1, RN2, RO, RP, RQ, RR, RS, RT, RU1, RU2,
+    RY, RZ1, RZ2, RZ3,
 )
 from src.triggers.rules.cluster_rules import RC
 from src.triggers.rules.listing_rules import RA, RB, RE
@@ -38,6 +39,8 @@ ALL_RULES: list[TriggerRule] = [
     RO, RP, RQ, RR,
     # Step 4.5 — opportunity routing
     RS, RT, RU1, RU2,
+    # Seller-intent + expansion rules
+    RY, RZ1, RZ2, RZ3,
     # Step 7 — municipal scan rules
     RV, RW, RX,
     # Step 8 — stallout detection rules
@@ -94,6 +97,7 @@ __all__ = [
     "RI", "RJ", "RK", "RL", "RM", "RN1", "RN2",
     "RO", "RP", "RQ", "RR",
     "RS", "RT", "RU1", "RU2",
+    "RY", "RZ1", "RZ2", "RZ3",
     "RV", "RW", "RX",
     "STA", "STB", "STC", "STD", "STE", "STF", "STG",
 ]

@@ -31,7 +31,7 @@ const ROWS: Row[] = [
     profit: '$99k',
     margin: '24.8%',
     tier: 'B',
-    tierStyle: 'bg-stone-300 text-on-surface',
+    tierStyle: 'bg-surface-container-high text-on-surface',
     impact: '+$611k',
   },
   {
@@ -39,14 +39,14 @@ const ROWS: Row[] = [
     profit: '$64k',
     margin: '16.5%',
     tier: 'C',
-    tierStyle: 'bg-stone-200 text-on-surface-variant',
+    tierStyle: 'bg-surface-container text-on-surface-variant',
     impact: '+$394k',
   },
 ]
 
 export function DealSensitivity() {
   return (
-    <div className="col-span-12 lg:col-span-7 rounded-xl bg-white p-8 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
+    <div className="col-span-12 lg:col-span-7 rounded-xl bg-white p-8 shadow-ambient">
       <div className="mb-6">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
           Deal Sensitivity

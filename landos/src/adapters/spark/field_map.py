@@ -83,6 +83,34 @@ BBO_TO_LISTING: dict[str, str] = {
     # Family 6 — Market Velocity
     "PurchaseContractDate":  "purchase_contract_date",
 
+    # Agent-only remarks (separate from PrivateRemarks)
+    "Remarks_sp_Misc_co_Agent_sp_Only_sp_Remarks2": "agent_only_remarks",
+
+    # Additional parcels
+    "AdditionalParcelsYN": "additional_parcels_yn",
+    "AdditionalParcelsDescription": "additional_parcels_description",
+
+    # Development status
+    "DevelopmentStatus": "development_status",
+
+    # Contract/pending dates
+    "ContractStatusChangeDate": "contract_status_change_date",
+    "PendingTimestamp": "pending_timestamp",
+
+    # Concessions
+    "Concessions": "concessions",
+    "ConcessionsComments": "concessions_comments",
+
+    # Township (separate from municipality)
+    "Township": "township_name",
+
+    # Legal description (Spark uses different field names)
+    "Remarks_sp_Misc_co_Legal3": "legal_remarks",
+
+    # Document/media counts
+    "DocumentsCount":        "documents_count",
+    "PhotosCount":           "photos_count",
+
     # Land detail
     "Zoning":                "zoning",
     "ZoningDescription":     "zoning_description",

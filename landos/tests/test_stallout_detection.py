@@ -947,7 +947,7 @@ class TestScanIntegration:
         )
 
         assert len(results) == 1
-        assessment, emitted_events, opportunity = results[0]
+        assessment, emitted_events, routing_results, opportunity = results[0]
 
         assert assessment.is_stalled is True
         assert len(emitted_events) > 0
@@ -968,7 +968,7 @@ class TestScanIntegration:
         )
 
         assert len(results) == 1
-        assessment, emitted_events, opportunity = results[0]
+        assessment, emitted_events, routing_results, opportunity = results[0]
 
         assert assessment.is_stalled is False
         assert opportunity is None
@@ -994,10 +994,10 @@ class TestScanIntegration:
         assert len(results) == 2
         # First result (Willow Creek) should be stalled
         assert results[0][0].is_stalled is True
-        assert results[0][2] is not None  # opportunity
+        assert results[0][3] is not None  # opportunity
         # Second result (Oak Ridge) should not be stalled
         assert results[1][0].is_stalled is False
-        assert results[1][2] is None  # no opportunity
+        assert results[1][3] is None  # no opportunity
 
     def test_scan_maple_estates_partial_buildout(self):
         subdivision, events, parcels = _maple_estates()
@@ -1013,7 +1013,7 @@ class TestScanIntegration:
         )
 
         assert len(results) == 1
-        assessment, emitted_events, opportunity = results[0]
+        assessment, emitted_events, routing_results, opportunity = results[0]
 
         # Maple Estates should emit partial_buildout_stagnation_detected
         stagnation = [
@@ -1104,3 +1104,158 @@ class TestEdgeCases:
         assert len(emitted) > 1
         run_ids = {ev.emitted_by_agent_run_id for ev in emitted}
         assert len(run_ids) == 1, f"Expected 1 agent_run_id, got {len(run_ids)}"
+
+
+# ── Step 8 hardening tests ──────────────────────────────────────────────────
+
+
+class TestHardeningFixes:
+    """Tests added during Step 8 hardening pass."""
+
+    def test_bond_progress_mixed_date_types(self):
+        """Fix 1: Mixed date/datetime in MunicipalEvents does not raise TypeError."""
+        sub_id = uuid4()
+        subdivision = Subdivision(
+            subdivision_id=sub_id,
+            name="Mixed Date Sub",
+            municipality_id=_MUNI_ID,
+            county="Washtenaw",
+            state="MI",
+            plat_date=date(2018, 1, 1),
+            total_lots=20,
+            vacant_lots=14,
+            improved_lots=6,
+        )
+        # Bond event with bare date, permit event with datetime — mixed types
+        events = [
+            MunicipalEvent(
+                municipality_id=_MUNI_ID,
+                event_type=MunicipalEventType.BOND_POSTED,
+                occurred_at=date(2019, 6, 1),  # bare date
+                source_system="test",
+                subdivision_id=sub_id,
+                details={"bond_amount": 100000},
+            ),
+            MunicipalEvent(
+                municipality_id=_MUNI_ID,
+                event_type=MunicipalEventType.PERMIT_PULLED,
+                occurred_at=datetime(2019, 3, 1, tzinfo=timezone.utc),  # datetime
+                source_system="test",
+                subdivision_id=sub_id,
+            ),
+        ]
+        parcels = [_make_parcel(sub_id) for _ in range(14)]
+
+        assessment = detect_stall(subdivision, events, parcels, now=_NOW)
+        # Should not raise TypeError
+        emitted = build_stallout_events(assessment, subdivision, events, now=_NOW)
+        # Verify no crash and events are valid
+        for ev in emitted:
+            assert ev.event_class == EventClass.DERIVED
+
+    def test_routing_results_returned_in_scan(self):
+        """Fix 3: ScanResult includes populated RoutingResult list."""
+        subdivision, events, parcels = _willow_creek()
+        store = InMemoryMunicipalEventStore()
+        for ev in events:
+            store.save(ev)
+
+        engine, context = _engine_and_context()
+        parcels_map = {subdivision.subdivision_id: parcels}
+
+        results = scan_subdivisions_for_stalls(
+            [subdivision], store, parcels_map, engine, context, now=_NOW
+        )
+
+        assert len(results) == 1
+        assessment, emitted_events, routing_results, opportunity = results[0]
+        assert assessment.is_stalled is True
+        assert len(emitted_events) > 0
+        assert len(routing_results) == len(emitted_events)
+        # Each routing result should have fired_rules
+        for rr in routing_results:
+            assert rr.event_id is not None
+            assert rr.evaluated_at is not None
+
+    def test_empty_municipal_events_no_crash(self):
+        """Fix 5: Empty events list doesn't crash build_stallout_events."""
+        sub = Subdivision(
+            name="No Events Sub",
+            municipality_id=_MUNI_ID,
+            county="Washtenaw",
+            state="MI",
+            plat_date=date(2015, 1, 1),
+            total_lots=10,
+            vacant_lots=8,
+        )
+        assessment = detect_stall(sub, [], [], now=_NOW)
+        assert assessment.is_stalled is True
+
+        # build_stallout_events should return empty list (no provenance)
+        emitted = build_stallout_events(assessment, sub, [], now=_NOW)
+        assert emitted == []
+
+    def test_unscoped_events_not_applied_to_subdivisions(self):
+        """Fix 6: Events with subdivision_id=None excluded from stall assessment."""
+        sub1_id = uuid4()
+        sub2_id = uuid4()
+        muni_id = uuid4()
+
+        sub1 = Subdivision(
+            subdivision_id=sub1_id,
+            name="Sub A",
+            municipality_id=muni_id,
+            county="Washtenaw",
+            state="MI",
+            plat_date=date(2018, 1, 1),
+            total_lots=20,
+            vacant_lots=16,
+        )
+        sub2 = Subdivision(
+            subdivision_id=sub2_id,
+            name="Sub B",
+            municipality_id=muni_id,
+            county="Washtenaw",
+            state="MI",
+            plat_date=date(2018, 1, 1),
+            total_lots=20,
+            vacant_lots=16,
+        )
+
+        # Unscoped event (subdivision_id=None) — should NOT be applied to either
+        unscoped_event = _make_municipal_event(
+            MunicipalEventType.ROADS_INSTALLED,
+            date(2019, 5, 1),
+            municipality_id=muni_id,
+            subdivision_id=None,
+        )
+        # Scoped event for sub1 only
+        scoped_event = _make_municipal_event(
+            MunicipalEventType.BOND_POSTED,
+            date(2018, 8, 1),
+            municipality_id=muni_id,
+            subdivision_id=sub1_id,
+        )
+
+        store = InMemoryMunicipalEventStore()
+        store.save(unscoped_event)
+        store.save(scoped_event)
+
+        engine, context = _engine_and_context()
+        parcels_map = {
+            sub1_id: [_make_parcel(sub1_id, municipality_id=muni_id) for _ in range(16)],
+            sub2_id: [_make_parcel(sub2_id, municipality_id=muni_id) for _ in range(16)],
+        }
+
+        results = scan_subdivisions_for_stalls(
+            [sub1, sub2], store, parcels_map, engine, context, now=_NOW
+        )
+
+        # Sub1 should see the bond_posted event (scoped to it)
+        assessment1 = results[0][0]
+        assert "bonds_posted" in assessment1.stall_signals
+
+        # Sub2 should NOT see the roads_installed event (unscoped) or bond_posted (scoped to sub1)
+        assessment2 = results[1][0]
+        assert "roads_installed" not in assessment2.stall_signals
+        assert "bonds_posted" not in assessment2.stall_signals

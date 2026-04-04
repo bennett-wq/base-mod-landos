@@ -4,9 +4,13 @@ export default {
   theme: {
     borderRadius: {
       none: '0',
+      sm: '0.125rem',
       DEFAULT: '0.25rem',
+      md: '0.375rem',
       lg: '0.5rem',
       xl: '0.75rem',
+      '2xl': '1rem',
+      '3xl': '1.5rem',
       full: '9999px',
     },
     extend: {
@@ -23,6 +27,7 @@ export default {
         'surface-container': '#efeeeb',
         'surface-container-high': '#eae8e5',
         'surface-container-highest': '#e4e2df',
+        'surface-bright': '#fefcf9',
         'on-surface': '#1b1c1a',
         'on-surface-variant': '#504539',
         'outline': '#827567',
@@ -30,16 +35,34 @@ export default {
         'secondary': '#555f6d',
         'tertiary': '#006948',
         'tertiary-container': '#00855d',
+        'success': '#059669',
         'error': '#ba1a1a',
         'error-container': '#ffdad6',
+        'warning': '#D97706',
         'inverse-surface': '#30312f',
       },
       fontFamily: {
-        sans: ['"Inter"', 'sans-serif'],
+        sans: ['"Inter"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"SF Mono"', '"Fira Code"', 'monospace'],
+      },
+      fontSize: {
+        'display-lg': ['3.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'display-md': ['2.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+        'headline-sm': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.01em', fontWeight: '700' }],
+        'label-md': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.05em', fontWeight: '700' }],
       },
       boxShadow: {
         ambient: '0 12px 32px rgba(27, 28, 26, 0.04)',
         'ambient-lg': '0 20px 48px rgba(27, 28, 26, 0.06)',
+        'ambient-sm': '0 4px 16px rgba(27, 28, 26, 0.03)',
+        'copper-glow': '0 0 20px rgba(127, 83, 19, 0.15)',
+        'inner-soft': 'inset 0 1px 2px rgba(27, 28, 26, 0.04)',
+      },
+      transitionDuration: {
+        DEFAULT: '200ms',
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.35s ease-out both',
       },
     },
   },

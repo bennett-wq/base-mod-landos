@@ -6,7 +6,7 @@ export function DormantSupply() {
   const { data: owners, isLoading } = useDormantOwners()
 
   return (
-    <div className="relative col-span-12 overflow-hidden rounded-xl bg-white p-8 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
+    <div className="relative col-span-12 overflow-hidden rounded-xl bg-white p-8 shadow-ambient">
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

@@ -11,7 +11,7 @@ const DOT_COLORS = ['bg-[#B07D3B]', 'bg-[#C4954F]', 'bg-[#D4AD6A]', 'bg-[#9CA3AF
 
 export function CostWaterfallChart() {
   return (
-    <div className="col-span-12 lg:col-span-8 rounded-xl bg-white p-8 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
+    <div className="col-span-12 lg:col-span-8 rounded-xl bg-white p-8 shadow-ambient">
       {/* Header */}
       <div className="mb-10 flex items-center justify-between">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">

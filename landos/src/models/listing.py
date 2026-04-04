@@ -98,3 +98,29 @@ class Listing(BaseModel):
 
     # BBO — Market Velocity (Signal Family 6)
     purchase_contract_date: Optional[date] = None
+
+    # BBO — Agent-only remarks (separate from PrivateRemarks)
+    agent_only_remarks: Optional[str] = None
+    legal_remarks: Optional[str] = None
+
+    # BBO — Additional parcels
+    additional_parcels_yn: Optional[str] = None
+    additional_parcels_description: Optional[str] = None
+
+    # BBO — Development status
+    development_status: Optional[str] = None
+
+    # BBO — Contract / Pending timestamps
+    contract_status_change_date: Optional[date] = None
+    pending_timestamp: Optional[datetime] = None
+
+    # BBO — Concessions
+    concessions: Optional[str] = None
+    concessions_comments: Optional[str] = None
+
+    # BBO — Township
+    township_name: Optional[str] = None
+
+    # BBO — Document / media counts
+    documents_count: Optional[int] = None
+    photos_count: Optional[int] = None

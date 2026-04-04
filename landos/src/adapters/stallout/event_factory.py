@@ -119,6 +119,11 @@ def build_stallout_events(
     agent_run_id = uuid4()
     all_event_ids = [me.municipal_event_id for me in municipal_events]
 
+    # DERIVED events require non-empty derived_from_event_ids per envelope validator.
+    # If no municipal events exist, we cannot emit any events with valid provenance.
+    if not all_event_ids:
+        return events
+
     # ── 1. historical_subdivision_stall_detected ──────────────────────────
     # Condition: is_stalled = True
     if assessment.is_stalled:
@@ -233,7 +238,7 @@ def build_stallout_events(
         if me.event_type in _APPROVAL_EVENT_TYPES
     ]
     if approval_events and not permit_events:
-        latest_approval = max(approval_events, key=lambda me: me.occurred_at)
+        latest_approval = max(approval_events, key=lambda me: _event_date(me))
         approval_date = _event_date(latest_approval)
         years_since_approval = _years_between(approval_date, now)
         if years_since_approval >= 3.0:
@@ -245,6 +250,7 @@ def build_stallout_events(
                 derived_from_event_ids=approval_event_ids,
                 source_confidence=assessment.stall_confidence,
                 payload={
+                    "subdivision_id": str(subdivision.subdivision_id),
                     "approval_type": latest_approval.event_type.value,
                     "approval_date": approval_date.isoformat(),
                     "years_since_approval": years_since_approval,
@@ -261,13 +267,13 @@ def build_stallout_events(
         if me.event_type == MunicipalEventType.BOND_POSTED
     ]
     if bond_events:
-        latest_bond = max(bond_events, key=lambda me: me.occurred_at)
+        latest_bond = max(bond_events, key=lambda me: _event_date(me))
         bond_date = _event_date(latest_bond)
         years_since_bond = _years_between(bond_date, now)
         # "No progress" = no permit_pulled events after bond posting
         permits_after_bond = [
             me for me in permit_events
-            if me.occurred_at > latest_bond.occurred_at
+            if _event_date(me) > _event_date(latest_bond)
         ]
         if years_since_bond >= 3.0 and not permits_after_bond:
             bond_event_ids = [me.municipal_event_id for me in bond_events]
@@ -279,6 +285,7 @@ def build_stallout_events(
                 derived_from_event_ids=bond_event_ids,
                 source_confidence=assessment.stall_confidence,
                 payload={
+                    "subdivision_id": str(subdivision.subdivision_id),
                     "bond_amount": bond_details.get("bond_amount"),
                     "bond_date": bond_date.isoformat(),
                     "years_since_bond": years_since_bond,
@@ -295,7 +302,7 @@ def build_stallout_events(
     if improved_lots > 0 and vacant_lots > 0:
         # years_since_last_build = time since last permit_pulled
         if permit_events:
-            latest_permit = max(permit_events, key=lambda me: me.occurred_at)
+            latest_permit = max(permit_events, key=lambda me: _event_date(me))
             last_build_date = _event_date(latest_permit)
         elif last_event_date := _most_recent_event_date(municipal_events):
             last_build_date = last_event_date
@@ -330,7 +337,5 @@ def _most_recent_event_date(events: list[MunicipalEvent]) -> Optional[date]:
     """Return the most recent occurred_at date from events."""
     if not events:
         return None
-    latest = max(events, key=lambda me: me.occurred_at)
-    if isinstance(latest.occurred_at, datetime):
-        return latest.occurred_at.date()
-    return latest.occurred_at
+    latest = max(events, key=lambda me: _event_date(me))
+    return _event_date(latest)

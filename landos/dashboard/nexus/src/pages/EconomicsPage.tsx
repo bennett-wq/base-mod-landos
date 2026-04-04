@@ -10,16 +10,16 @@ export default function EconomicsPage() {
       {/* Header */}
       <section className="mb-10 flex items-end justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-on-surface">Economics</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">
+          <h2 className="text-2xl font-bold tracking-tight text-on-surface">Economics</h2>
+          <p className="mt-1 text-sm text-on-surface-variant/70">
             Real-time unit cost analysis and deal sensitivity modeling.
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="rounded-lg border border-outline-variant/20 bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all hover:bg-surface-container-low">
+          <button className="rounded-lg bg-surface-container-low px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-on-surface-variant transition-all hover:bg-surface-container">
             Export Model
           </button>
-          <button className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-container">
+          <button className="copper-gradient rounded-lg px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white shadow-md shadow-primary/15 transition-all">
             Commit to Pipeline
           </button>
         </div>
@@ -51,7 +51,7 @@ export default function EconomicsPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Cost Oracle v2.4
             </span>
           </div>
-          <p className="md:ml-auto">&copy; 2024 BaseMod Systems. Proprietary Analysis Environment.</p>
+          <p className="md:ml-auto">&copy; 2026 BaseMod Systems. Proprietary Analysis Environment.</p>
         </div>
       </footer>
     </div>

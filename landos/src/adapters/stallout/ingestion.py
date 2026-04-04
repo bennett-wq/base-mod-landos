@@ -71,7 +71,7 @@ def _update_subdivision(
         subdivision.infrastructure_status = infra
 
 
-ScanResult = tuple[StallAssessment, list[EventEnvelope], Optional[Opportunity]]
+ScanResult = tuple[StallAssessment, list[EventEnvelope], list[RoutingResult], Optional[Opportunity]]
 
 
 def scan_subdivisions_for_stalls(
@@ -89,7 +89,7 @@ def scan_subdivisions_for_stalls(
       2. Gather Parcels from the lookup dict
       3. Run detect_stall()
       4. If stalled: emit events and route through trigger engine
-      5. If confidence >= 0.45: create Opportunity
+      5. Create Opportunity if stall_confidence >= 0.45
       6. Update Subdivision fields (8D)
 
     Args:
@@ -101,7 +101,7 @@ def scan_subdivisions_for_stalls(
         now: Current timestamp (for testability).
 
     Returns:
-        List of (StallAssessment, emitted_events, Opportunity | None) tuples.
+        List of (StallAssessment, emitted_events, routing_results, Opportunity | None) tuples.
     """
     if now is None:
         now = datetime.now(timezone.utc)
@@ -113,10 +113,10 @@ def scan_subdivisions_for_stalls(
         all_muni_events = municipal_event_store.get_by_municipality(
             subdivision.municipality_id
         )
-        # Filter to events that reference this subdivision (or have no subdivision filter)
+        # Only include events that explicitly reference this subdivision
         subdivision_events = [
             me for me in all_muni_events
-            if me.subdivision_id is None or me.subdivision_id == subdivision.subdivision_id
+            if me.subdivision_id == subdivision.subdivision_id
         ]
 
         # 2. Gather Parcels
@@ -127,21 +127,23 @@ def scan_subdivisions_for_stalls(
 
         # 4. Emit events if stalled
         emitted_events: list[EventEnvelope] = []
-        if assessment.is_stalled or assessment.stall_confidence > 0:
+        routing_results: list[RoutingResult] = []
+        if assessment.is_stalled:
             emitted_events = build_stallout_events(
                 assessment, subdivision, subdivision_events, now=now
             )
             # Route each event through trigger engine
             for event in emitted_events:
-                engine.evaluate(event, context)
+                result = engine.evaluate(event, context)
+                routing_results.append(result)
 
-        # 5. Create Opportunity if confidence threshold met
+        # 5. Create Opportunity if stall_confidence >= 0.45
         event_ids = [ev.event_id for ev in emitted_events]
         opportunity = create_stall_opportunity(assessment, subdivision, event_ids)
 
         # 6. Update Subdivision fields (8D)
         _update_subdivision(subdivision, assessment, subdivision_events, now)
 
-        results.append((assessment, emitted_events, opportunity))
+        results.append((assessment, emitted_events, routing_results, opportunity))
 
     return results

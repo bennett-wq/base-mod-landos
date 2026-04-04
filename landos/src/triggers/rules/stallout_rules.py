@@ -72,13 +72,13 @@ STB = TriggerRule(
     priority=4,
     routing_class=RoutingClass.STANDARD,
     condition=lambda e, ctx: (
-        (e.payload or {}).get("stall_confidence", 0) >= 0.6
+        (e.payload or {}).get("stall_confidence", 0) >= 0.45
     ),
     cooldown_seconds=_STALLOUT_COOLDOWN,
     cooldown_key_builder=_stallout_cooldown_key,
     description=(
         "historical_subdivision_stall_detected → create Opportunity + link DeveloperEntity. "
-        "Priority 4, standard, 30d cooldown per subdivision."
+        "Priority 4, standard, 30d cooldown per subdivision. Fires when stall_confidence >= 0.45."
     ),
 )
 

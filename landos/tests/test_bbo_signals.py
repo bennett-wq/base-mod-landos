@@ -22,12 +22,18 @@ import pytest
 from src.adapters.spark.bbo_signals import (
     CDOM_THRESHOLD_DEFAULT,
     detect_agent_land_accumulation,
+    detect_all_remarks_signals,
+    detect_broker_note_signals,
     detect_cdom_threshold,
     detect_developer_exit,
     detect_market_velocity,
     detect_office_land_program,
     detect_private_remarks_signals,
+    detect_same_subdivision_listings,
+    detect_site_condo_from_legal,
     detect_subdivision_remnant,
+    extract_infrastructure_profile,
+    extract_legal_lot_info,
 )
 from src.adapters.spark.event_factory import build_listing_private_remarks_signal_detected
 from src.adapters.spark.ingestion import InMemoryListingStore, SparkIngestionAdapter
@@ -38,7 +44,7 @@ from src.triggers.context import TriggerContext
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.engine import TriggerEngine
 from src.triggers.enums import PhaseGate
-from src.triggers.rules import ALL_RULES, RO, RP, RQ, RR
+from src.triggers.rules import ALL_RULES, RO, RP, RQ, RR, RY, RZ1, RZ2, RZ3
 
 _FIXED_TS = datetime(2026, 3, 9, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -201,6 +207,114 @@ class TestPrivateRemarksSignals:
         listing = _listing(private_remarks="Nice lot near the park. Call for details.")
         categories = detect_private_remarks_signals(listing)
         assert categories == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 3B: New seller-intent patterns (distress, infrastructure, development)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestNewRemarksPatterns:
+
+    def test_distress_as_is_detected(self):
+        listing = _listing(private_remarks="selling as-is, no warranties")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_distress_estate_sale_detected(self):
+        listing = _listing(private_remarks="estate sale, all offers considered")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_distress_foreclosure_detected(self):
+        listing = _listing(private_remarks="subject to foreclosure proceedings")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_distress_below_market_detected(self):
+        listing = _listing(private_remarks="priced below market value")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_distress_bank_owned_detected(self):
+        listing = _listing(private_remarks="bank-owned property, quick close")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_distress_must_close_detected(self):
+        listing = _listing(private_remarks="seller must close by end of month")
+        assert "distress_language" in detect_private_remarks_signals(listing)
+
+    def test_infrastructure_ready_paved_road(self):
+        listing = _listing(private_remarks="on paved road with city services")
+        assert "infrastructure_ready" in detect_private_remarks_signals(listing)
+
+    def test_infrastructure_ready_city_water_sewer(self):
+        listing = _listing(private_remarks="city water and city sewer available")
+        assert "infrastructure_ready" in detect_private_remarks_signals(listing)
+
+    def test_infrastructure_ready_public_utilities(self):
+        listing = _listing(private_remarks="public utilities at the lot line")
+        assert "infrastructure_ready" in detect_private_remarks_signals(listing)
+
+    def test_development_ready_site_plan(self):
+        listing = _listing(private_remarks="site plan approved for 8 units")
+        assert "development_ready" in detect_private_remarks_signals(listing)
+
+    def test_development_ready_perc_test(self):
+        listing = _listing(private_remarks="perc test complete, ready to build")
+        assert "development_ready" in detect_private_remarks_signals(listing)
+
+    def test_development_ready_splits_available(self):
+        listing = _listing(private_remarks="splits available per township")
+        assert "development_ready" in detect_private_remarks_signals(listing)
+
+    def test_fatigue_priced_to_sell(self):
+        listing = _listing(private_remarks="priced to sell quickly")
+        assert "fatigue_language" in detect_private_remarks_signals(listing)
+
+    def test_fatigue_make_offer(self):
+        listing = _listing(private_remarks="make an offer on this beautiful lot")
+        assert "fatigue_language" in detect_private_remarks_signals(listing)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 3C: detect_all_remarks_signals — scans ALL text fields
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestAllRemarksSignals:
+
+    def test_detects_from_public_remarks(self):
+        listing = _listing(remarks_raw="package deal, all remaining lots")
+        assert "package_language" in detect_all_remarks_signals(listing)
+
+    def test_detects_from_private_remarks(self):
+        listing = _listing(private_remarks="motivated seller, bring offer")
+        assert "fatigue_language" in detect_all_remarks_signals(listing)
+
+    def test_detects_from_showing_instructions(self):
+        listing = _listing(showing_instructions="estate sale property, call first")
+        assert "distress_language" in detect_all_remarks_signals(listing)
+
+    def test_detects_from_agent_only_remarks(self):
+        listing = _listing(agent_only_remarks="must sell, price just reduced below market")
+        categories = detect_all_remarks_signals(listing)
+        assert "fatigue_language" in categories or "distress_language" in categories
+
+    def test_combines_across_fields(self):
+        listing = _listing(
+            remarks_raw="paved road, city water available",
+            private_remarks="bring any offer, motivated seller",
+        )
+        categories = detect_all_remarks_signals(listing)
+        assert "infrastructure_ready" in categories
+        assert "fatigue_language" in categories
+
+    def test_deduplicates_categories(self):
+        listing = _listing(
+            remarks_raw="bring offer",
+            private_remarks="bring any offer",
+        )
+        categories = detect_all_remarks_signals(listing)
+        assert categories.count("fatigue_language") == 1
+
+    def test_no_text_returns_empty(self):
+        listing = _listing()
+        assert detect_all_remarks_signals(listing) == []
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -396,6 +510,207 @@ class TestMarketVelocity:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# SECTION 6C: Structured infrastructure profile extraction
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestInfrastructureProfile:
+
+    def test_full_infrastructure_high_score(self):
+        """Listing with public sewer, public water, gas, electric, paved = high score."""
+        listing = _listing(
+            sewer="['Public Sewer']",
+            water_source="['Public']",
+            utilities="['Natural Gas Connected', 'Electricity Connected', 'Storm Sewer']",
+            road_surface_type="['Paved']",
+            lot_features="['Buildable']",
+        )
+        profile = extract_infrastructure_profile(listing)
+        assert profile['public_sewer'] is True
+        assert profile['public_water'] is True
+        assert profile['gas_connected'] is True
+        assert profile['electric_connected'] is True
+        assert profile['paved_road'] is True
+        assert profile['buildable'] is True
+        assert profile['infra_score'] >= 0.8
+
+    def test_no_infrastructure_low_score(self):
+        """Listing with no infrastructure data = zero score."""
+        listing = _listing(
+            sewer="[]",
+            water_source="[]",
+            utilities="['None']",
+        )
+        profile = extract_infrastructure_profile(listing)
+        assert profile['infra_score'] == 0.0
+
+    def test_site_condo_detected(self):
+        listing = _listing(lot_features="['Site Condo', 'Buildable']")
+        profile = extract_infrastructure_profile(listing)
+        assert profile['site_condo'] is True
+        assert profile['buildable'] is True
+
+    def test_wetland_reduces_score(self):
+        listing = _listing(
+            lot_features="['Buildable', 'Wetland Area']",
+            utilities="['Electricity Available']",
+        )
+        profile = extract_infrastructure_profile(listing)
+        assert profile['wetland'] is True
+        # Wetland penalty should reduce the score
+        listing2 = _listing(
+            lot_features="['Buildable']",
+            utilities="['Electricity Available']",
+        )
+        profile2 = extract_infrastructure_profile(listing2)
+        assert profile['infra_score'] < profile2['infra_score']
+
+    def test_septic_not_public_sewer(self):
+        listing = _listing(sewer="['Septic Tank']")
+        profile = extract_infrastructure_profile(listing)
+        assert profile['public_sewer'] is False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 6D: Broker note signal detection
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestBrokerNoteSignals:
+
+    def test_splits_available(self):
+        listing = _listing(private_remarks="Splits are available with this property!!!")
+        signals = detect_broker_note_signals(listing)
+        assert "splits_available" in signals
+
+    def test_all_offers_considered(self):
+        listing = _listing(private_remarks="All reasonable offers will be considered.")
+        signals = detect_broker_note_signals(listing)
+        assert "all_offers" in signals
+
+    def test_seller_is_agent(self):
+        listing = _listing(private_remarks="Seller is a licensed Realtor in the State of Michigan")
+        signals = detect_broker_note_signals(listing)
+        assert "seller_is_agent" in signals
+
+    def test_hoa_inactive(self):
+        listing = _listing(private_remarks="HOA not active in this development")
+        signals = detect_broker_note_signals(listing)
+        assert "hoa_inactive" in signals
+
+    def test_lot_being_split(self):
+        listing = _listing(private_remarks="Split is pending approval from the township. Seller to pay for survey.")
+        signals = detect_broker_note_signals(listing)
+        assert "lot_being_split" in signals
+
+    def test_seller_pays(self):
+        listing = _listing(private_remarks="Seller to pay for all costs associated with said survey.")
+        signals = detect_broker_note_signals(listing)
+        assert "seller_pays" in signals
+
+    def test_site_tested(self):
+        listing = _listing(private_remarks="Perc results & Survey attached. Soil evaluation date: 2007-04-01")
+        signals = detect_broker_note_signals(listing)
+        assert "site_tested" in signals
+
+    def test_highest_best(self):
+        listing = _listing(private_remarks="OFFER DEADLINE IS MONDAY MAY 19 BY 6:00 PM.")
+        signals = detect_broker_note_signals(listing)
+        assert "highest_best" in signals
+
+    def test_adjacent_available(self):
+        listing = _listing(private_remarks="Adjacent lot also available for purchase separately")
+        signals = detect_broker_note_signals(listing)
+        assert "adjacent_available" in signals
+
+    def test_no_signals(self):
+        listing = _listing(private_remarks="Nice lot, call for details")
+        signals = detect_broker_note_signals(listing)
+        assert signals == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 6E: Site condo detection from legal remarks
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestSiteCondoFromLegal:
+
+    def test_master_deed_detected(self):
+        listing = _listing(legal_remarks="M.D. L 4188 P 480 UNIT 28 AUGUSTA COMMONS SPLIT ON 12/02/2002")
+        detected, detail = detect_site_condo_from_legal(listing)
+        assert detected is True
+        assert "AUGUSTA COMMONS" in detail
+
+    def test_unit_without_md_detected(self):
+        listing = _listing(legal_remarks="UNIT 5 RIVERSIDE ESTATES PCL")
+        detected, detail = detect_site_condo_from_legal(listing)
+        assert detected is True
+        assert "RIVERSIDE ESTATES" in detail
+
+    def test_no_legal_remarks(self):
+        listing = _listing()
+        detected, _ = detect_site_condo_from_legal(listing)
+        assert detected is False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 6F: Legal description lot-number extraction and grouping
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestLegalLotExtraction:
+
+    def test_lot_subdivision_pattern(self):
+        listing = _listing(legal_remarks="Lot 7 York Crest subdivision")
+        info = extract_legal_lot_info(listing)
+        assert info is not None
+        assert info['subdivision'] == 'york crest'
+        assert info['lot_number'] == 7
+        assert info['is_unit'] is False
+
+    def test_unit_site_condo_pattern(self):
+        listing = _listing(legal_remarks="M.D. L3716 P931 UNIT 16 MANCHESTER SITE CONDOMINIUM")
+        info = extract_legal_lot_info(listing)
+        assert info is not None
+        assert 'manchester' in info['subdivision']
+        assert info['lot_number'] == 16
+        assert info['is_unit'] is True
+
+    def test_lot_sub_pattern(self):
+        listing = _listing(legal_remarks="LOT 5 SMITH ACRES SUB")
+        info = extract_legal_lot_info(listing)
+        assert info is not None
+        assert info['subdivision'] == 'smith acres'
+        assert info['lot_number'] == 5
+
+    def test_no_legal_returns_none(self):
+        listing = _listing()
+        assert extract_legal_lot_info(listing) is None
+
+
+class TestSameSubdivisionGrouping:
+
+    def test_groups_same_subdivision_different_lots(self):
+        listings = [
+            _listing(listing_key="L-1", legal_remarks="Lot 1 York Crest subdivision"),
+            _listing(listing_key="L-2", legal_remarks="Lot 7 York Crest subdivision"),
+            _listing(listing_key="L-3", legal_remarks="Lot 3 Different Place SUB"),
+        ]
+        groups = detect_same_subdivision_listings(listings)
+        assert 'york crest' in groups
+        assert len(groups['york crest']) == 2
+        # Different Place only has 1 listing, shouldn't appear
+        assert 'different place' not in groups
+
+    def test_groups_site_condo_units(self):
+        listings = [
+            _listing(listing_key=f"L-{i}", legal_remarks=f"M.D. L4188 P480 UNIT {i+27} AUGUSTA COMMONS SPLIT")
+            for i in range(5)
+        ]
+        groups = detect_same_subdivision_listings(listings)
+        matching = [k for k in groups if 'augusta' in k]
+        assert len(matching) == 1
+        assert len(groups[matching[0]]) == 5
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # SECTION 7: Reverse rules wired in ALL_RULES
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -434,6 +749,56 @@ class TestReverseRulesWired:
         rule_ids = [r.rule_id for r in ALL_RULES]
         for rule in (RS, RT, RU1, RU2):
             assert rule.rule_id in rule_ids, f"{rule.rule_id} missing from ALL_RULES"
+
+    def test_seller_intent_rules_present(self):
+        """RY, RZ1, RZ2, RZ3 all present in ALL_RULES."""
+        rule_ids = [r.rule_id for r in ALL_RULES]
+        for rule in (RY, RZ1, RZ2, RZ3):
+            assert rule.rule_id in rule_ids, f"{rule.rule_id} missing from ALL_RULES"
+
+    def test_ry_targets_supply_intelligence(self):
+        """RY (listing_relisted) → supply_intelligence_team."""
+        assert RY.event_type == "listing_relisted"
+        assert RY.wake_target == "supply_intelligence_team"
+
+    def test_rz1_targets_cluster_detection(self):
+        """RZ1 (listing_relisted) → cluster_detection_agent."""
+        assert RZ1.event_type == "listing_relisted"
+        assert RZ1.wake_target == "cluster_detection_agent"
+
+    def test_rz2_fires_on_distress_language(self):
+        """RZ2 fires when distress_language in detected_categories."""
+        from uuid import uuid4
+        from src.events.envelope import EventEnvelope, EntityRefs
+        from src.events.enums import EventClass, EventFamily
+        event = EventEnvelope(
+            event_type="listing_private_remarks_signal_detected",
+            event_family=EventFamily.LISTING,
+            event_class=EventClass.RAW,
+            occurred_at=_FIXED_TS,
+            observed_at=_FIXED_TS,
+            source_system="test",
+            entity_refs=EntityRefs(listing_id=uuid4()),
+            payload={"detected_categories": ["distress_language"], "listing_key": "L-1"},
+        )
+        assert RZ2.condition(event, _ctx()) is True
+
+    def test_rz3_fires_on_infrastructure_ready(self):
+        """RZ3 fires when infrastructure_ready in detected_categories."""
+        from uuid import uuid4
+        from src.events.envelope import EventEnvelope, EntityRefs
+        from src.events.enums import EventClass, EventFamily
+        event = EventEnvelope(
+            event_type="listing_private_remarks_signal_detected",
+            event_family=EventFamily.LISTING,
+            event_class=EventClass.RAW,
+            occurred_at=_FIXED_TS,
+            observed_at=_FIXED_TS,
+            source_system="test",
+            entity_refs=EntityRefs(listing_id=uuid4()),
+            payload={"detected_categories": ["infrastructure_ready"], "listing_key": "L-1"},
+        )
+        assert RZ3.condition(event, _ctx()) is True
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -499,3 +864,31 @@ class TestBboIntegration:
         assert listing.private_remarks is None
         assert listing.list_agent_key is None
         assert listing.legal_description is None
+
+    def test_public_remarks_triggers_signal_event(self):
+        """Public remarks with package language should emit remarks event."""
+        adapter = SparkIngestionAdapter(engine=_engine(), context=_ctx())
+        record = _land_record(PublicRemarks="remaining lots available, package deal")
+        results = adapter.process_batch([record], now=_FIXED_TS)
+        event_types = [r.event_type for r in results]
+        assert "listing_private_remarks_signal_detected" in event_types
+
+    def test_distress_language_triggers_signal_event(self):
+        """Distress language in remarks should emit remarks event."""
+        adapter = SparkIngestionAdapter(engine=_engine(), context=_ctx())
+        record = _land_record(PrivateRemarks="estate sale property, selling as-is")
+        results = adapter.process_batch([record], now=_FIXED_TS)
+        event_types = [r.event_type for r in results]
+        assert "listing_private_remarks_signal_detected" in event_types
+
+    def test_relist_emits_relisted_event(self):
+        """Listing going from expired→active emits listing_relisted event."""
+        adapter = SparkIngestionAdapter(engine=_engine(), context=_ctx())
+        # First: expired listing
+        r1 = _land_record(StandardStatus="Expired")
+        adapter.process_batch([r1], now=_FIXED_TS)
+        # Second: same listing, now active
+        r2 = _land_record(StandardStatus="Active")
+        results = adapter.process_batch([r2], now=_FIXED_TS)
+        event_types = [r.event_type for r in results]
+        assert "listing_relisted" in event_types

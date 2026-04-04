@@ -1,6 +1,6 @@
 export function MarketComparables() {
   return (
-    <div className="col-span-12 lg:col-span-5 rounded-xl bg-white p-8 shadow-[0_12px_32px_rgba(27,28,26,0.04)]">
+    <div className="col-span-12 lg:col-span-5 rounded-xl bg-white p-8 shadow-ambient">
       <div className="mb-8">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">
           Market Comparables

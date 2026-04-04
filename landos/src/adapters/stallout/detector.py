@@ -65,6 +65,13 @@ def _years_between(target_date: date, now: datetime) -> float:
     return (now.date() - target_date).days / 365.25
 
 
+def _event_date(me: MunicipalEvent) -> date:
+    """Extract date from MunicipalEvent.occurred_at, normalizing datetime → date."""
+    if isinstance(me.occurred_at, datetime):
+        return me.occurred_at.date()
+    return me.occurred_at
+
+
 def _compute_vacancy_ratio(
     subdivision: Subdivision,
     parcels: list[Parcel],
@@ -103,10 +110,8 @@ def _most_recent_event_date(events: list[MunicipalEvent]) -> Optional[date]:
     """Return the most recent occurred_at date from events."""
     if not events:
         return None
-    latest = max(events, key=lambda me: me.occurred_at)
-    if isinstance(latest.occurred_at, datetime):
-        return latest.occurred_at.date()
-    return latest.occurred_at
+    latest = max(events, key=lambda me: _event_date(me))
+    return _event_date(latest)
 
 
 def detect_stall(

@@ -77,74 +77,68 @@ export function AgentDetailPanel({ nodeIndex, onClose }: AgentDetailPanelProps) 
     <AnimatePresence>
       {isOpen && detail && (
         <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
+          initial={{ x: '100%', opacity: 0.8 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '100%', opacity: 0.8 }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="absolute right-0 top-0 bottom-0 w-[360px] bg-white border-l border-outline-variant/10 z-50 p-6 flex flex-col"
-          style={{ boxShadow: '-12px 0 32px rgba(27, 28, 26, 0.04)' }}
+          className="absolute right-0 top-0 bottom-0 w-[360px] bg-white z-50 p-6 flex flex-col"
+          style={{ boxShadow: '-12px 0 40px rgba(27, 28, 26, 0.06)' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center mr-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center mr-3">
                 <detail.Icon size={20} className="text-primary" />
               </div>
               <div>
                 <h3 className="font-bold text-on-surface leading-tight">{detail.name}</h3>
-                <span className="text-[10px] font-bold text-[#059669] uppercase tracking-wider">
-                  {detail.status}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                  <span className="text-[9px] font-bold text-success uppercase tracking-wider">
+                    {detail.status}
+                  </span>
+                </div>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-on-surface-variant hover:text-on-surface transition-colors"
+              className="text-on-surface-variant/50 hover:text-on-surface transition-colors rounded-lg p-1 hover:bg-surface-container-low"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 bg-surface-container-low rounded-xl">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase">
-                Runs Today
-              </span>
-              <p className="text-xl font-bold text-on-surface mt-1">{detail.stats.runs}</p>
-            </div>
-            <div className="p-4 bg-surface-container-low rounded-xl">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase">
-                Avg Duration
-              </span>
-              <p className="text-xl font-bold text-on-surface mt-1">{detail.stats.duration}</p>
-            </div>
-            <div className="p-4 bg-surface-container-low rounded-xl">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase">
-                Events Emitted
-              </span>
-              <p className="text-xl font-bold text-on-surface mt-1">{detail.stats.events}</p>
-            </div>
-            <div className="p-4 bg-surface-container-low rounded-xl">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase">
-                Hit Rate
-              </span>
-              <p className="text-xl font-bold text-primary mt-1">{detail.stats.hitRate}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {[
+              { label: 'Runs Today', value: detail.stats.runs },
+              { label: 'Avg Duration', value: detail.stats.duration },
+              { label: 'Events Emitted', value: detail.stats.events },
+              { label: 'Hit Rate', value: detail.stats.hitRate, accent: true },
+            ].map((stat) => (
+              <div key={stat.label} className="p-4 bg-surface-container-low rounded-xl">
+                <span className="text-[9px] font-bold text-on-surface-variant/60 uppercase tracking-[0.1em]">
+                  {stat.label}
+                </span>
+                <p className={`text-xl font-bold mt-1 tabular-nums ${stat.accent ? 'text-primary' : 'text-on-surface'}`}>
+                  {stat.value}
+                </p>
+              </div>
+            ))}
           </div>
 
           {/* Recent operations */}
-          <div className="flex-1">
-            <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block mb-3">
+          <div className="flex-1 overflow-y-auto">
+            <span className="text-[9px] font-bold text-on-surface-variant/60 uppercase tracking-[0.12em] block mb-3">
               Recent Operations
             </span>
             <div className="space-y-3">
               {detail.ops.map((op, i) => (
-                <div key={i} className="flex items-start">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 mr-3 shrink-0" />
+                <div key={i} className="flex items-start group">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 mr-3 shrink-0 group-hover:bg-primary transition-colors" />
                   <div className="flex-1">
-                    <p className="text-xs font-semibold">{op.label}</p>
-                    <p className="text-[10px] text-on-surface-variant mt-0.5">
+                    <p className="text-xs font-semibold text-on-surface">{op.label}</p>
+                    <p className="text-[10px] text-on-surface-variant/60 mt-0.5">
                       {op.time} &middot; {op.detail}
                     </p>
                   </div>
@@ -154,7 +148,7 @@ export function AgentDetailPanel({ nodeIndex, onClose }: AgentDetailPanelProps) 
           </div>
 
           {/* Re-initialize button */}
-          <button className="w-full py-3 copper-gradient rounded-xl text-white text-sm font-bold shadow-lg shadow-primary/20 mt-6">
+          <button className="w-full py-3 copper-gradient rounded-xl text-white text-sm font-bold shadow-md shadow-primary/15 mt-6 transition-all">
             Re-initialize Agent
           </button>
         </motion.div>

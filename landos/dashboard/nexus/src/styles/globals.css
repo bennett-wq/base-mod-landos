@@ -5,12 +5,25 @@
 @layer base {
   html {
     font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     @apply bg-surface text-on-surface antialiased;
     font-size: 14px;
     line-height: 1.6;
+  }
+
+  /* Tighten default heading tracking */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: rgba(127, 83, 19, 0.15);
+    color: #1b1c1a;
   }
 }
 
@@ -22,92 +35,103 @@
   .ghost-border {
     outline: 1px solid rgba(212, 196, 180, 0.2);
   }
+
+  /* Consistent card surface */
+  .nexus-card {
+    @apply bg-surface-container-lowest rounded-2xl shadow-ambient;
+  }
+
+  /* Label typography — the "stamped" institutional look */
+  .nexus-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant;
+  }
+
+  /* Tonal section separator — replaces borders per design spec */
+  .tonal-separator {
+    @apply bg-surface-container-low;
+    min-height: 1px;
+  }
 }
 
-/* Agent pulse animation */
+/* ─── Agent pulse animation ───────────────────────────────────────────────── */
 @keyframes agent-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(127, 83, 19, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(127, 83, 19, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(127, 83, 19, 0);
-  }
+  0%  { box-shadow: 0 0 0 0 rgba(127, 83, 19, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(127, 83, 19, 0); }
+  100%{ box-shadow: 0 0 0 0 rgba(127, 83, 19, 0); }
 }
-
 .agent-pulse {
   animation: agent-pulse 2s ease-in-out infinite;
 }
 
-/* Scanline animation */
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
+/* ─── Subtle fade-in for staggered lists ──────────────────────────────────── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
 }
 
+/* ─── Glow ring for live elements ─────────────────────────────────────────── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(5, 150, 105, 0); }
+}
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Scanline animation ──────────────────────────────────────────────────── */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
 .scanline {
   position: relative;
   overflow: hidden;
 }
-
 .scanline::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(127, 83, 19, 0.03) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg, transparent 0%, rgba(127, 83, 19, 0.03) 50%, transparent 100%);
   animation: scanline 4s linear infinite;
   pointer-events: none;
 }
 
-/* Custom scrollbar */
+/* ─── Custom scrollbar ────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background-color: #d4c4b4;
+  background-color: rgba(212, 196, 180, 0.4);
   border-radius: 9999px;
+  transition: background-color 0.2s;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background-color: #827567;
 }
 
-/* Terminal blink cursor */
+/* ─── Terminal blink cursor ───────────────────────────────────────────────── */
 @keyframes terminal-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  50%      { opacity: 0; }
 }
-
 .terminal-blink {
   animation: terminal-blink 1s step-end infinite;
 }
 
-/* Hide scrollbar utility */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+/* ─── Hide scrollbar utility ──────────────────────────────────────────────── */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Animated mesh connection lines */
+/* ─── Animated mesh connection lines ──────────────────────────────────────── */
 @keyframes dash-flow {
   to { stroke-dashoffset: -24; }
 }
@@ -115,20 +139,34 @@
   animation: dash-flow 3s linear infinite;
 }
 
-/* Button press micro-interaction */
+/* ─── Button press micro-interaction ──────────────────────────────────────── */
 .copper-gradient {
-  @apply active:scale-[0.98];
-  transition: transform 100ms ease;
+  @apply active:scale-[0.97];
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+.copper-gradient:hover {
+  opacity: 0.92;
 }
 
-/* Kanban horizontal scrollbar */
-.kanban-scroll::-webkit-scrollbar {
-  height: 6px;
-}
-.kanban-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ─── Kanban horizontal scrollbar ─────────────────────────────────────────── */
+.kanban-scroll::-webkit-scrollbar { height: 5px; }
+.kanban-scroll::-webkit-scrollbar-track { background: transparent; }
 .kanban-scroll::-webkit-scrollbar-thumb {
-  background-color: #d4c4b4;
+  background-color: rgba(212, 196, 180, 0.4);
   border-radius: 9999px;
+}
+
+/* ─── Focus ring for accessibility ────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid rgba(127, 83, 19, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Smooth page transitions ─────────────────────────────────────────────── */
+.page-enter { opacity: 0; transform: translateY(8px); }
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
 }

@@ -15,7 +15,7 @@ export function AgentRosterExpanded() {
   const activeCount = agents?.filter((a) => a.status !== 'IDLE').length ?? 0
 
   return (
-    <section className="w-[300px] shrink-0 flex flex-col border-r border-outline-variant/10 p-4 space-y-4 overflow-y-auto bg-white/40">
+    <section className="w-[300px] shrink-0 flex flex-col p-4 space-y-4 overflow-y-auto bg-surface-container-low/50">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
           Command Swarm
@@ -35,7 +35,7 @@ export function AgentRosterExpanded() {
               return isExpanded ? (
                 <div
                   key={agent.name}
-                  className="p-4 bg-white rounded-xl border border-outline-variant/20 shadow-sm hover:shadow-md transition-all"
+                  className="p-4 bg-white rounded-xl shadow-ambient-sm hover:shadow-ambient transition-all duration-200"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-on-surface">{agent.name}</span>
@@ -60,7 +60,7 @@ export function AgentRosterExpanded() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-on-surface">{agent.name}</span>
-                    <span className="text-[9px] font-bold text-[#059669]">IDLE</span>
+                    <span className="text-[9px] font-bold text-on-surface-variant/40">IDLE</span>
                   </div>
                 </div>
               )

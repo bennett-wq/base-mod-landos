@@ -37,11 +37,15 @@ from datetime import datetime, timezone
 
 from src.adapters.spark.bbo_signals import (
     detect_agent_land_accumulation,
+    detect_all_remarks_signals,
+    detect_broker_note_signals,
     detect_cdom_threshold,
     detect_developer_exit,
     detect_office_land_program,
     detect_private_remarks_signals,
+    detect_site_condo_from_legal,
     detect_subdivision_remnant,
+    extract_infrastructure_profile,
     CDOM_THRESHOLD_DEFAULT,
 )
 from src.adapters.spark.event_factory import (
@@ -209,10 +213,10 @@ class SparkIngestionAdapter:
                 )
             )
 
-        # RJ/RK — private remarks signals
-        remarks_categories = detect_private_remarks_signals(listing)
+        # RJ/RK — remarks signals (public + private + showing + agent-only)
+        remarks_categories = detect_all_remarks_signals(listing)
         if remarks_categories:
-            excerpt = (listing.private_remarks or "")[:200]
+            excerpt = (listing.private_remarks or listing.remarks_raw or "")[:200]
             bbo_events.append(
                 build_listing_private_remarks_signal_detected(
                     listing,

@@ -38,13 +38,13 @@ export default function DeepAssessmentPage() {
   return (
     <div className="flex -m-8 min-h-[calc(100vh-120px)]">
       {/* Sub-navigation sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-white border-r border-outline-variant/10 py-6">
+      <aside className="w-64 flex-shrink-0 bg-white py-6">
         <div className="px-6 mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+          <h2 className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/60">
             Site Feasibility
           </h2>
         </div>
-        <nav className="px-3 space-y-1">
+        <nav className="px-3 space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = activeView === item.key
@@ -52,10 +52,10 @@ export default function DeepAssessmentPage() {
               <button
                 key={item.key}
                 onClick={() => setActiveView(item.key)}
-                className={`flex items-center gap-3 w-full px-3 py-3 text-left transition-all ${
+                className={`flex items-center gap-3 w-full rounded-xl px-3 py-3 text-left transition-all duration-200 ${
                   isActive
                     ? 'border-l-[3px] border-primary text-primary font-semibold bg-primary/5'
-                    : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary'
+                    : 'border-l-[3px] border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
                 }`}
               >
                 <Icon className="h-[18px] w-[18px]" />

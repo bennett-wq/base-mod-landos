@@ -32,27 +32,27 @@ export function Shell() {
       <Sidebar />
 
       {/* Main content area */}
-      <div className="ml-[240px] min-h-screen pb-[56px]">
+      <div className="ml-[240px] min-h-screen pb-[52px]">
         <TopNav />
 
-        {/* Ghost gradient overlays */}
+        {/* Ghost gradient overlays — ambient warmth */}
         <div
-          className="pointer-events-none fixed right-0 top-0 h-full w-1/2 opacity-30 mix-blend-multiply"
-          style={{ background: 'radial-gradient(circle at 100% 0%, #ffddb8 0%, transparent 70%)' }}
+          className="pointer-events-none fixed right-0 top-0 h-full w-1/2 opacity-20 mix-blend-multiply"
+          style={{ background: 'radial-gradient(ellipse at 100% 0%, #ffddb8 0%, transparent 65%)' }}
         />
         <div
-          className="pointer-events-none fixed bottom-0 left-[240px] h-1/2 w-1/2 opacity-15 mix-blend-multiply"
-          style={{ background: 'radial-gradient(circle at 0% 100%, #9b6b2a 0%, transparent 70%)' }}
+          className="pointer-events-none fixed bottom-0 left-[240px] h-1/2 w-1/2 opacity-10 mix-blend-multiply"
+          style={{ background: 'radial-gradient(ellipse at 0% 100%, #9b6b2a 0%, transparent 65%)' }}
         />
 
         <main className="p-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <Outlet />
             </motion.div>

@@ -6,29 +6,32 @@ import type { Cluster, Tier } from '@/data/mockData'
 
 const TIER_STYLES: Record<Tier, string> = {
   A: 'bg-primary text-white',
-  B: 'bg-stone-400 text-white',
-  C: 'bg-stone-300 text-stone-600',
+  B: 'bg-outline text-white',
+  C: 'bg-surface-container-highest text-on-surface-variant',
 }
 
-interface DimensionBarProps {
-  label: string
-  value: number
+const SIGNAL_LABELS: Record<string, string> = {
+  high_vacancy: 'High Vacancy',
+  roads_installed: 'Infrastructure Invested',
+  no_recent_activity: 'No Recent Activity',
+  plat_age: 'Aged Plat',
+  bonds_posted: 'Bonds Posted',
+  permits_with_vacancy: 'Permits + Vacancy',
 }
 
-function DimensionBar({ label, value }: DimensionBarProps) {
+function EvidenceTag({ signal }: { signal: string }) {
+  const label = SIGNAL_LABELS[signal] ?? signal
+  const isInfra = signal === 'roads_installed'
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-[10px] font-bold uppercase text-stone-500">
-        <span>{label}</span>
-        <span>{value}%</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
-        <div
-          className={value < 50 ? 'h-full bg-amber-500' : 'h-full bg-primary'}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
+    <span
+      className={`inline-block rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+        isInfra
+          ? 'bg-primary/10 text-primary'
+          : 'bg-surface-container-low text-on-surface-variant'
+      }`}
+    >
+      {label}
+    </span>
   )
 }
 
@@ -46,7 +49,7 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-on-surface">Deep Cluster Intelligence</h2>
           <p className="mt-1 text-sm text-on-surface-variant">
-            Found {clusters?.length ?? 0} high-probability clusters in North Washtenaw
+            Found {clusters?.length ?? 0} high-probability clusters in Washtenaw County
           </p>
         </div>
         <button className="rounded-lg border border-primary/20 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/5">
@@ -62,6 +65,8 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
             ))
           : clusters?.map((cluster, i) => {
               const isFeatured = i === 0
+              const hasStallEvidence = (cluster.stallSignals?.length ?? 0) > 0
+              const hasListings = (cluster.listingCount ?? 0) > 0
               return (
                 <motion.article
                   key={cluster.id}
@@ -80,41 +85,84 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
                   </div>
 
                   {/* Top row */}
-                  <div className="mb-6 flex items-start justify-between">
+                  <div className="mb-5 flex items-start justify-between">
                     <div className="space-y-1">
-                      <h3 className="text-lg font-bold leading-none text-stone-900">{cluster.owner}</h3>
+                      <h3 className="text-lg font-bold leading-none text-on-surface capitalize">{cluster.owner}</h3>
                       <p className="text-sm text-on-surface-variant">
-                        {cluster.township} &bull; {cluster.lots} lots &bull; {cluster.acreage.toLocaleString()} acres
+                        {cluster.township} &bull; {cluster.lots} lots &bull; {cluster.acreage.toFixed(1)} acres
                       </p>
                     </div>
                     <ScoreRing score={cluster.score} size={64} />
                   </div>
 
-                  {/* Stats row */}
-                  <div className="mb-6 grid grid-cols-4 gap-4 border-y border-stone-50 py-4">
+                  {/* Stats row — real data */}
+                  <div className="mb-5 grid grid-cols-4 gap-4 border-y border-surface-container-low py-4">
                     <div>
-                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Lot Count</p>
-                      <p className="text-sm font-bold text-on-surface">{cluster.lots} lots</p>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Lots</p>
+                      <p className="text-sm font-bold text-on-surface">{cluster.lots}</p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Acreage</p>
-                      <p className="text-sm font-bold text-on-surface">{cluster.acreage} ac</p>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Acreage</p>
+                      <p className="text-sm font-bold text-on-surface">{cluster.acreage.toFixed(1)} ac</p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Avg Land</p>
-                      <p className="text-sm font-bold text-on-surface">{cluster.avgLandValue}</p>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Vacancy</p>
+                      <p className="text-sm font-bold text-on-surface">
+                        {cluster.vacancyRatio != null ? `${Math.round(cluster.vacancyRatio * 100)}%` : '—'}
+                      </p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Supply</p>
-                      <p className="text-sm font-bold text-primary">{cluster.supplyType}</p>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Listings</p>
+                      <p className={`text-sm font-bold ${hasListings ? 'text-primary' : 'text-on-surface'}`}>
+                        {cluster.listingCount ?? 0} active
+                      </p>
                     </div>
                   </div>
 
-                  {/* Dimension bars */}
-                  <div className="mb-8 space-y-3">
-                    <DimensionBar label="Zoning & Entitlement" value={cluster.zoning} />
-                    <DimensionBar label="Infrastructure Signal" value={cluster.infrastructure} />
-                    <DimensionBar label="Economic Demand Fit" value={cluster.economicFit} />
+                  {/* Stall evidence tags */}
+                  {hasStallEvidence && (
+                    <div className="mb-5">
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">
+                        Stall Evidence ({Math.round((cluster.stallConfidence ?? 0) * 100)}% confidence)
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cluster.stallSignals!.map((signal) => (
+                          <EvidenceTag key={signal} signal={signal} />
+                        ))}
+                        {cluster.infrastructureInvested && !cluster.stallSignals?.includes('roads_installed') && (
+                          <EvidenceTag signal="roads_installed" />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Listing agents — who is active on this cluster */}
+                  {hasListings && cluster.listingAgents && cluster.listingAgents.length > 0 && (
+                    <div className="mb-5">
+                      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">
+                        Active Agents
+                      </p>
+                      <p className="text-xs text-on-surface-variant">
+                        {cluster.listingAgents.join(', ')}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Supply type + opportunity type */}
+                  <div className="mb-6 flex items-center gap-2">
+                    <span className={`rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${
+                      cluster.supplyType === 'STALLED' ? 'bg-amber-50 text-amber-700'
+                        : cluster.supplyType === 'ACTIVE' ? 'bg-green-50 text-green-700'
+                        : cluster.supplyType === 'DORMANT' ? 'bg-red-50 text-red-700'
+                        : 'bg-surface-container-low text-on-surface-variant'
+                    }`}>
+                      {cluster.supplyType}
+                    </span>
+                    {cluster.opportunityType && (
+                      <span className="rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-surface-container-low text-on-surface-variant">
+                        {cluster.opportunityType.replace(/_/g, ' ')}
+                      </span>
+                    )}
                   </div>
 
                   {/* CTA */}

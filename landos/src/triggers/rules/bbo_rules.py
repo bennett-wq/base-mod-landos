@@ -43,6 +43,9 @@ _PARCEL_OWNER_REVERSE_COOLDOWN = int(timedelta(hours=48).total_seconds())
 _OPPORTUNITY_COOLDOWN = int(timedelta(hours=48).total_seconds())
 _SUBDIVISION_COOLDOWN = int(timedelta(hours=72).total_seconds())
 _CLUSTER_THRESHOLD_COOLDOWN = int(timedelta(hours=72).total_seconds())
+_RELIST_COOLDOWN = int(timedelta(hours=24).total_seconds())
+_FAILED_EXIT_COOLDOWN = int(timedelta(hours=24).total_seconds())
+_DISTRESS_COOLDOWN = int(timedelta(days=7).total_seconds())
 
 
 # ── RI — CDOM threshold → cluster rescan ──────────────────────────────────
@@ -391,5 +394,107 @@ RU2 = TriggerRule(
     description=(
         "owner_cluster_size_threshold_crossed → RESCAN municipal_agent. "
         "72-hour cooldown per owner key. Opportunity routing rule RU (leg 2)."
+    ),
+)
+
+# ── RY — listing_relisted → cluster rescan + seller intent rescore ────────
+# A relist is one of the strongest seller-intent signals: the owner tried
+# to sell, failed (expired/withdrawn/canceled), and is trying again.
+
+RY = TriggerRule(
+    rule_id="RY__listing_relisted__seller_intent_rescore",
+    event_type="listing_relisted",
+    wake_target="supply_intelligence_team",
+    wake_type=WakeType.RESCORE,
+    phase=PhaseGate.PHASE_1,
+    priority=3,
+    routing_class=RoutingClass.STANDARD,
+    condition=lambda e, ctx: True,
+    cooldown_seconds=_RELIST_COOLDOWN,
+    cooldown_key_builder=lambda e, ctx: (
+        f"relist_rescore:{e.payload.get('listing_key', '')}"
+    ),
+    raw_event_bypasses_cooldown=False,
+    materiality_threshold=None,
+    description=(
+        "listing_relisted → RESCORE supply_intelligence_team. "
+        "Strong seller-intent signal: owner tried to exit, failed, relisted. "
+        "24-hour cooldown per listing."
+    ),
+)
+
+# ── RZ1 — listing_relisted → cluster expansion ──────────────────────────
+# A relist should also trigger cluster expansion: find more lots from the
+# same owner or subdivision.
+
+RZ1 = TriggerRule(
+    rule_id="RZ1__listing_relisted__cluster_expansion",
+    event_type="listing_relisted",
+    wake_target="cluster_detection_agent",
+    wake_type=WakeType.RESCAN,
+    phase=PhaseGate.PHASE_1,
+    priority=4,
+    routing_class=RoutingClass.STANDARD,
+    condition=lambda e, ctx: True,
+    cooldown_seconds=_RELIST_COOLDOWN,
+    cooldown_key_builder=lambda e, ctx: (
+        f"relist_cluster:{e.payload.get('listing_key', '')}"
+    ),
+    raw_event_bypasses_cooldown=False,
+    materiality_threshold=None,
+    description=(
+        "listing_relisted → RESCAN cluster_detection_agent. "
+        "Owner re-entering market triggers cluster expansion search. "
+        "24-hour cooldown per listing."
+    ),
+)
+
+# ── RZ2 — distress language → opportunity rescore ────────────────────────
+
+RZ2 = TriggerRule(
+    rule_id="RZ2__private_remarks_distress_language__rescore",
+    event_type="listing_private_remarks_signal_detected",
+    wake_target="supply_intelligence_team",
+    wake_type=WakeType.RESCORE,
+    phase=PhaseGate.PHASE_1,
+    priority=3,
+    routing_class=RoutingClass.STANDARD,
+    condition=lambda e, ctx: "distress_language" in (e.payload.get("detected_categories") or []),
+    cooldown_seconds=_DISTRESS_COOLDOWN,
+    cooldown_key_builder=lambda e, ctx: (
+        f"remarks_distress:{e.payload.get('listing_key', '')}"
+    ),
+    raw_event_bypasses_cooldown=False,
+    materiality_threshold=None,
+    description=(
+        "listing_private_remarks_signal_detected with distress_language → "
+        "RESCORE supply_intelligence_team. 7-day cooldown per listing. "
+        "As-is, estate sale, foreclosure, below market = high urgency."
+    ),
+)
+
+# ── RZ3 — infrastructure/development ready → opportunity rescan ──────────
+
+RZ3 = TriggerRule(
+    rule_id="RZ3__remarks_infrastructure_ready__opportunity_rescan",
+    event_type="listing_private_remarks_signal_detected",
+    wake_target="opportunity_creation_agent",
+    wake_type=WakeType.RESCAN,
+    phase=PhaseGate.PHASE_1,
+    priority=4,
+    routing_class=RoutingClass.STANDARD,
+    condition=lambda e, ctx: bool(
+        {"infrastructure_ready", "development_ready"} & set(e.payload.get("detected_categories") or [])
+    ),
+    cooldown_seconds=_DISTRESS_COOLDOWN,
+    cooldown_key_builder=lambda e, ctx: (
+        f"remarks_infra:{e.payload.get('listing_key', '')}"
+    ),
+    raw_event_bypasses_cooldown=False,
+    materiality_threshold=None,
+    description=(
+        "listing_private_remarks_signal_detected with infrastructure_ready or "
+        "development_ready → RESCAN opportunity_creation_agent. "
+        "7-day cooldown per listing. Confirmed infrastructure = actionable lot."
     ),
 )

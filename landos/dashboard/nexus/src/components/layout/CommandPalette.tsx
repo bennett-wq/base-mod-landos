@@ -119,7 +119,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       onClick={onClose}
     >
       <div
-        className="mx-auto mt-[20vh] w-full max-w-[640px] overflow-hidden rounded-[16px] bg-white shadow-ambient-lg"
+        className="mx-auto mt-[18vh] w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-ambient-lg"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

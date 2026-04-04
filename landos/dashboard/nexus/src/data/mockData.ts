@@ -38,6 +38,17 @@ export interface Cluster {
   zoning: number
   infrastructure: number
   economicFit: number
+  // Evidence fields from strategic ranker
+  stallSignals?: string[]
+  stallConfidence?: number
+  infrastructureInvested?: boolean
+  vacancyRatio?: number
+  listingCount?: number
+  listingAgents?: string[]
+  bboSignalCount?: number
+  opportunityType?: string
+  parcelCount?: number
+  subdivisionName?: string
 }
 
 export interface ClusterSummary {
@@ -99,6 +110,14 @@ export interface PipelineDeal {
   negotiationStatus?: string
   progressPercent?: number
   dueDiligence?: string
+  // Evidence fields
+  stallSignals?: string[]
+  stallConfidence?: number
+  infrastructureInvested?: boolean
+  vacancyRatio?: number
+  listingCount?: number
+  listingAgents?: string[]
+  acreage?: number
 }
 
 export interface PipelineStage {

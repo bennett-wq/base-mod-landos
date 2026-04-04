@@ -43,11 +43,14 @@ from src.triggers.rules import ALL_RULES
 SPARK_BASE_URL = os.environ.get("SPARK_BASE_URL", "https://replication.sparkapi.com/Reso/OData")
 
 
-def fetch_listings(api_key: str, top: int, county: str | None) -> list[dict]:
-    """Fetch active land listings from the Spark RESO Web API."""
+HISTORICAL_STATUSES = ["Active", "Pending", "Closed", "Withdrawn", "Expired", "Canceled"]
+
+
+def fetch_listings(api_key: str, top: int, county: str | None, status: str = "Active") -> list[dict]:
+    """Fetch land listings from the Spark RESO Web API for a given status."""
     filters = [
         "PropertyType eq 'Land'",
-        "StandardStatus eq 'Active'",
+        f"StandardStatus eq '{status}'",
     ]
     if county:
         filters.append(f"CountyOrParish eq '{county}'")
@@ -59,7 +62,7 @@ def fetch_listings(api_key: str, top: int, county: str | None) -> list[dict]:
     })
     url = f"{SPARK_BASE_URL}/Property?{params}"
 
-    print(f"  Fetching up to {top} listings from Spark API...")
+    print(f"  Fetching up to {top} {status} listings from Spark API...")
     print(f"  URL: {url}")
 
     req = urllib.request.Request(url, headers={
@@ -77,8 +80,28 @@ def fetch_listings(api_key: str, top: int, county: str | None) -> list[dict]:
         sys.exit(1)
 
     records = data.get("value", data.get("D", {}).get("Results", []))
-    print(f"  Received {len(records)} records from API.\n")
+    print(f"  Received {len(records)} {status} records from API.\n")
     return records
+
+
+def fetch_all_statuses(api_key: str, top_per_status: int = 200, county: str | None = None, statuses: list[str] | None = None) -> list[dict]:
+    """Fetch listings across multiple statuses. Returns all records combined, deduped by ListingKey."""
+    if statuses is None:
+        statuses = HISTORICAL_STATUSES
+
+    all_records: list[dict] = []
+    seen_keys: set[str] = set()
+
+    for status in statuses:
+        records = fetch_listings(api_key, top=top_per_status, county=county, status=status)
+        for rec in records:
+            key = rec.get("ListingKey")
+            if key and key not in seen_keys:
+                seen_keys.add(key)
+                all_records.append(rec)
+
+    print(f"  Total unique records across {len(statuses)} statuses: {len(all_records)}\n")
+    return all_records
 
 
 # ── Signal report ─────────────────────────────────────────────────────────
