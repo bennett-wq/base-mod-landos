@@ -41,6 +41,8 @@ export function IntelFeed() {
             ? Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} height="120px" className="rounded-xl" />
               ))
+            : (!signals || signals.length === 0)
+            ? <p className="text-xs text-on-surface-variant/50 text-center py-8">No signals yet. Run the pipeline to generate events.</p>
             : signals?.map((signal, i) => (
                 <motion.div
                   key={i}

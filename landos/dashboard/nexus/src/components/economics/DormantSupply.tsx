@@ -39,6 +39,8 @@ export function DormantSupply() {
           ? Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} height="80px" className="rounded-lg" />
             ))
+          : (!owners || owners.length === 0)
+          ? <p className="col-span-full text-xs text-on-surface-variant/50 text-center py-8">No dormant supply detected. Run the pipeline to identify idle clusters.</p>
           : owners?.map((owner) => (
               <div
                 key={owner.name}

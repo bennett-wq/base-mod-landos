@@ -1,21 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchStrategic, type ApiStrategicOpp } from '@/lib/api'
-import { PIPELINE_STAGES as MOCK_STAGES, type PipelineStage, type PipelineDeal } from '@/data/mockData'
+import type { PipelineStage, PipelineDeal } from '@/data/mockData'
 import { usePipelineStore, PIPELINE_STAGES, type PipelineStageName } from '@/stores/pipelineStore'
 
-/** Convert a strategic opportunity into a PipelineDeal with evidence fields. */
+/**
+ * Convert a strategic opportunity into a PipelineDeal.
+ *
+ * Signal classification respects precedence_tier from the backend:
+ * - Tier 1 owner cluster with historical failed exits = HIGHEST
+ *   (even if 0 active listings — this is the key product insight)
+ * - Active listings alone are not enough for HIGHEST
+ */
 function strategicToDeal(opp: ApiStrategicOpp): PipelineDeal {
+  const hasHistoricalEvidence =
+    opp.owner_linked_failed_exit_count > 0 ||
+    opp.has_relist_cycle ||
+    opp.partial_release_detected ||
+    opp.expired_listing_count > 0 ||
+    opp.distress_language_detected ||
+    opp.fatigue_language_detected
+
+  const signal = opp.precedence_tier === 1 && hasHistoricalEvidence ? 'HIGHEST'
+    : opp.precedence_tier === 1 ? 'HIGH'
+    : opp.has_active_listings && opp.composite_score >= 0.3 ? 'HIGH'
+    : undefined
+
   return {
     id: opp.opportunity_id,
     title: opp.name || opp.owner_name || 'Unknown',
-    tier: opp.composite_score >= 0.4 ? 1 : undefined,
+    tier: opp.precedence_tier === 1 || opp.composite_score >= 0.4 ? 1 : undefined,
     entityType: opp.opportunity_type === 'owner_cluster' ? 'OWNER'
       : opp.opportunity_type === 'stalled_subdivision' ? 'SUBDIVISION'
       : 'CLUSTER',
     location: 'Washtenaw Co',
     lotCount: opp.lot_count,
     score: Math.round(opp.composite_score * 100),
-    signal: opp.has_active_listings ? 'HIGHEST' : (opp.lot_count >= 10 ? 'HIGH' : undefined),
+    signal,
     updatedAgo: 'From pipeline',
     // Evidence fields
     stallSignals: opp.stall_signals ?? [],
@@ -59,13 +79,10 @@ export function usePipeline() {
 
   return useQuery({
     queryKey: ['pipeline', dealStages],
-    queryFn: async () => {
-      const res = await fetchStrategic({ min_lots: 3 })
-      if (res.opportunities.length > 0) {
-        const deals = res.opportunities.slice(0, 30).map(strategicToDeal)
-        return buildStages(deals, dealStages)
-      }
-      return MOCK_STAGES
+    queryFn: async (): Promise<PipelineStage[]> => {
+      const res = await fetchStrategic({ min_lots: 3, limit: 50 })
+      const deals = res.opportunities.map(strategicToDeal)
+      return buildStages(deals, dealStages)
     },
     staleTime: 30_000,
   })

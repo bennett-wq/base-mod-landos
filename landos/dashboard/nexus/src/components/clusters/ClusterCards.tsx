@@ -19,6 +19,47 @@ const SIGNAL_LABELS: Record<string, string> = {
   permits_with_vacancy: 'Permits + Vacancy',
 }
 
+/** Historical evidence tags for owner-linked seller intent. */
+function HistoricalEvidence({ cluster }: { cluster: Cluster }) {
+  const tags: { label: string; copper?: boolean }[] = []
+  if ((cluster.ownerLinkedFailedExitCount ?? 0) > 0)
+    tags.push({ label: `${cluster.ownerLinkedFailedExitCount} Failed Exit${(cluster.ownerLinkedFailedExitCount ?? 0) > 1 ? 's' : ''}`, copper: true })
+  if (cluster.hasRelistCycle) tags.push({ label: 'Relist Cycle', copper: true })
+  if (cluster.partialReleaseDetected) tags.push({ label: 'Partial Release' })
+  if ((cluster.expiredListingCount ?? 0) > 0)
+    tags.push({ label: `${cluster.expiredListingCount} Expired` })
+  if ((cluster.withdrawnListingCount ?? 0) > 0)
+    tags.push({ label: `${cluster.withdrawnListingCount} Withdrawn` })
+  if (cluster.packageLanguageDetected) tags.push({ label: 'Package Language', copper: true })
+  if (cluster.fatigueLanguageDetected) tags.push({ label: 'Fatigue Language', copper: true })
+  if (cluster.distressLanguageDetected) tags.push({ label: 'Distress Language', copper: true })
+  if ((cluster.maxCdom ?? 0) >= 180)
+    tags.push({ label: `${cluster.maxCdom}d CDOM` })
+
+  if (tags.length === 0) return null
+  return (
+    <div className="mb-5">
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">
+        Historical Seller Intent ({cluster.historicalListingCount ?? 0} past listing{(cluster.historicalListingCount ?? 0) !== 1 ? 's' : ''})
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((t) => (
+          <span
+            key={t.label}
+            className={`inline-block rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+              t.copper
+                ? 'bg-primary/10 text-primary'
+                : 'bg-surface-container-low text-on-surface-variant'
+            }`}
+          >
+            {t.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function EvidenceTag({ signal }: { signal: string }) {
   const label = SIGNAL_LABELS[signal] ?? signal
   const isInfra = signal === 'roads_installed'
@@ -40,7 +81,7 @@ interface ClusterCardsProps {
 }
 
 export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
-  const { data: clusters, isLoading } = useClusters()
+  const { data: clusters, isLoading, isError } = useClusters()
 
   return (
     <section className="flex w-1/2 flex-col overflow-y-auto bg-surface p-8 hide-scrollbar">
@@ -59,7 +100,16 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
 
       {/* Cards */}
       <div className="space-y-6">
-        {isLoading
+        {isError ? (
+          <div className="flex items-center justify-center py-20 text-on-surface-variant">
+            <p className="text-sm">Failed to load cluster data. Is the API running?</p>
+          </div>
+        ) : (!isLoading && (!clusters || clusters.length === 0)) ? (
+          <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant">
+            <p className="text-sm font-medium">No clusters found.</p>
+            <p className="mt-1 text-xs">Run the pipeline to detect parcel clusters.</p>
+          </div>
+        ) : isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} height="300px" className="rounded-[1.25rem]" />
             ))
@@ -135,6 +185,9 @@ export function ClusterCards({ onViewIntel }: ClusterCardsProps) {
                       </div>
                     </div>
                   )}
+
+                  {/* Historical seller intent — owner-linked evidence */}
+                  <HistoricalEvidence cluster={cluster} />
 
                   {/* Listing agents — who is active on this cluster */}
                   {hasListings && cluster.listingAgents && cluster.listingAgents.length > 0 && (

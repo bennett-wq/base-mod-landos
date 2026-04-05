@@ -43,12 +43,28 @@ export interface Cluster {
   stallConfidence?: number
   infrastructureInvested?: boolean
   vacancyRatio?: number
-  listingCount?: number
+  listingCount?: number          // ACTIVE listings only
   listingAgents?: string[]
   bboSignalCount?: number
   opportunityType?: string
   parcelCount?: number
   subdivisionName?: string
+  // Owner-link and historical evidence (separate from live listing activity)
+  precedenceTier?: number
+  historicalListingCount?: number
+  expiredListingCount?: number
+  withdrawnListingCount?: number
+  ownerLinkedFailedExitCount?: number
+  hasRelistCycle?: boolean
+  partialReleaseDetected?: boolean
+  packageLanguageDetected?: boolean
+  fatigueLanguageDetected?: boolean
+  distressLanguageDetected?: boolean
+  maxCdom?: number
+  avgCdom?: number
+  ownerLinkedHistoricalCount?: number
+  ownerLinkConfidence?: number
+  scoreBreakdown?: Record<string, number>
 }
 
 export interface ClusterSummary {

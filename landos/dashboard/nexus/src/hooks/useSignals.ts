@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchSignals, type ApiSignal } from '@/lib/api'
 import {
-  SIGNALS,
-  COMMAND_SIGNALS,
   TRIGGER_RULES,
   type IntelSignal,
   type CommandSignal,
@@ -63,12 +61,9 @@ function toCommandSignal(s: ApiSignal): CommandSignal {
 export function useSignals() {
   return useQuery({
     queryKey: ['signals'],
-    queryFn: async () => {
+    queryFn: async (): Promise<IntelSignal[]> => {
       const res = await fetchSignals(20)
-      if (res.signals.length > 0) {
-        return res.signals.slice(0, 8).map(toIntelSignal)
-      }
-      return SIGNALS
+      return res.signals.slice(0, 8).map(toIntelSignal)
     },
     staleTime: 30_000,
     refetchInterval: 30_000,
@@ -78,18 +73,16 @@ export function useSignals() {
 export function useCommandSignals() {
   return useQuery({
     queryKey: ['signals', 'command'],
-    queryFn: async () => {
+    queryFn: async (): Promise<CommandSignal[]> => {
       const res = await fetchSignals(10)
-      if (res.signals.length > 0) {
-        return res.signals.slice(0, 5).map(toCommandSignal)
-      }
-      return COMMAND_SIGNALS
+      return res.signals.slice(0, 5).map(toCommandSignal)
     },
     staleTime: 30_000,
     refetchInterval: 30_000,
   })
 }
 
+// Trigger rules remain informational — no backend endpoint exists yet
 export function useTriggerRules() {
   return useQuery({
     queryKey: ['trigger-rules'],

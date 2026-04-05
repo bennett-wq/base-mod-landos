@@ -118,6 +118,12 @@ export function IntelSidebar() {
                 <Skeleton key={i} height="32px" />
               ))}
             </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-on-surface-variant/50 text-center py-8">
+              {(targets ?? []).length === 0
+                ? 'No targets found. Run the pipeline to detect opportunities.'
+                : 'No targets match current filters.'}
+            </p>
           ) : (
             <table className="w-full border-separate border-spacing-y-1 text-left">
               <thead>

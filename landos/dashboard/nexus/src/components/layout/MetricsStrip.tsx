@@ -1,8 +1,10 @@
 import { Terminal } from 'lucide-react'
 import { useMetrics } from '@/hooks/useMetrics'
+import { isApiLive } from '@/lib/api'
 
 export function MetricsStrip() {
-  const { data: metrics } = useMetrics()
+  const { data: metrics, isLoading, isError } = useMetrics()
+  const live = isApiLive()
 
   return (
     <footer className="fixed bottom-0 left-0 z-30 ml-[240px] flex h-[52px] w-[calc(100%-240px)] items-center justify-between bg-white/90 px-8 backdrop-blur-xl">
@@ -37,8 +39,10 @@ export function MetricsStrip() {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-success glow-pulse" />
-          <span className="text-[9px] font-medium text-on-surface-variant/50">Live</span>
+          <div className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-success glow-pulse' : 'bg-outline-variant'}`} />
+          <span className="text-[9px] font-medium text-on-surface-variant/50">
+            {isLoading ? 'Loading…' : isError ? 'Error' : live ? 'Live' : 'Offline'}
+          </span>
         </div>
       </div>
     </footer>
