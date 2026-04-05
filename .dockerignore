@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node / NEXUS frontend (not needed for API image)
+landos/dashboard/
+node_modules/
+
+# Data (seeded separately via volume)
+landos/data/*.db
+
+# Git & IDE
+.git/
+.gitignore
+*.md
+.vscode/
+.idea/
+
+# Misc
+.env
+.DS_Store
+*.log
+landos/logs/
+stitch-designs/
+basemod-brand/
+reference/
