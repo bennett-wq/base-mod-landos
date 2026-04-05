@@ -33,6 +33,9 @@ htmlcov/
 # Bulk data files (Regrid CSV exports, etc.)
 landos/data/
 
+# Pipeline logs
+landos/logs/
+
 # Node / Dashboard build artifacts
 node_modules/
 dist/
