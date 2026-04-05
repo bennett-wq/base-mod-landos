@@ -19,13 +19,11 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
-from uuid import UUID
 
-from src.models.enums import VacancyStatus
 from src.models.listing import Listing
 from src.models.municipality import MunicipalEvent
 from src.models.opportunity import Opportunity
-from src.models.owner import Owner, OwnerCluster
+from src.models.owner import OwnerCluster
 from src.models.parcel import Parcel
 from src.models.development import Subdivision
 

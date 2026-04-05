@@ -41,12 +41,10 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from src.mcp.handlers import MeshState
 from src.mcp.tools import (
-    ALL_TOOLS,
-    INVESTIGATION_TOOL_NAMES,
     INVESTIGATION_TOOLS,
     MUTATION_TOOL_NAMES,
     MUTATION_TOOLS,

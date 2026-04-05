@@ -5,7 +5,7 @@ Fields per LANDOS_OBJECT_MODEL.md.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import UUID, uuid4
 

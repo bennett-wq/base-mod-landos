@@ -24,7 +24,6 @@ from uuid import UUID, uuid4
 import pytest
 
 from src.adapters.municipal.event_factory import (
-    _EVENT_TYPE_MAP,
     build_detection_event,
     evaluate_split_impact,
 )
@@ -32,9 +31,8 @@ from src.adapters.municipal.ingestion import process_municipal_records
 from src.adapters.municipal.normalizer import normalize_municipal_record
 from src.adapters.municipal.store import InMemoryMunicipalEventStore
 from src.events.envelope import EntityRefs, EventEnvelope
-from src.events.enums import EventClass, EventFamily, RoutingClass
+from src.events.enums import EventClass, EventFamily
 from src.models.enums import (
-    LandDivisionPosture,
     MunicipalEventType,
     MunicipalityType,
 )

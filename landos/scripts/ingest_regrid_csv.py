@@ -17,11 +17,10 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import UUID
 
 # Ensure project root is on sys.path so `from src...` imports work.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -42,7 +41,6 @@ from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
 from src.triggers.rules import ALL_RULES
-from src.utils.subdivision_canon import canonicalize_subdivision
 
 # Default CSV path
 DEFAULT_CSV = _PROJECT_ROOT / "data" / "regrid" / "Washtenaw County" / "mi_washtenaw.csv"
@@ -112,7 +110,7 @@ def aggregate_subdivision_totals(csv_path: Path) -> dict[str, SubdivisionTotals]
 
     Returns dict of canonical_name → SubdivisionTotals.
     """
-    print(f"  Aggregating subdivision totals from full CSV...")
+    print("  Aggregating subdivision totals from full CSV...")
     totals: dict[str, list[int, int]] = {}  # canonical → [total, vacant]
 
     with open(csv_path, newline="", encoding="utf-8") as f:

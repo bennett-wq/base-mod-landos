@@ -11,9 +11,8 @@ Target: ~31 new tests → total 159/159.
 
 from __future__ import annotations
 
-import math
 from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
@@ -23,12 +22,10 @@ from src.adapters.regrid.event_factory import (
     build_parcel_score_updated,
 )
 from src.adapters.regrid.ingestion import (
-    InMemoryOwnerStore,
-    InMemoryParcelStore,
     RegridIngestionAdapter,
     _compute_score,
 )
-from src.adapters.regrid.linker import ParcelListingLinker, _normalize_address, _normalize_apn
+from src.adapters.regrid.linker import ParcelListingLinker
 from src.adapters.regrid.normalizer import SkipRecord, normalize
 from src.events.enums import EventClass, EventFamily
 from src.models.enums import VacancyStatus

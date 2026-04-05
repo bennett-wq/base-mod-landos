@@ -12,18 +12,15 @@ Coverage:
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime, timezone
 from uuid import uuid4
 
-import pytest
 
 from src.adapters.cluster.detector import (
     AGENT_THRESHOLD,
     CLUSTER_SIZE_THRESHOLD,
     OFFICE_THRESHOLD,
     OWNER_CLUSTER_EMIT,
-    OWNER_CLUSTER_MIN,
     ClusterDetector,
     _deterministic_cluster_id,
 )

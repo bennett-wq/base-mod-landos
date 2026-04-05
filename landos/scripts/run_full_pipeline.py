@@ -110,7 +110,7 @@ def main() -> None:
         stage_stats["spark"] = {"listings": 0, "events": 0, "fired": 0, "seconds": 0}
 
     # ── Stage 2: Regrid CSV ───────────────────────────────────────────────
-    print(f"\n  STAGE 2: Regrid CSV Ingestion")
+    print("\n  STAGE 2: Regrid CSV Ingestion")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -162,7 +162,7 @@ def main() -> None:
           f"{len(owner_store)} owners ({elapsed:.1f}s)")
 
     # ── Stage 3: PARCEL Cluster Detection (the main event) ────────────────
-    print(f"\n  STAGE 3: Vacant Parcel Cluster Detection")
+    print("\n  STAGE 3: Vacant Parcel Cluster Detection")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -205,7 +205,7 @@ def main() -> None:
     print(f"  Clusters with active listings: {len(clusters_with_listings)}")
 
     # ── Stage 4: Listing Cluster Detection (agent/office) ─────────────────
-    print(f"\n  STAGE 4: Listing Agent/Office Clusters")
+    print("\n  STAGE 4: Listing Agent/Office Clusters")
     print("  " + "-" * 40)
     t0 = time.time()
 

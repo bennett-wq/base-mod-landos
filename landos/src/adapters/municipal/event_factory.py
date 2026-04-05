@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from src.events.envelope import EntityRefs, EventEnvelope
 from src.events.enums import EventClass, EventFamily

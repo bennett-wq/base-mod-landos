@@ -18,7 +18,6 @@ import pytest
 from src.models.enums import StandardStatus
 from src.models.listing import Listing
 from src.scoring.listing_history_signals import (
-    ListingHistoryEvidence,
     analyze_cluster_listing_history,
 )
 

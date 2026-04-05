@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from src.adapters.cluster.parcel_cluster_detector import (
@@ -22,7 +22,6 @@ from src.adapters.cluster.parcel_cluster_detector import (
     PROXIMITY_RADIUS_METERS,
     SUBDIVISION_MIN_PARCELS,
     ParcelClusterDetector,
-    ParcelClusterResult,
 )
 from src.adapters.cluster.store import InMemoryClusterStore
 from src.adapters.regrid.ingestion import (

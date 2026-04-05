@@ -38,14 +38,10 @@ from datetime import datetime, timezone
 from src.adapters.spark.bbo_signals import (
     detect_agent_land_accumulation,
     detect_all_remarks_signals,
-    detect_broker_note_signals,
     detect_cdom_threshold,
     detect_developer_exit,
     detect_office_land_program,
-    detect_private_remarks_signals,
-    detect_site_condo_from_legal,
     detect_subdivision_remnant,
-    extract_infrastructure_profile,
     CDOM_THRESHOLD_DEFAULT,
 )
 from src.adapters.spark.event_factory import (

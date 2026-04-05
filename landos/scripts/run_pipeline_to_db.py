@@ -21,7 +21,6 @@ import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import UUID, uuid4
 
 # Ensure project root is on sys.path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -33,7 +32,6 @@ load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 from src.adapters.cluster.detector import ClusterDetector
 from src.adapters.cluster.parcel_cluster_detector import ParcelClusterDetector
 from src.adapters.cluster.store import InMemoryClusterStore
-from src.adapters.municipal.store import InMemoryMunicipalEventStore
 from src.adapters.regrid.ingestion import (
     RegridIngestionAdapter,
     InMemoryParcelStore,
@@ -47,7 +45,7 @@ from src.models.enums import InfrastructureStatus, MunicipalEventType, StandardS
 from src.models.municipality import MunicipalEvent
 from src.scoring.listing_history_signals import analyze_cluster_listing_history, ListingHistoryEvidence
 from src.scoring.owner_link_evidence import OwnerLinkEvidence, analyze_owner_cluster_evidence
-from src.scoring.strategic_ranker import rank_from_pipeline, StrategicOpportunity
+from src.scoring.strategic_ranker import rank_from_pipeline
 from src.stores.sqlite_store import SQLiteStore
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
@@ -58,7 +56,6 @@ from src.utils.subdivision_canon import canonicalize_subdivision
 from scripts.ingest_regrid_csv import (
     DEFAULT_CSV,
     WASHTENAW_MUNICIPALITY_ID,
-    SubdivisionTotals,
     aggregate_subdivision_totals,
     load_csv_records,
 )
@@ -205,7 +202,7 @@ def main() -> None:
         stage_stats["spark"] = {"listings": 0, "events": 0, "fired": 0, "seconds": 0}
 
     # ── Stage 2: Regrid CSV ───────────────────────────────────────────────
-    print(f"\n  STAGE 2: Regrid CSV Ingestion")
+    print("\n  STAGE 2: Regrid CSV Ingestion")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -258,12 +255,12 @@ def main() -> None:
     # ── Stage 2.5: Full-CSV Subdivision Aggregation ───────────────────────
     # Scan ALL Regrid rows (not just vacant) to get real total/vacant/improved
     # lot counts per subdivision. This is what breaks the vacancy_ratio=1.0 bug.
-    print(f"\n  STAGE 2.5: Subdivision Total Aggregation (full CSV)")
+    print("\n  STAGE 2.5: Subdivision Total Aggregation (full CSV)")
     print("  " + "-" * 40)
     subdivision_totals = aggregate_subdivision_totals(csv_path)
 
     # ── Stage 3: Parcel Cluster Detection ─────────────────────────────────
-    print(f"\n  STAGE 3: Vacant Parcel Cluster Detection")
+    print("\n  STAGE 3: Vacant Parcel Cluster Detection")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -332,7 +329,7 @@ def main() -> None:
     # full-CSV aggregation pass (Stage 2.5) instead of counting only the
     # vacant parcels in the cluster. This breaks the vacancy_ratio=1.0 bug
     # that was causing ghost subdivisions to outrank real opportunities.
-    print(f"\n  STAGE 3.5: Stallout Detection on Subdivision Clusters")
+    print("\n  STAGE 3.5: Stallout Detection on Subdivision Clusters")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -431,7 +428,7 @@ def main() -> None:
           f"{stall_count} stalled, {not_stalled_count} not stalled ({elapsed:.1f}s)")
 
     # ── Stage 4: Listing Clusters ─────────────────────────────────────────
-    print(f"\n  STAGE 4: Listing Agent/Office Clusters")
+    print("\n  STAGE 4: Listing Agent/Office Clusters")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -451,7 +448,7 @@ def main() -> None:
     print(f"  Stage 4: {len(listing_cluster_store)} listing clusters ({elapsed:.1f}s)")
 
     # ── Stage 4.5: Listing History Evidence ─────────────────────────────
-    print(f"\n  STAGE 4.5: Listing History Evidence Analysis")
+    print("\n  STAGE 4.5: Listing History Evidence Analysis")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -535,7 +532,7 @@ def main() -> None:
     print(f"  Stage 4.5: {len(history_evidence)} clusters analyzed, {hist_enriched} with history signals ({elapsed:.1f}s)")
 
     # ── Stage 4.7: Owner-Linked Seller Evidence ─────────────────────────
-    print(f"\n  STAGE 4.7: Owner-Linked Seller Evidence")
+    print("\n  STAGE 4.7: Owner-Linked Seller Evidence")
     print("  " + "-" * 40)
     t0 = time.time()
 
@@ -566,7 +563,7 @@ def main() -> None:
     )
 
     # ── Stage 4.6: Legal Description Multi-Lot Grouping ──────────────────
-    print(f"\n  STAGE 4.6: Legal Description Multi-Lot Detection")
+    print("\n  STAGE 4.6: Legal Description Multi-Lot Detection")
     print("  " + "-" * 40)
     from src.adapters.spark.bbo_signals import detect_same_subdivision_listings
     legal_groups = detect_same_subdivision_listings(all_listings_for_history)
@@ -589,7 +586,7 @@ def main() -> None:
     }
 
     # ── Stage 5: Strategic Opportunity Ranking ────────────────────────────
-    print(f"\n  STAGE 5: Strategic Opportunity Ranking")
+    print("\n  STAGE 5: Strategic Opportunity Ranking")
     print("  " + "-" * 40)
     t0 = time.time()
 

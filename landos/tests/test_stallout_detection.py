@@ -23,7 +23,7 @@ AC-17: Verified by file existence (this file)
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
@@ -38,17 +38,16 @@ from src.adapters.stallout.store import (
     InMemorySubdivisionStore,
 )
 from src.events.envelope import EntityRefs, EventEnvelope
-from src.events.enums import EventClass, EventFamily, RoutingClass
+from src.events.enums import EventClass, EventFamily
 from src.models.development import Subdivision
 from src.models.enums import (
     InfrastructureStatus,
     MunicipalEventType,
-    MunicipalityType,
     OpportunityStatus,
     OpportunityType,
     VacancyStatus,
 )
-from src.models.municipality import Municipality, MunicipalEvent
+from src.models.municipality import MunicipalEvent
 from src.models.opportunity import Opportunity
 from src.models.parcel import Parcel
 from src.triggers.context import TriggerContext

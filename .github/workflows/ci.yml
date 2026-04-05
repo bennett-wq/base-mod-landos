@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        working-directory: landos
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff
+
+      - name: Lint with ruff
+        working-directory: landos
+        run: |
+          # F-codes catch real bugs (unused imports, undefined names, etc.)
+          # Ignore E402 (import order — scripts use sys.path manipulation)
+          # Ignore E741 (ambiguous names — domain convention)
+          # Ignore F841 in scripts/tests (unused vars kept for readability)
+          ruff check src/ api/ --select E,F,W --ignore E402,E741,E501,F841
+          ruff check tests/ scripts/ --select F --ignore F841
+
+      - name: Run tests
+        working-directory: landos
+        run: python -m pytest tests/ -v --tb=short

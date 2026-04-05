@@ -30,7 +30,6 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional
 
 from src.adapters.cluster.store import InMemoryClusterStore
 from src.adapters.regrid.linker import ParcelListingLinker

@@ -25,10 +25,8 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Optional
-from uuid import UUID
 
 from src.adapters.spark.bbo_signals import (
-    BROKER_NOTE_PATTERNS,
     REMARKS_PATTERNS,
     detect_broker_note_signals,
     extract_infrastructure_profile,
@@ -388,7 +386,6 @@ def rank_from_pipeline(
         site_tested = False
         has_docs = False
         total_docs = 0
-        from src.adapters.spark.bbo_signals import extract_legal_lot_info
 
         for l in active_matched:
             listing_keys.append(l.listing_key)

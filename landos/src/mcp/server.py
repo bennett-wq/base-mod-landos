@@ -18,7 +18,7 @@ import sys
 from typing import Any
 
 from src.mcp.handlers import MeshState, dispatch_tool
-from src.mcp.tools import ALL_TOOLS, MUTATION_TOOL_NAMES
+from src.mcp.tools import ALL_TOOLS
 
 
 # Global mesh state — initialized once, shared across all tool calls

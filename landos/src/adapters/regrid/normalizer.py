@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from src.adapters.regrid.field_map import (
     REQUIRED_REGRID_FIELDS,

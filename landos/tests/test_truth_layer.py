@@ -8,14 +8,11 @@
 
 from __future__ import annotations
 
-import sqlite3
 import tempfile
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from uuid import UUID
 
-import pytest
 
 from src.utils.subdivision_canon import canonicalize_subdivision
 from src.adapters.cluster.parcel_cluster_detector import _extract_subdivision

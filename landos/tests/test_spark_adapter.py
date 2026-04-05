@@ -11,14 +11,12 @@ wall-clock non-determinism (same pattern as test_trigger_engine.py).
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
-from uuid import UUID, uuid4
+from datetime import datetime, timezone
 
 import pytest
 
 from src.adapters.spark.event_factory import (
     build_listing_added,
-    build_listing_expired,
     build_listing_price_reduced,
     build_listing_relisted,
     build_listing_status_changed,

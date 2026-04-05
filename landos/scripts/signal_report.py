@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import time
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -27,14 +26,12 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-from src.adapters.cluster.detector import ClusterDetector
 from src.adapters.cluster.parcel_cluster_detector import ParcelClusterDetector, ParcelClusterResult
 from src.adapters.cluster.store import InMemoryClusterStore
 from src.adapters.regrid.ingestion import (
     RegridIngestionAdapter, InMemoryParcelStore, InMemoryOwnerStore,
 )
 from src.adapters.spark.ingestion import SparkIngestionAdapter, InMemoryListingStore
-from src.models.enums import VacancyStatus
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
@@ -242,7 +239,7 @@ def main() -> None:
     tier1 = [(c, i) for c, i in scored if i["score"] >= 6]
     print(f"\n{'='*80}")
     print(f"  TIER 1 — HIGHEST SIGNAL CONVERGENCE ({len(tier1)} opportunities)")
-    print(f"  Multiple signals reinforcing: fatigue + multi-parcel + remarks intelligence")
+    print("  Multiple signals reinforcing: fatigue + multi-parcel + remarks intelligence")
     print(f"{'='*80}")
     for c, info in tier1:
         print(f"\n  [{c.cluster_type.upper()}] {c.group_key}")
@@ -261,7 +258,7 @@ def main() -> None:
     tier2 = [(c, i) for c, i in scored if 3 <= i["score"] < 6]
     print(f"\n{'='*80}")
     print(f"  TIER 2 — MODERATE SIGNAL ({len(tier2)} opportunities)")
-    print(f"  Owner cluster + listing, some fatigue or remarks indicators")
+    print("  Owner cluster + listing, some fatigue or remarks indicators")
     print(f"{'='*80}")
     for c, info in tier2:
         print(f"\n  [{c.cluster_type.upper()}] {c.group_key}")
@@ -276,7 +273,7 @@ def main() -> None:
     # ── TIER 3: Listings with BBO signals but no cluster match ────────────
     print(f"\n{'='*80}")
     print(f"  TIER 3 — UNCLUSTERED LISTINGS WITH SIGNALS ({len(unclustered_listings_with_signals)})")
-    print(f"  Active listing with fatigue/remarks signals, not linked to a parcel cluster")
+    print("  Active listing with fatigue/remarks signals, not linked to a parcel cluster")
     print(f"{'='*80}")
     for l, signals, score in unclustered_listings_with_signals[:20]:
         cdom = f"CDOM={l.cdom}" if l.cdom else ""
@@ -291,7 +288,7 @@ def main() -> None:
     dormant.sort(key=lambda x: -x.parcel_count)
     print(f"\n{'='*80}")
     print(f"  TIER 4 — DORMANT SUPPLY ({len(dormant)} large owner clusters, no active listing)")
-    print(f"  Owners holding significant vacant inventory not currently on market")
+    print("  Owners holding significant vacant inventory not currently on market")
     print(f"{'='*80}")
     for c in dormant[:25]:
         print(f"  {c.group_key}: {c.parcel_count} parcels, {c.total_acreage:.1f} acres")
@@ -310,7 +307,7 @@ def main() -> None:
 
     # ── Summary stats ─────────────────────────────────────────────────────
     print(f"\n{'='*80}")
-    print(f"  SUMMARY")
+    print("  SUMMARY")
     print(f"{'='*80}")
     print(f"  Tier 1 (highest convergence):     {len(tier1)}")
     print(f"  Tier 2 (moderate signal):          {len(tier2)}")

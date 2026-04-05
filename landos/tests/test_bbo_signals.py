@@ -20,7 +20,6 @@ from datetime import date, datetime, timezone
 import pytest
 
 from src.adapters.spark.bbo_signals import (
-    CDOM_THRESHOLD_DEFAULT,
     detect_agent_land_accumulation,
     detect_all_remarks_signals,
     detect_broker_note_signals,
@@ -36,7 +35,7 @@ from src.adapters.spark.bbo_signals import (
     extract_legal_lot_info,
 )
 from src.adapters.spark.event_factory import build_listing_private_remarks_signal_detected
-from src.adapters.spark.ingestion import InMemoryListingStore, SparkIngestionAdapter
+from src.adapters.spark.ingestion import SparkIngestionAdapter
 from src.adapters.spark.normalizer import normalize
 from src.models.enums import StandardStatus
 from src.models.listing import Listing
