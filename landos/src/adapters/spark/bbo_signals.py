@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 from src.models.listing import Listing
+from src.utils.subdivision_canon import canonicalize_subdivision
 
 CDOM_THRESHOLD_DEFAULT = 90
 CDOM_EXIT_THRESHOLD = 120
@@ -345,11 +346,13 @@ def extract_legal_lot_info(listing: Listing) -> dict | None:
         # UNIT N SUBDIVISION_NAME (site condo)
         m = re.search(r'\bUNIT\s+(\d+)\s+([A-Z][A-Z\s\'.]+?)(?:\s+SPLIT|\s+PCL|\s*$)', text, re.IGNORECASE)
         if m:
-            return {
-                'subdivision': m.group(2).strip().lower(),
-                'lot_number': int(m.group(1)),
-                'is_unit': True,
-            }
+            canon = canonicalize_subdivision(m.group(2).strip())
+            if canon:
+                return {
+                    'subdivision': canon,
+                    'lot_number': int(m.group(1)),
+                    'is_unit': True,
+                }
 
         # LOT N SUBDIVISION SUB/SUBDIVISION
         m = re.search(r'\bLOT\s+(\d+[A-Z]?)\s+(.+?)\s+(?:SUB|SUBDIVISION|SUBD|S/D)', text, re.IGNORECASE)
@@ -359,9 +362,10 @@ def extract_legal_lot_info(listing: Listing) -> dict | None:
                 lot_num = int(re.sub(r'[A-Z]', '', m.group(1)))
             except ValueError:
                 lot_num = 0
-            if len(name) >= 3:
+            canon = canonicalize_subdivision(name)
+            if canon:
                 return {
-                    'subdivision': name.lower(),
+                    'subdivision': canon,
                     'lot_number': lot_num,
                     'is_unit': False,
                 }
@@ -369,11 +373,13 @@ def extract_legal_lot_info(listing: Listing) -> dict | None:
         # Lot N SUBDIVISION_NAME (without explicit SUB suffix)
         m = re.search(r'\bLot\s+(\d+)\s+([A-Z][a-zA-Z\s]+?)(?:\s+subdivision|\s*$)', text, re.IGNORECASE)
         if m and len(m.group(2).strip()) >= 3:
-            return {
-                'subdivision': m.group(2).strip().lower(),
-                'lot_number': int(m.group(1)),
-                'is_unit': False,
-            }
+            canon = canonicalize_subdivision(m.group(2).strip())
+            if canon:
+                return {
+                    'subdivision': canon,
+                    'lot_number': int(m.group(1)),
+                    'is_unit': False,
+                }
 
     return None
 

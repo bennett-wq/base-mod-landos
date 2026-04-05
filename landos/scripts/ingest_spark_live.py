@@ -20,6 +20,7 @@ import sys
 import urllib.request
 import urllib.parse
 import urllib.error
+from datetime import datetime
 from pathlib import Path
 
 # Ensure project root is on sys.path so `from src...` imports work.
@@ -44,6 +45,16 @@ SPARK_BASE_URL = os.environ.get("SPARK_BASE_URL", "https://replication.sparkapi.
 
 
 HISTORICAL_STATUSES = ["Active", "Pending", "Closed", "Withdrawn", "Expired", "Canceled"]
+
+_CURRENT_STATUS_PRIORITY = {
+    "Active": 50,
+    "Pending": 40,
+    "ActiveUnderContract": 40,
+    "Closed": 30,
+    "Withdrawn": 20,
+    "Canceled": 20,
+    "Expired": 20,
+}
 
 
 def fetch_listings(api_key: str, top: int, county: str | None, status: str = "Active") -> list[dict]:
@@ -84,24 +95,93 @@ def fetch_listings(api_key: str, top: int, county: str | None, status: str = "Ac
     return records
 
 
+def _parse_dt(raw: object) -> datetime | None:
+    if raw is None or raw == "":
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    text = text.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _record_sort_key(record: dict) -> tuple[int, datetime]:
+    status = str(record.get("StandardStatus") or "").strip()
+    status_priority = _CURRENT_STATUS_PRIORITY.get(status, 0)
+    ts = (
+        _parse_dt(record.get("StatusChangeTimestamp"))
+        or _parse_dt(record.get("MajorChangeTimestamp"))
+        or _parse_dt(record.get("ModificationTimestamp"))
+        or _parse_dt(record.get("OriginalEntryTimestamp"))
+        or _parse_dt(record.get("PendingTimestamp"))
+    )
+    if ts is None:
+        listing_contract_date = record.get("ListingContractDate")
+        if listing_contract_date:
+            dt = _parse_dt(f"{listing_contract_date}T00:00:00+00:00")
+            if dt is not None:
+                ts = dt
+    if ts is None:
+        ts = datetime.min
+    return (status_priority, ts)
+
+
+def select_current_records(records: list[dict]) -> list[dict]:
+    """Pick one current-state record per ListingKey for live surfaces."""
+    by_key: dict[str, dict] = {}
+    for rec in records:
+        key = rec.get("ListingKey")
+        if not key:
+            continue
+        current = by_key.get(key)
+        if current is None or _record_sort_key(rec) > _record_sort_key(current):
+            by_key[key] = rec
+    return list(by_key.values())
+
+
 def fetch_all_statuses(api_key: str, top_per_status: int = 200, county: str | None = None, statuses: list[str] | None = None) -> list[dict]:
-    """Fetch listings across multiple statuses. Returns all records combined, deduped by ListingKey."""
+    """Fetch listings across multiple statuses and return the current-state surface."""
     if statuses is None:
         statuses = HISTORICAL_STATUSES
 
     all_records: list[dict] = []
-    seen_keys: set[str] = set()
 
     for status in statuses:
         records = fetch_listings(api_key, top=top_per_status, county=county, status=status)
-        for rec in records:
-            key = rec.get("ListingKey")
-            if key and key not in seen_keys:
-                seen_keys.add(key)
-                all_records.append(rec)
+        all_records.extend(records)
 
-    print(f"  Total unique records across {len(statuses)} statuses: {len(all_records)}\n")
-    return all_records
+    current_records = select_current_records(all_records)
+    print(
+        f"  Total records across {len(statuses)} statuses: {len(all_records)} "
+        f"({len(current_records)} current-state listing keys)\n"
+    )
+    return current_records
+
+
+def fetch_status_surfaces(
+    api_key: str,
+    top_per_status: int = 200,
+    county: str | None = None,
+    statuses: list[str] | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """Fetch both current-state and full historical Spark surfaces."""
+    if statuses is None:
+        statuses = HISTORICAL_STATUSES
+
+    all_records: list[dict] = []
+    for status in statuses:
+        records = fetch_listings(api_key, top=top_per_status, county=county, status=status)
+        all_records.extend(records)
+
+    current_records = select_current_records(all_records)
+    print(
+        f"  Total records across {len(statuses)} statuses: {len(all_records)} "
+        f"({len(current_records)} current-state listing keys)\n"
+    )
+    return current_records, all_records
 
 
 # ── Signal report ─────────────────────────────────────────────────────────

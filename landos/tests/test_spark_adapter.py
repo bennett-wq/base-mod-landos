@@ -136,6 +136,17 @@ class TestNormalizer:
         assert listing.list_price == 125000
         assert isinstance(listing.list_price, int)
 
+    def test_owner_name_maps_when_seller_name_missing(self):
+        listing = normalize(
+            _land_record(
+                SellerName=None,
+                OwnerName="Cook Jennifer L",
+            ),
+            now=_FIXED_TS,
+        )
+        assert listing.seller_name_raw is None
+        assert listing.owner_name_raw == "Cook Jennifer L"
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # SECTION 2: Event factory / diff tests

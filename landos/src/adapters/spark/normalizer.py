@@ -88,6 +88,10 @@ def normalize(record: dict, now: datetime | None = None) -> Listing:
     listing_office_name = _to_str_optional(record.get("ListOfficeName"))
     subdivision_name_raw = _to_str_optional(record.get("SubdivisionName"))
     seller_name_raw = _to_str_optional(record.get("SellerName"))
+    owner_name_raw = _to_str_optional(
+        record.get("OwnerName")
+        or record.get("Tax_sp_Info_co_Owner_sp_Name2")
+    )
     address_raw = _to_str_optional(record.get("UnparsedAddress"))
     parcel_number_raw = _to_str_optional(record.get("ParcelNumber"))
 
@@ -121,6 +125,7 @@ def normalize(record: dict, now: datetime | None = None) -> Listing:
         expiration_date=expiration_date,
         subdivision_name_raw=subdivision_name_raw,
         seller_name_raw=seller_name_raw,
+        owner_name_raw=owner_name_raw,
         address_raw=address_raw,
         parcel_number_raw=parcel_number_raw,
         price_per_acre=price_per_acre,

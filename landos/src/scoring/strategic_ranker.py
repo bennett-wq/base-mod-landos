@@ -6,17 +6,17 @@ clusters with 5+ vacant lots, infrastructure invested, and acquisition signals.
 
 This IS the query that makes BaseMod different.
 
-Composite score formula (v0.4):
-  - lot_count_score   (0.14): 5+ lots = 0.5, 10+ = 0.75, 20+ = 1.0
-  - stall_confidence  (0.14): direct from stallout detector (0.0-1.0)
-  - seller_intent     (0.16): distress + fatigue + relist cycles + partial release
-  - infrastructure    (0.12): roads/sewer/water invested OR confirmed in remarks
-  - vacancy_ratio     (0.10): from subdivision or cluster parcels
-  - bbo_signals       (0.08): any BBO behavioral signals on cluster listings
-  - municipal_posture (0.04): PERMISSIVE = 1.0, MODERATE = 0.5, else 0.0
-  - listing_activity  (0.08): has active listings = 1.0, else 0.0
-  - history_signals   (0.08): listing history composite (test-the-water, failed exits)
-  - broker_notes      (0.06): package/bulk language + high CDOM from remarks
+Composite score formula (v0.5):
+  - ownership_concentration (0.18): concentrated same-owner vacant inventory
+  - seller_intent           (0.24): owner-linked failed exits, relists, test-water behavior
+  - history_signals         (0.14): cluster history composite
+  - broker_notes            (0.10): package/distress/fatigue/development language
+  - document_evidence       (0.06): seller-prepared docs on current or historical listings
+  - infrastructure          (0.08): roads/sewer/water invested OR confirmed in remarks
+  - vacancy_ratio           (0.08): from subdivision or cluster parcels
+  - stall_confidence        (0.06): direct from stallout detector
+  - live_listing_bonus      (0.04): active listing recency only
+  - municipal_posture       (0.02): PERMISSIVE = 1.0, MODERATE = 0.5, else 0.0
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from src.adapters.spark.bbo_signals import (
     BROKER_NOTE_PATTERNS,
@@ -33,8 +33,9 @@ from src.adapters.spark.bbo_signals import (
     detect_broker_note_signals,
     extract_infrastructure_profile,
 )
-from src.models.enums import VacancyStatus
+from src.models.enums import StandardStatus, VacancyStatus
 from src.scoring.listing_history_signals import ListingHistoryEvidence
+from src.scoring.owner_link_evidence import OwnerLinkEvidence
 
 # Deterministic namespace for opportunity IDs — stable across reruns
 _OPP_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
@@ -43,16 +44,16 @@ _OPP_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 # ── Weights ──────────────────────────────────────────────────────────────────
 
 WEIGHTS = {
-    "lot_count": 0.14,
-    "stall_confidence": 0.14,
-    "seller_intent": 0.16,
-    "infrastructure": 0.12,
-    "vacancy_ratio": 0.10,
-    "bbo_signals": 0.08,
-    "municipal_posture": 0.04,
-    "listing_activity": 0.08,
-    "history_signals": 0.08,
-    "broker_notes": 0.06,
+    "ownership_concentration": 0.18,
+    "seller_intent": 0.24,
+    "history_signals": 0.14,
+    "broker_notes": 0.10,
+    "document_evidence": 0.06,
+    "infrastructure": 0.08,
+    "vacancy_ratio": 0.08,
+    "stall_confidence": 0.06,
+    "live_listing_bonus": 0.04,
+    "municipal_posture": 0.02,
 }
 
 
@@ -63,6 +64,7 @@ class StrategicOpportunity:
     name: str
     opportunity_type: str  # "stalled_subdivision", "owner_cluster", "subdivision_cluster"
     municipality_id: Optional[str] = None
+    precedence_tier: int = 4
 
     # Core metrics
     lot_count: int = 0
@@ -101,6 +103,7 @@ class StrategicOpportunity:
     historical_listing_count: int = 0
     expired_listing_count: int = 0
     withdrawn_listing_count: int = 0
+    canceled_listing_count: int = 0
     has_relist_cycle: bool = False
     partial_release_detected: bool = False
     max_cdom: int = 0
@@ -133,6 +136,24 @@ class StrategicOpportunity:
     site_tested: bool = False
     has_documents: bool = False
     document_count: int = 0
+
+    # Owner-linked historical seller evidence
+    owner_linked_active_count: int = 0
+    owner_linked_historical_count: int = 0
+    owner_linked_failed_exit_count: int = 0
+    owner_linked_expired_count: int = 0
+    owner_linked_withdrawn_count: int = 0
+    owner_linked_canceled_count: int = 0
+    owner_linked_agents: list[str] = field(default_factory=list)
+    owner_linked_offices: list[str] = field(default_factory=list)
+    owner_linked_listing_keys: list[str] = field(default_factory=list)
+    repeat_agent_on_owner_inventory: bool = False
+    owner_link_match_methods: list[str] = field(default_factory=list)
+    owner_link_confidence: float = 0.0
+    owner_linked_notes_present: bool = False
+    owner_linked_documents_present: bool = False
+    owner_linked_notes_count: int = 0
+    owner_linked_document_count: int = 0
 
     # Legal description multi-lot evidence
     legal_lot_numbers: list[int] = field(default_factory=list)
@@ -167,57 +188,116 @@ def _municipal_posture_score(posture: str) -> float:
     return 0.0
 
 
-def score_opportunity(opp: StrategicOpportunity) -> StrategicOpportunity:
-    """Compute composite score for a strategic opportunity (v0.4).
+def _ownership_concentration_score(opp: StrategicOpportunity) -> float:
+    base = _lot_count_score(opp.lot_count)
+    if opp.opportunity_type == "owner_cluster":
+        return base
+    if opp.opportunity_type == "stalled_subdivision":
+        return round(base * 0.7, 4)
+    if opp.opportunity_type == "subdivision_cluster":
+        return round(base * 0.6, 4)
+    return round(base * 0.5, 4)
 
-    Key change from v0.3: adds explicit seller_intent dimension that
-    combines distress language, failed exits, partial release, and relist
-    cycles into a single strong signal.
-    """
-    # Seller intent: the core question — is the owner trying to get out?
+
+def _determine_precedence_tier(
+    opp_type: str,
+    has_active_listings: bool,
+    hist_ev: ListingHistoryEvidence | None,
+    owner_ev: OwnerLinkEvidence | None,
+    has_notes_or_docs: bool,
+) -> int:
+    owner_linked = bool(
+        owner_ev
+        and (
+            owner_ev.owner_linked_active_count > 0
+            or owner_ev.owner_linked_historical_count > 0
+        )
+    )
+    cluster_history = bool(
+        hist_ev
+        and (
+            hist_ev.total_historical_listings > 0
+            or hist_ev.expired_listings > 0
+            or hist_ev.withdrawn_listings > 0
+            or hist_ev.canceled_listings > 0
+        )
+    )
+    if opp_type == "owner_cluster" and owner_linked:
+        return 1
+    if cluster_history or has_notes_or_docs:
+        return 2
+    if has_active_listings:
+        return 3
+    return 4
+
+
+def score_opportunity(opp: StrategicOpportunity) -> StrategicOpportunity:
+    """Compute composite score for a strategic opportunity (v0.5)."""
     intent_score = 0.0
-    if opp.distress_language_detected:
-        intent_score += 0.30  # as-is, estate sale, foreclosure
-    if opp.fatigue_language_detected:
-        intent_score += 0.15  # motivated, bring offer, must sell
-    if opp.all_offers_considered:
-        intent_score += 0.15  # "all offers considered" = ready to deal
+    if opp.owner_linked_failed_exit_count > 0:
+        intent_score += 0.35
     if opp.has_relist_cycle:
-        intent_score += 0.15  # tried, failed, trying again
+        intent_score += 0.12
     if opp.partial_release_detected:
-        intent_score += 0.12  # testing the water with few lots
+        intent_score += 0.10
+    if opp.repeat_agent_on_owner_inventory:
+        intent_score += 0.10
+    if opp.owner_linked_historical_count > 0:
+        intent_score += 0.10
+    if opp.owner_linked_active_count > 0:
+        intent_score += 0.06
+    if opp.distress_language_detected:
+        intent_score += 0.08
+    if opp.fatigue_language_detected:
+        intent_score += 0.05
+    if opp.all_offers_considered:
+        intent_score += 0.03
     if opp.splits_available:
-        intent_score += 0.10  # actively offering splits = exit strategy
-    if opp.expired_listing_count > 0 or opp.withdrawn_listing_count > 0:
-        intent_score += 0.08  # any failed exit attempt
+        intent_score += 0.03
     intent_score = min(intent_score, 1.0)
 
-    # Infrastructure: from platted subdivision, structured BBO fields, OR remarks
     infra_score = 0.0
     if opp.infrastructure_invested:
         infra_score = 1.0
     elif opp.structured_infra_score > 0:
-        infra_score = max(opp.structured_infra_score, 0.5)  # structured data is reliable
+        infra_score = max(opp.structured_infra_score, 0.5)
     elif opp.infrastructure_ready_detected or opp.development_ready_detected:
-        infra_score = 0.4  # mentioned in remarks only
+        infra_score = 0.4
+
+    broker_notes_score = 0.0
+    if opp.package_language_detected:
+        broker_notes_score += 0.25
+    if opp.distress_language_detected:
+        broker_notes_score += 0.20
+    if opp.fatigue_language_detected:
+        broker_notes_score += 0.15
+    if opp.owner_linked_notes_present:
+        broker_notes_score += 0.15
+    if opp.site_tested:
+        broker_notes_score += 0.10
+    if opp.max_cdom >= 180:
+        broker_notes_score += 0.15
+    broker_notes_score = min(broker_notes_score, 1.0)
+
+    document_score = min(
+        (
+            (opp.document_count if opp.document_count else 0)
+            + (opp.owner_linked_document_count if opp.owner_linked_document_count else 0)
+        ) / 3.0,
+        1.0,
+    )
 
     breakdown = {
-        "lot_count": _lot_count_score(opp.lot_count),
-        "stall_confidence": min(opp.stall_confidence, 1.0),
+        "ownership_concentration": _ownership_concentration_score(opp),
         "seller_intent": intent_score,
+        "history_signals": min(opp.history_signal_score, 1.0),
+        "broker_notes": broker_notes_score,
+        "document_evidence": document_score,
         "infrastructure": infra_score,
         "vacancy_ratio": min(opp.vacancy_ratio, 1.0),
-        "bbo_signals": min(opp.bbo_signal_count / 3.0, 1.0) if opp.bbo_signal_count > 0 else 0.0,
+        "stall_confidence": min(opp.stall_confidence, 1.0),
+        "live_listing_bonus": 1.0 if opp.has_active_listings else 0.0,
         "municipal_posture": _municipal_posture_score(opp.municipal_posture),
-        "listing_activity": 1.0 if opp.has_active_listings else 0.0,
-        "history_signals": min(opp.history_signal_score, 1.0),
-        "broker_notes": (
-            (1.0 if opp.package_language_detected else 0.0) * 0.25
-            + (1.0 if opp.site_tested else 0.0) * 0.25
-            + (1.0 if opp.has_documents else 0.0) * 0.15
-            + (1.0 if opp.seller_is_agent else 0.0) * 0.15
-            + (min(opp.max_cdom / 365.0, 1.0)) * 0.20
-        ),
     }
 
     composite = sum(WEIGHTS[k] * breakdown[k] for k in WEIGHTS)
@@ -234,6 +314,7 @@ def rank_from_pipeline(
     subdivisions_by_group_key: dict | None = None,  # group_key -> Subdivision
     min_lots: int = 1,
     listing_history_evidence: dict | None = None,  # group_key -> ListingHistoryEvidence
+    owner_link_evidence: dict | None = None,  # owner cluster group_key -> OwnerLinkEvidence
 ) -> list[StrategicOpportunity]:
     """Build and rank strategic opportunities from pipeline output.
 
@@ -254,6 +335,7 @@ def rank_from_pipeline(
     _stall_by_gk = stall_by_group_key or {}
     _subs_by_gk = subdivisions_by_group_key or {}
     _hist_ev_by_gk = listing_history_evidence or {}
+    _owner_ev_by_gk = owner_link_evidence or {}
     opportunities: list[StrategicOpportunity] = []
 
     for cluster in parcel_clusters:
@@ -282,10 +364,10 @@ def rank_from_pipeline(
             best_stall = _stall_by_gk[cluster.group_key]
             best_sub = _subs_by_gk.get(cluster.group_key)
 
-        # Look up listing history evidence for this cluster
+        active_matched = [l for l in cluster.matched_listings if l.standard_status == StandardStatus.ACTIVE]
         hist_ev = _hist_ev_by_gk.get(cluster.group_key)
+        owner_ev = _owner_ev_by_gk.get(cluster.group_key)
 
-        # BBO signals from matched listings — more granular
         bbo_count = 0
         listing_keys = []
         listing_agents = []
@@ -308,7 +390,7 @@ def rank_from_pipeline(
         total_docs = 0
         from src.adapters.spark.bbo_signals import extract_legal_lot_info
 
-        for l in cluster.matched_listings:
+        for l in active_matched:
             listing_keys.append(l.listing_key)
             if l.listing_agent_name:
                 listing_agents.append(l.listing_agent_name)
@@ -360,7 +442,6 @@ def rank_from_pipeline(
                 if excerpt and excerpt not in remarks_excerpts:
                     remarks_excerpts.append(excerpt)
 
-        # Centroid from first parcel with coordinates
         centroid_lat = None
         centroid_lon = None
         for p in cluster.parcels:
@@ -378,10 +459,24 @@ def rank_from_pipeline(
         # Deterministic ID: same cluster type + group_key always produces same opportunity_id
         det_id = str(uuid.uuid5(_OPP_NAMESPACE, f"{cluster.cluster_type}:{cluster.group_key}"))
 
+        has_notes_or_docs = bool(
+            (hist_ev and hist_ev.remarks_excerpts)
+            or (owner_ev and (owner_ev.historical_notes_present or owner_ev.historical_documents_present))
+            or has_docs
+        )
+        precedence_tier = _determine_precedence_tier(
+            opp_type=opp_type,
+            has_active_listings=len(active_matched) > 0,
+            hist_ev=hist_ev,
+            owner_ev=owner_ev,
+            has_notes_or_docs=has_notes_or_docs,
+        )
+
         opp = StrategicOpportunity(
             opportunity_id=det_id,
             name=best_sub.name if best_sub else cluster.group_key,
             opportunity_type=opp_type,
+            precedence_tier=precedence_tier,
             lot_count=cluster.parcel_count,
             total_acreage=cluster.total_acreage,
             infrastructure_invested=best_stall.infrastructure_invested if best_stall else False,
@@ -389,8 +484,8 @@ def rank_from_pipeline(
             vacancy_ratio=best_stall.vacancy_ratio if best_stall else (
                 sum(1 for p in cluster.parcels if p.vacancy_status == VacancyStatus.VACANT) / max(cluster.parcel_count, 1)
             ),
-            has_active_listings=len(cluster.matched_listings) > 0,
-            listing_count=len(cluster.matched_listings),
+            has_active_listings=len(active_matched) > 0,
+            listing_count=len(active_matched),
             bbo_signal_count=bbo_count,
             owner_name=cluster.group_key if cluster.cluster_type == "owner" else "",
             subdivision_name=best_sub.name if best_sub else (
@@ -431,16 +526,37 @@ def rank_from_pipeline(
             historical_listing_count=hist_ev.total_historical_listings if hist_ev else 0,
             expired_listing_count=hist_ev.expired_listings if hist_ev else 0,
             withdrawn_listing_count=hist_ev.withdrawn_listings if hist_ev else 0,
+            canceled_listing_count=hist_ev.canceled_listings if hist_ev else 0,
             has_relist_cycle=hist_ev.has_relist_cycle if hist_ev else False,
-            partial_release_detected=hist_ev.partial_release_detected if hist_ev else False,
-            max_cdom=hist_ev.max_cdom if hist_ev else (max((l.cdom or 0) for l in cluster.matched_listings) if cluster.matched_listings else 0),
+            partial_release_detected=(
+                owner_ev.partial_release_test_water
+                if owner_ev and owner_ev.partial_release_test_water
+                else (hist_ev.partial_release_detected if hist_ev else False)
+            ),
+            max_cdom=hist_ev.max_cdom if hist_ev else (max((l.cdom or 0) for l in active_matched) if active_matched else 0),
             avg_cdom=hist_ev.avg_cdom if hist_ev else 0.0,
             history_signal_score=hist_ev.history_signal_score if hist_ev else 0.0,
+            owner_linked_active_count=owner_ev.owner_linked_active_count if owner_ev else 0,
+            owner_linked_historical_count=owner_ev.owner_linked_historical_count if owner_ev else 0,
+            owner_linked_failed_exit_count=owner_ev.owner_linked_failed_exit_count if owner_ev else 0,
+            owner_linked_expired_count=owner_ev.owner_linked_expired_count if owner_ev else 0,
+            owner_linked_withdrawn_count=owner_ev.owner_linked_withdrawn_count if owner_ev else 0,
+            owner_linked_canceled_count=owner_ev.owner_linked_canceled_count if owner_ev else 0,
+            owner_linked_agents=owner_ev.owner_linked_agents if owner_ev else [],
+            owner_linked_offices=owner_ev.owner_linked_offices if owner_ev else [],
+            owner_linked_listing_keys=owner_ev.owner_linked_listing_keys if owner_ev else [],
+            repeat_agent_on_owner_inventory=owner_ev.repeat_agent_on_owner_inventory if owner_ev else False,
+            owner_link_match_methods=owner_ev.owner_link_match_methods if owner_ev else [],
+            owner_link_confidence=owner_ev.owner_link_confidence if owner_ev else 0.0,
+            owner_linked_notes_present=owner_ev.historical_notes_present if owner_ev else False,
+            owner_linked_documents_present=owner_ev.historical_documents_present if owner_ev else False,
+            owner_linked_notes_count=owner_ev.historical_notes_count if owner_ev else 0,
+            owner_linked_document_count=owner_ev.historical_document_count if owner_ev else 0,
         )
 
         score_opportunity(opp)
         opportunities.append(opp)
 
     # Sort by composite score descending
-    opportunities.sort(key=lambda o: -o.composite_score)
+    opportunities.sort(key=lambda o: (o.precedence_tier, -o.composite_score))
     return opportunities

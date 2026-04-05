@@ -19,6 +19,7 @@ import argparse
 import csv
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -35,11 +36,13 @@ from src.adapters.regrid.ingestion import (
     InMemoryParcelStore,
     InMemoryOwnerStore,
 )
+from src.adapters.cluster.parcel_cluster_detector import _extract_subdivision
 from src.models.listing import Listing
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
 from src.triggers.rules import ALL_RULES
+from src.utils.subdivision_canon import canonicalize_subdivision
 
 # Default CSV path
 DEFAULT_CSV = _PROJECT_ROOT / "data" / "regrid" / "Washtenaw County" / "mi_washtenaw.csv"
@@ -86,6 +89,62 @@ def load_csv_records(
     else:
         print(f"  Loaded {len(records)} records from CSV.\n")
     return records
+
+
+@dataclass
+class SubdivisionTotals:
+    """Real lot counts for a subdivision, aggregated from ALL Regrid rows."""
+    canonical_name: str
+    total_lots: int
+    vacant_lots: int
+    improved_lots: int
+
+    @property
+    def vacancy_ratio(self) -> float:
+        return self.vacant_lots / self.total_lots if self.total_lots > 0 else 0.0
+
+
+def aggregate_subdivision_totals(csv_path: Path) -> dict[str, SubdivisionTotals]:
+    """Scan ALL Regrid rows (not just vacant) to compute real subdivision lot counts.
+
+    Uses the same legal description parsing as parcel_cluster_detector to extract
+    subdivision names, then runs them through shared canonicalization.
+
+    Returns dict of canonical_name → SubdivisionTotals.
+    """
+    print(f"  Aggregating subdivision totals from full CSV...")
+    totals: dict[str, list[int, int]] = {}  # canonical → [total, vacant]
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            legal = row.get("legaldesc") or ""
+            sub_name = _extract_subdivision(legal)
+            if not sub_name:
+                continue
+
+            usedesc = (row.get("usedesc") or "").strip().upper()
+            is_vacant = "VACANT" in usedesc
+
+            if sub_name not in totals:
+                totals[sub_name] = [0, 0]
+            totals[sub_name][0] += 1
+            if is_vacant:
+                totals[sub_name][1] += 1
+
+    result = {}
+    for name, (total, vacant) in totals.items():
+        result[name] = SubdivisionTotals(
+            canonical_name=name,
+            total_lots=total,
+            vacant_lots=vacant,
+            improved_lots=total - vacant,
+        )
+
+    print(f"  Found {len(result)} subdivisions across {sum(t.total_lots for t in result.values())} total lots")
+    print(f"  Vacancy rates: {sum(1 for t in result.values() if t.vacancy_ratio >= 0.4)}/{len(result)} have ≥40% vacancy")
+
+    return result
 
 
 def run_regrid_ingestion(

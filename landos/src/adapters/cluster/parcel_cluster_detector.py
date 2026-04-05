@@ -43,6 +43,7 @@ from src.models.parcel import Parcel
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
 from src.triggers.result import RoutingResult
+from src.utils.subdivision_canon import canonicalize_subdivision
 
 # ── Thresholds ────────────────────────────────────────────────────────────
 
@@ -76,7 +77,11 @@ _SUBDIVISION_PATTERNS = [
 
 
 def _extract_subdivision(legal_desc: str) -> str | None:
-    """Try to extract a subdivision name from a legal description string."""
+    """Try to extract a subdivision name from a legal description string.
+
+    Uses the shared canonicalization path so that the same legal description
+    produces the same canonical key everywhere in the pipeline.
+    """
     if not legal_desc:
         return None
     for pattern in _SUBDIVISION_PATTERNS:
@@ -86,8 +91,8 @@ def _extract_subdivision(legal_desc: str) -> str | None:
             # Clean up: remove lot/block refs that leaked in
             name = re.sub(r"\s+LOT\s+.*", "", name, flags=re.IGNORECASE).strip()
             name = re.sub(r"\s+BLK\s+.*", "", name, flags=re.IGNORECASE).strip()
-            if len(name) >= 3:
-                return name.lower()
+            # Run through shared canonicalization (handles variants + false positives)
+            return canonicalize_subdivision(name)
     return None
 
 

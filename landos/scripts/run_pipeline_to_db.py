@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import time
+import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,24 +40,57 @@ from src.adapters.regrid.ingestion import (
     InMemoryOwnerStore,
 )
 from src.adapters.spark.ingestion import SparkIngestionAdapter, InMemoryListingStore
+from src.adapters.spark.normalizer import SkipRecord as SparkSkipRecord, normalize as normalize_spark
 from src.adapters.stallout.detector import StallAssessment, detect_stall
 from src.models.development import Subdivision
-from src.models.enums import InfrastructureStatus, MunicipalEventType, VacancyStatus
+from src.models.enums import InfrastructureStatus, MunicipalEventType, StandardStatus, VacancyStatus
 from src.models.municipality import MunicipalEvent
 from src.scoring.listing_history_signals import analyze_cluster_listing_history, ListingHistoryEvidence
+from src.scoring.owner_link_evidence import OwnerLinkEvidence, analyze_owner_cluster_evidence
 from src.scoring.strategic_ranker import rank_from_pipeline, StrategicOpportunity
 from src.stores.sqlite_store import SQLiteStore
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
 from src.triggers.rules import ALL_RULES
+from src.utils.subdivision_canon import canonicalize_subdivision
 
 from scripts.ingest_regrid_csv import (
     DEFAULT_CSV,
     WASHTENAW_MUNICIPALITY_ID,
+    SubdivisionTotals,
+    aggregate_subdivision_totals,
     load_csv_records,
 )
-from scripts.ingest_spark_live import fetch_listings, fetch_all_statuses
+from scripts.ingest_spark_live import fetch_listings, fetch_status_surfaces
+
+# Deterministic namespace for subdivision IDs (stable across reruns)
+_SUBDIVISION_NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+
+
+def _normalize_parcel_number(raw: str | None) -> str:
+    if not raw:
+        return ""
+    value = re.sub(r"[-\s]", "", raw.strip())
+    value = value.lstrip("0") or "0"
+    return value.lower()
+
+
+def _history_identity(listing) -> tuple:
+    return (
+        listing.listing_key,
+        listing.standard_status.value if listing.standard_status else None,
+        listing.list_price,
+        listing.cdom,
+        listing.dom,
+        str(listing.list_date) if listing.list_date else None,
+        str(listing.expiration_date) if listing.expiration_date else None,
+        str(listing.off_market_date) if listing.off_market_date else None,
+        str(listing.withdrawal_date) if listing.withdrawal_date else None,
+        str(listing.back_on_market_date) if listing.back_on_market_date else None,
+        str(listing.status_change_timestamp) if listing.status_change_timestamp else None,
+        str(listing.major_change_timestamp) if listing.major_change_timestamp else None,
+    )
 
 
 def _routing_result_to_signal(r) -> dict:
@@ -102,6 +137,10 @@ def main() -> None:
     # Initialize SQLite store
     db = SQLiteStore(db_path=args.db) if args.db else SQLiteStore()
     print(f"\n  Database: {db.db_path}")
+    run_id = str(uuid.uuid4())
+
+    # Reset current-state tables (preserve listing_history for seller-intent continuity)
+    db.reset_current_state()
 
     # Shared engine
     engine = TriggerEngine(rules=ALL_RULES, cooldown_tracker=InMemoryCooldownTracker())
@@ -117,22 +156,35 @@ def main() -> None:
 
     # ── Stage 1: Spark MLS ────────────────────────────────────────────────
     listing_store = InMemoryListingStore()
+    historical_listings: list = []
     if not args.skip_spark:
         print("\n  STAGE 1: Spark MLS Ingestion")
         print("  " + "-" * 40)
         t0 = time.time()
 
         if args.active_only:
-            raw_spark = fetch_listings(api_key, top=args.top, county=args.county)
+            current_raw = fetch_listings(api_key, top=args.top, county=args.county)
+            historical_raw = list(current_raw)
         else:
-            raw_spark = fetch_all_statuses(api_key, top_per_status=args.top, county=args.county)
+            current_raw, historical_raw = fetch_status_surfaces(
+                api_key,
+                top_per_status=args.top,
+                county=args.county,
+            )
         spark_adapter = SparkIngestionAdapter(engine=engine, context=context, store=listing_store)
-        spark_results = spark_adapter.process_batch(raw_spark)
+        spark_results = spark_adapter.process_batch(current_raw)
         all_results.extend(spark_results)
+
+        for record in historical_raw:
+            try:
+                historical_listings.append(normalize_spark(record))
+            except SparkSkipRecord:
+                continue
 
         elapsed = time.time() - t0
         stage_stats["spark"] = {
             "listings": len(listing_store),
+            "historical_rows": len(historical_listings),
             "events": len(spark_results),
             "fired": sum(len(r.fired_rules) for r in spark_results),
             "seconds": round(elapsed, 1),
@@ -144,8 +196,8 @@ def main() -> None:
         db.save_listings_batch(all_ingested_listings)
 
         # Also persist to history table (every run adds snapshots)
-        print(f"  Saving {len(all_ingested_listings)} listing snapshots to history...")
-        db.save_listing_history_batch(all_ingested_listings)
+        print(f"  Saving {len(historical_listings)} listing snapshots to history...")
+        db.save_listing_history_batch(historical_listings, run_id=run_id)
 
         print(f"  Stage 1: {len(listing_store)} listings ({elapsed:.1f}s)")
     else:
@@ -203,6 +255,13 @@ def main() -> None:
 
     print(f"  Stage 2: {len(parcel_store)} parcels ({vacant_count} vacant) ({elapsed:.1f}s)")
 
+    # ── Stage 2.5: Full-CSV Subdivision Aggregation ───────────────────────
+    # Scan ALL Regrid rows (not just vacant) to get real total/vacant/improved
+    # lot counts per subdivision. This is what breaks the vacancy_ratio=1.0 bug.
+    print(f"\n  STAGE 2.5: Subdivision Total Aggregation (full CSV)")
+    print("  " + "-" * 40)
+    subdivision_totals = aggregate_subdivision_totals(csv_path)
+
     # ── Stage 3: Parcel Cluster Detection ─────────────────────────────────
     print(f"\n  STAGE 3: Vacant Parcel Cluster Detection")
     print("  " + "-" * 40)
@@ -224,7 +283,10 @@ def main() -> None:
     owner_clusters = [c for c in parcel_clusters if c.cluster_type == "owner"]
     sub_clusters = [c for c in parcel_clusters if c.cluster_type == "subdivision"]
     prox_clusters = [c for c in parcel_clusters if c.cluster_type == "proximity"]
-    clusters_with_listings = [c for c in parcel_clusters if c.matched_listings]
+    clusters_with_listings = [
+        c for c in parcel_clusters
+        if any(l.standard_status == StandardStatus.ACTIVE for l in c.matched_listings)
+    ]
 
     stage_stats["parcel_clusters"] = {
         "total": len(parcel_clusters),
@@ -247,7 +309,10 @@ def main() -> None:
             None,
         )
         pcr_parcel_count = matching_pcr.parcel_count if matching_pcr else stored_cluster.member_count
-        pcr_listing_count = len(matching_pcr.matched_listings) if matching_pcr else 0
+        pcr_listing_count = sum(
+            1 for l in (matching_pcr.matched_listings if matching_pcr else [])
+            if l.standard_status == StandardStatus.ACTIVE
+        )
         pcr_has_listings = pcr_listing_count > 0
         group_key = matching_pcr.group_key if matching_pcr else ""
         cluster_batch.append((stored_cluster, group_key, pcr_parcel_count, pcr_listing_count, pcr_has_listings))
@@ -262,8 +327,11 @@ def main() -> None:
     # "LOT 5 SMITH ACRES SUB"). In Michigan, a recorded subdivision plat
     # requires infrastructure plans and performance bonds, so the existence
     # of a platted subdivision IS evidence of infrastructure investment.
-    # We materialize Subdivision objects, create domain-justified ROADS_INSTALLED
-    # events, and run the stallout detector to get real stall_confidence scores.
+    #
+    # KEY FIX: We now use real total/vacant/improved lot counts from the
+    # full-CSV aggregation pass (Stage 2.5) instead of counting only the
+    # vacant parcels in the cluster. This breaks the vacancy_ratio=1.0 bug
+    # that was causing ghost subdivisions to outrank real opportunities.
     print(f"\n  STAGE 3.5: Stallout Detection on Subdivision Clusters")
     print("  " + "-" * 40)
     t0 = time.time()
@@ -272,40 +340,50 @@ def main() -> None:
     subs_by_group_key: dict[str, Subdivision] = {}
     materialized_subs: list[Subdivision] = []
     stall_count = 0
+    not_stalled_count = 0
 
     for cluster in sub_clusters:
-        # Compute vacancy from cluster parcels
-        total_lots = cluster.parcel_count
-        vacant_lots = sum(
-            1 for p in cluster.parcels
-            if p.vacancy_status == VacancyStatus.VACANT
-        )
-        vacancy_ratio = vacant_lots / total_lots if total_lots > 0 else 0.0
+        # Canonicalize the group key (should already be canonical from detector,
+        # but ensure consistency)
+        canon_key = canonicalize_subdivision(cluster.group_key) or cluster.group_key
 
-        # Materialize a Subdivision object
-        sub_id = uuid4()
+        # Look up real lot counts from full-CSV aggregation
+        real_totals = subdivision_totals.get(canon_key)
+
+        if real_totals:
+            total_lots = real_totals.total_lots
+            vacant_lots = real_totals.vacant_lots
+            improved_lots = real_totals.improved_lots
+            vacancy_ratio = real_totals.vacancy_ratio
+        else:
+            # Fallback: count from cluster parcels only (all are vacant)
+            total_lots = cluster.parcel_count
+            vacant_lots = cluster.parcel_count
+            improved_lots = 0
+            vacancy_ratio = 1.0
+
+        # Deterministic subdivision ID from canonical name
+        sub_id = uuid.uuid5(_SUBDIVISION_NAMESPACE, canon_key)
+
         sub = Subdivision(
             subdivision_id=sub_id,
-            name=cluster.group_key,
+            name=canon_key,
             municipality_id=WASHTENAW_MUNICIPALITY_ID,
             county="Washtenaw",
             state="MI",
             total_lots=total_lots,
             vacant_lots=vacant_lots,
+            improved_lots=improved_lots,
             vacancy_ratio=vacancy_ratio,
             # Platted subdivision = infrastructure invested (Michigan law)
             infrastructure_status=InfrastructureStatus.ROADS_INSTALLED,
             parcel_ids=[p.parcel_id for p in cluster.parcels],
-            active_listing_count=len(cluster.matched_listings),
+            active_listing_count=sum(1 for l in cluster.matched_listings if l.standard_status == StandardStatus.ACTIVE),
         )
-        materialized_subs.append(sub)
-        subs_by_group_key[cluster.group_key] = sub
 
         # Create a domain-justified ROADS_INSTALLED municipal event.
         # Rationale: Michigan Plat Act (MCL 560) requires road and utility
-        # infrastructure as a condition of plat recording. If a subdivision
-        # appears in legal descriptions, it was recorded, therefore
-        # infrastructure was invested (built or bonded).
+        # infrastructure as a condition of plat recording.
         synthetic_event = MunicipalEvent(
             municipality_id=WASHTENAW_MUNICIPALITY_ID,
             event_type=MunicipalEventType.ROADS_INSTALLED,
@@ -314,17 +392,29 @@ def main() -> None:
             subdivision_id=sub_id,
         )
 
-        # Run stallout detection with real parcel data + inferred infrastructure
+        # Run stallout detection with real vacancy ratios
         assessment = detect_stall(
             subdivision=sub,
             municipal_events=[synthetic_event],
             parcels=cluster.parcels,
         )
 
-        stall_by_group_key[cluster.group_key] = assessment
+        # Persist stall assessment back to the Subdivision object
+        sub.stall_flag = assessment.is_stalled
+        sub.stall_score = assessment.stall_confidence
+        sub.stall_score_version = "v1_plat_inference"
+        sub.stall_detected_at = datetime.now(timezone.utc) if assessment.is_stalled else None
+        sub.vacancy_ratio = assessment.vacancy_ratio
+        sub.years_since_plat = assessment.years_since_plat
+
+        stall_by_group_key[canon_key] = assessment
+        subs_by_group_key[canon_key] = sub
+        materialized_subs.append(sub)
 
         if assessment.is_stalled:
             stall_count += 1
+        else:
+            not_stalled_count += 1
 
     # Persist materialized subdivisions to SQLite
     if materialized_subs:
@@ -334,10 +424,11 @@ def main() -> None:
     stage_stats["stallout"] = {
         "subdivisions_materialized": len(materialized_subs),
         "stalled": stall_count,
+        "not_stalled": not_stalled_count,
         "seconds": round(elapsed, 1),
     }
     print(f"  Stage 3.5: {len(materialized_subs)} subdivisions materialized, "
-          f"{stall_count} stalled ({elapsed:.1f}s)")
+          f"{stall_count} stalled, {not_stalled_count} not stalled ({elapsed:.1f}s)")
 
     # ── Stage 4: Listing Clusters ─────────────────────────────────────────
     print(f"\n  STAGE 4: Listing Agent/Office Clusters")
@@ -365,45 +456,73 @@ def main() -> None:
     t0 = time.time()
 
     history_evidence: dict[str, ListingHistoryEvidence] = {}
-    all_listings_for_history = listing_store.all_listings()
+    all_listings_for_history = historical_listings
 
-    # Build a lookup from listing subdivision_name → listings
+    # Build a lookup from listing subdivision_name → listings (canonicalized)
     listings_by_sub: dict[str, list] = {}
     listings_by_parcel: dict[str, list] = {}
     for l in all_listings_for_history:
         if l.subdivision_name_raw:
-            sub_key = l.subdivision_name_raw.lower().strip()
-            listings_by_sub.setdefault(sub_key, []).append(l)
+            sub_key = canonicalize_subdivision(l.subdivision_name_raw)
+            if sub_key:
+                listings_by_sub.setdefault(sub_key, []).append(l)
         if l.parcel_number_raw:
-            listings_by_parcel.setdefault(l.parcel_number_raw, []).append(l)
+            parcel_key = _normalize_parcel_number(l.parcel_number_raw)
+            if parcel_key:
+                listings_by_parcel.setdefault(parcel_key, []).append(l)
 
     # For each parcel cluster, find matching historical listings
-    from src.models.enums import StandardStatus
     hist_enriched = 0
     for cluster in parcel_clusters:
-        # Collect active and historical listings for this cluster
+        # Canonicalize the group key for subdivision clusters
+        if cluster.cluster_type == "subdivision":
+            canon_key = canonicalize_subdivision(cluster.group_key) or cluster.group_key
+        else:
+            canon_key = cluster.group_key
+
         active = [l for l in cluster.matched_listings if l.standard_status == StandardStatus.ACTIVE]
-        historical = [l for l in cluster.matched_listings if l.standard_status != StandardStatus.ACTIVE]
+        historical = []
+        seen_history = set()
+
+        for listing in cluster.matched_listings:
+            if listing.standard_status != StandardStatus.ACTIVE:
+                ident = _history_identity(listing)
+                if ident not in seen_history:
+                    historical.append(listing)
+                    seen_history.add(ident)
+
+        parcel_numbers = {
+            _normalize_parcel_number(p.apn_or_parcel_number)
+            for p in cluster.parcels
+            if p.apn_or_parcel_number
+        }
+        for parcel_number in parcel_numbers:
+            for listing in listings_by_parcel.get(parcel_number, []):
+                if listing.standard_status == StandardStatus.ACTIVE:
+                    continue
+                ident = _history_identity(listing)
+                if ident not in seen_history:
+                    historical.append(listing)
+                    seen_history.add(ident)
 
         # Also look up historical listings by subdivision name or parcel number
         if cluster.cluster_type == "subdivision":
-            sub_listings = listings_by_sub.get(cluster.group_key, [])
-            # Add any listings not already in matched_listings
-            matched_keys = {l.listing_key for l in cluster.matched_listings}
+            sub_listings = listings_by_sub.get(canon_key, [])
             for l in sub_listings:
-                if l.listing_key not in matched_keys:
-                    if l.standard_status == StandardStatus.ACTIVE:
+                ident = _history_identity(l)
+                if l.standard_status == StandardStatus.ACTIVE:
+                    if all(existing.listing_key != l.listing_key for existing in active):
                         active.append(l)
-                    else:
-                        historical.append(l)
-                    matched_keys.add(l.listing_key)
+                elif ident not in seen_history:
+                    historical.append(l)
+                    seen_history.add(ident)
 
         ev = analyze_cluster_listing_history(
             active_listings=active,
             historical_listings=historical,
             total_cluster_lots=cluster.parcel_count,
         )
-        history_evidence[cluster.group_key] = ev
+        history_evidence[canon_key] = ev
         if ev.history_signal_score > 0:
             hist_enriched += 1
 
@@ -414,6 +533,37 @@ def main() -> None:
         "seconds": round(elapsed, 1),
     }
     print(f"  Stage 4.5: {len(history_evidence)} clusters analyzed, {hist_enriched} with history signals ({elapsed:.1f}s)")
+
+    # ── Stage 4.7: Owner-Linked Seller Evidence ─────────────────────────
+    print(f"\n  STAGE 4.7: Owner-Linked Seller Evidence")
+    print("  " + "-" * 40)
+    t0 = time.time()
+
+    owner_link_evidence: dict[str, OwnerLinkEvidence] = {}
+    owner_linked_clusters = 0
+    for cluster in owner_clusters:
+        owner_names = sorted({p.owner_name_raw for p in cluster.parcels if p.owner_name_raw})
+        parcel_numbers = sorted({p.apn_or_parcel_number for p in cluster.parcels if p.apn_or_parcel_number})
+        ev = analyze_owner_cluster_evidence(
+            owner_names=owner_names,
+            listings=all_listings_for_history,
+            total_cluster_lots=cluster.parcel_count,
+            parcel_numbers=parcel_numbers,
+        )
+        owner_link_evidence[cluster.group_key] = ev
+        if ev.owner_linked_active_count > 0 or ev.owner_linked_historical_count > 0:
+            owner_linked_clusters += 1
+
+    elapsed = time.time() - t0
+    stage_stats["owner_linkage"] = {
+        "clusters_analyzed": len(owner_link_evidence),
+        "owner_linked": owner_linked_clusters,
+        "seconds": round(elapsed, 1),
+    }
+    print(
+        f"  Stage 4.7: {len(owner_link_evidence)} owner clusters analyzed, "
+        f"{owner_linked_clusters} with owner-linked listing evidence ({elapsed:.1f}s)"
+    )
 
     # ── Stage 4.6: Legal Description Multi-Lot Grouping ──────────────────
     print(f"\n  STAGE 4.6: Legal Description Multi-Lot Detection")
@@ -451,6 +601,7 @@ def main() -> None:
         subdivisions_by_group_key=subs_by_group_key,
         min_lots=1,  # Rank everything, filter via API
         listing_history_evidence=history_evidence,
+        owner_link_evidence=owner_link_evidence,
     )
 
     # Convert to dicts for SQLite

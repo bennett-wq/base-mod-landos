@@ -40,6 +40,7 @@ class Listing(BaseModel):
     listing_office_name: Optional[str] = None
     listing_office_id: Optional[str] = None
     seller_name_raw: Optional[str] = None
+    owner_name_raw: Optional[str] = None
     owner_id: Optional[UUID] = None
     lot_size_acres: Optional[float] = None
     latitude: Optional[float] = None

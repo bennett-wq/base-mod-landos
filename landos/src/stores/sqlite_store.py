@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -61,6 +62,25 @@ def _json(val: Any) -> Optional[str]:
     if val is None:
         return None
     return json.dumps(val, default=str)
+
+
+def _history_fingerprint(listing: Listing) -> str:
+    payload = {
+        "listing_key": listing.listing_key,
+        "status": listing.standard_status.value if listing.standard_status else None,
+        "list_price": listing.list_price,
+        "dom": listing.dom,
+        "cdom": listing.cdom,
+        "list_date": str(listing.list_date) if listing.list_date else None,
+        "expiration_date": str(listing.expiration_date) if listing.expiration_date else None,
+        "off_market_date": str(listing.off_market_date) if listing.off_market_date else None,
+        "withdrawal_date": str(listing.withdrawal_date) if listing.withdrawal_date else None,
+        "back_on_market_date": str(listing.back_on_market_date) if listing.back_on_market_date else None,
+        "status_change_timestamp": str(listing.status_change_timestamp) if listing.status_change_timestamp else None,
+        "major_change_timestamp": str(listing.major_change_timestamp) if listing.major_change_timestamp else None,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 class SQLiteStore:
@@ -227,6 +247,8 @@ class SQLiteStore:
 
             CREATE TABLE IF NOT EXISTS listing_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT,
+                snapshot_fingerprint TEXT,
                 listing_key TEXT NOT NULL,
                 snapshot_status TEXT NOT NULL,
                 list_price INTEGER,
@@ -237,6 +259,7 @@ class SQLiteStore:
                 parcel_number TEXT,
                 subdivision_name TEXT,
                 seller_name TEXT,
+                owner_name_raw TEXT,
                 listing_agent_name TEXT,
                 listing_office_name TEXT,
                 address_raw TEXT,
@@ -259,11 +282,11 @@ class SQLiteStore:
             CREATE INDEX IF NOT EXISTS idx_history_subdivision ON listing_history(subdivision_name);
             CREATE INDEX IF NOT EXISTS idx_history_status ON listing_history(snapshot_status);
             CREATE INDEX IF NOT EXISTS idx_history_seller ON listing_history(seller_name);
-
             CREATE TABLE IF NOT EXISTS strategic_opportunities (
                 opportunity_id TEXT PRIMARY KEY,
                 name TEXT,
                 opportunity_type TEXT,
+                precedence_tier INTEGER DEFAULT 4,
                 municipality_id TEXT,
                 lot_count INTEGER,
                 total_acreage REAL,
@@ -282,7 +305,28 @@ class SQLiteStore:
             CREATE INDEX IF NOT EXISTS idx_strategic_lots
                 ON strategic_opportunities(lot_count);
         """)
+        self._ensure_column("listing_history", "run_id", "TEXT")
+        self._ensure_column("listing_history", "snapshot_fingerprint", "TEXT")
+        self._ensure_column("listing_history", "owner_name_raw", "TEXT")
+        self._ensure_column("strategic_opportunities", "precedence_tier", "INTEGER DEFAULT 4")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_history_run ON listing_history(run_id)")
+        c.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_history_run_fingerprint "
+            "ON listing_history(run_id, snapshot_fingerprint)"
+        )
+        c.execute(
+            "CREATE INDEX IF NOT EXISTS idx_strategic_tier_score "
+            "ON strategic_opportunities(precedence_tier ASC, composite_score DESC)"
+        )
         c.commit()
+
+    def _ensure_column(self, table: str, column: str, definition: str) -> None:
+        cols = {
+            row["name"]
+            for row in self._conn.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in cols:
+            self._conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
     # ── Listings ──────────────────────────────────────────────────────────────
 
@@ -638,16 +682,17 @@ class SQLiteStore:
         now = datetime.now(timezone.utc).isoformat()
         self._conn.execute(
             """INSERT OR REPLACE INTO strategic_opportunities
-               (opportunity_id, name, opportunity_type, municipality_id,
+               (opportunity_id, name, opportunity_type, precedence_tier, municipality_id,
                 lot_count, total_acreage, infrastructure_invested,
                 stall_confidence, vacancy_ratio, composite_score,
                 has_active_listings, listing_count, owner_name,
                 data_json, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 opp["opportunity_id"],
                 opp.get("name", ""),
                 opp.get("opportunity_type", ""),
+                opp.get("precedence_tier", 4),
                 opp.get("municipality_id"),
                 opp.get("lot_count", 0),
                 opp.get("total_acreage", 0.0),
@@ -678,27 +723,30 @@ class SQLiteStore:
             params.append(min_lots)
         if infrastructure_only:
             query += " AND infrastructure_invested = 1"
-        query += " ORDER BY composite_score DESC LIMIT ?"
+        query += " ORDER BY precedence_tier ASC, composite_score DESC LIMIT ?"
         params.append(limit)
         rows = self._conn.execute(query, params).fetchall()
         return [json.loads(r["data_json"]) for r in rows]
 
     # ── Listing History ────────────────────────────────────────────────────────
 
-    def save_listing_history(self, listing: Listing) -> None:
+    def save_listing_history(self, listing: Listing, run_id: str | None = None) -> None:
         """Save a listing snapshot to history. Does NOT dedupe — every call adds a row."""
         now = datetime.now(timezone.utc).isoformat()
+        fingerprint = _history_fingerprint(listing)
         self._conn.execute(
-            """INSERT INTO listing_history
-               (listing_key, snapshot_status, list_price, cdom, dom,
+            """INSERT OR IGNORE INTO listing_history
+               (run_id, snapshot_fingerprint, listing_key, snapshot_status, list_price, cdom, dom,
                 original_list_price, previous_list_price, parcel_number,
-                subdivision_name, seller_name, listing_agent_name,
+                subdivision_name, seller_name, owner_name_raw, listing_agent_name,
                 listing_office_name, address_raw, private_remarks,
                 showing_instructions, list_date, close_date, expiration_date,
                 off_market_date, withdrawal_date, back_on_market_date,
                 latitude, longitude, lot_size_acres, data_json, ingested_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
+                run_id,
+                fingerprint,
                 listing.listing_key,
                 listing.standard_status.value if listing.standard_status else "unknown",
                 listing.list_price,
@@ -709,6 +757,7 @@ class SQLiteStore:
                 listing.parcel_number_raw,
                 listing.subdivision_name_raw,
                 listing.seller_name_raw,
+                getattr(listing, "owner_name_raw", None),
                 listing.listing_agent_name,
                 listing.listing_office_name,
                 listing.address_raw,
@@ -728,14 +777,14 @@ class SQLiteStore:
             ),
         )
 
-    def save_listing_history_batch(self, listings: list[Listing]) -> None:
+    def save_listing_history_batch(self, listings: list[Listing], run_id: str | None = None) -> None:
         for listing in listings:
-            self.save_listing_history(listing)
+            self.save_listing_history(listing, run_id=run_id)
         self._conn.commit()
 
     def get_listing_history_by_key(self, listing_key: str) -> list[dict]:
         rows = self._conn.execute(
-            "SELECT data_json, ingested_at, snapshot_status FROM listing_history WHERE listing_key = ? ORDER BY ingested_at DESC",
+            "SELECT data_json, ingested_at, snapshot_status, run_id FROM listing_history WHERE listing_key = ? ORDER BY ingested_at DESC",
             (listing_key,),
         ).fetchall()
         results = []
@@ -743,12 +792,13 @@ class SQLiteStore:
             data = json.loads(r["data_json"])
             data["_ingested_at"] = r["ingested_at"]
             data["_snapshot_status"] = r["snapshot_status"]
+            data["_run_id"] = r["run_id"]
             results.append(data)
         return results
 
     def get_listing_history_by_parcel(self, parcel_number: str) -> list[dict]:
         rows = self._conn.execute(
-            "SELECT data_json, ingested_at, snapshot_status FROM listing_history WHERE parcel_number = ? ORDER BY ingested_at DESC",
+            "SELECT data_json, ingested_at, snapshot_status, run_id FROM listing_history WHERE parcel_number = ? ORDER BY ingested_at DESC",
             (parcel_number,),
         ).fetchall()
         results = []
@@ -756,12 +806,13 @@ class SQLiteStore:
             data = json.loads(r["data_json"])
             data["_ingested_at"] = r["ingested_at"]
             data["_snapshot_status"] = r["snapshot_status"]
+            data["_run_id"] = r["run_id"]
             results.append(data)
         return results
 
     def get_listing_history_by_subdivision(self, subdivision_name: str) -> list[dict]:
         rows = self._conn.execute(
-            "SELECT data_json, ingested_at, snapshot_status FROM listing_history WHERE subdivision_name = ? ORDER BY ingested_at DESC",
+            "SELECT data_json, ingested_at, snapshot_status, run_id FROM listing_history WHERE subdivision_name = ? ORDER BY ingested_at DESC",
             (subdivision_name,),
         ).fetchall()
         results = []
@@ -769,6 +820,7 @@ class SQLiteStore:
             data = json.loads(r["data_json"])
             data["_ingested_at"] = r["ingested_at"]
             data["_snapshot_status"] = r["snapshot_status"]
+            data["_run_id"] = r["run_id"]
             results.append(data)
         return results
 
@@ -794,6 +846,38 @@ class SQLiteStore:
             "unique_listing_keys": unique_keys,
             "total_snapshots": total_snapshots,
         }
+
+    # ── Strategic Opportunity Count ──────────────────────────────────────────
+
+    def get_strategic_opportunity_count(self) -> int:
+        row = self._conn.execute(
+            "SELECT COUNT(*) as c FROM strategic_opportunities"
+        ).fetchone()
+        return row["c"]
+
+    # ── Pipeline Reset ───────────────────────────────────────────────────────
+
+    def reset_current_state(self) -> None:
+        """Clear all current-state and derived tables for a fresh pipeline run.
+
+        Does NOT wipe listing_history — that table preserves seller-intent
+        continuity (prior listed lots, expired attempts, broker history).
+        """
+        tables_to_clear = [
+            "listings",
+            "parcels",
+            "clusters",
+            "subdivisions",
+            "opportunities",
+            "strategic_opportunities",
+            "municipal_events",
+            "owners",
+            "pipeline_signals",
+            "pipeline_stats",
+        ]
+        for table in tables_to_clear:
+            self._conn.execute(f"DELETE FROM {table}")
+        self._conn.commit()
 
     # ── Utility ───────────────────────────────────────────────────────────────
 

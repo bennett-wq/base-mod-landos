@@ -17,7 +17,9 @@ import pytest
 
 from src.adapters.stallout.detector import StallAssessment
 from src.models.development import Subdivision
-from src.models.enums import VacancyStatus
+from src.models.enums import StandardStatus, VacancyStatus
+from src.models.listing import Listing
+from src.scoring.owner_link_evidence import OwnerLinkEvidence
 from src.models.parcel import Parcel
 from src.scoring.strategic_ranker import (
     StrategicOpportunity,
@@ -73,6 +75,16 @@ def _make_subdivision_cluster(
     )
 
 
+def _make_listing(listing_key: str, status: StandardStatus) -> Listing:
+    return Listing(
+        source_system="spark_rets",
+        listing_key=listing_key,
+        standard_status=status,
+        list_price=75000,
+        property_type="Land",
+    )
+
+
 # ── Tests ──────────────────────────────────────────────────────────────────────
 
 
@@ -84,8 +96,7 @@ class TestScoreComputation:
             opportunity_type="owner_cluster",
         )
         score_opportunity(opp)
-        # lot_count=0 → 0.1 * 0.14 = 0.014
-        assert opp.composite_score == pytest.approx(0.014, abs=0.01)
+        assert opp.composite_score == pytest.approx(0.018, abs=0.01)
 
     def test_score_with_infrastructure_and_vacancy(self):
         opp = StrategicOpportunity(
@@ -100,10 +111,10 @@ class TestScoreComputation:
         )
         score_opportunity(opp)
         # Should be a decent score even without seller intent
-        assert opp.composite_score > 0.35
+        assert opp.composite_score > 0.3
         assert opp.score_breakdown["infrastructure"] == 1.0
         assert opp.score_breakdown["stall_confidence"] == 0.6
-        assert opp.score_breakdown["listing_activity"] == 1.0
+        assert opp.score_breakdown["live_listing_bonus"] == 1.0
 
     def test_seller_intent_boosts_score(self):
         """Distress + fatigue + relist = strong seller intent signal."""
@@ -119,12 +130,11 @@ class TestScoreComputation:
             distress_language_detected=True,
             fatigue_language_detected=True,
             has_relist_cycle=True,
-            expired_listing_count=2,
+            owner_linked_failed_exit_count=2,
         )
         score_opportunity(opp)
-        # Seller intent should push this above 0.5
-        assert opp.composite_score > 0.5
-        assert opp.score_breakdown["seller_intent"] > 0.6
+        assert opp.composite_score > 0.45
+        assert opp.score_breakdown["seller_intent"] > 0.55
 
     def test_infrastructure_ready_from_remarks(self):
         """Infrastructure mentioned in remarks (not from plat) gives partial score."""
@@ -163,6 +173,57 @@ class TestRankFromPipeline:
         assert result[0].lot_count == 20
         assert result[0].composite_score > result[1].composite_score
 
+    def test_listing_count_is_active_only(self):
+        cluster = FakeParcelClusterResult(
+            cluster_type="owner",
+            group_key="smith llc",
+            parcels=[_make_parcel() for _ in range(6)],
+            matched_listings=[
+                _make_listing("A-1", StandardStatus.ACTIVE),
+                _make_listing("E-1", StandardStatus.EXPIRED),
+            ],
+            total_acreage=6.0,
+        )
+        result = rank_from_pipeline([cluster], {}, {})
+        opp = result[0]
+        assert opp.has_active_listings is True
+        assert opp.listing_count == 1
+
+    def test_owner_linked_history_gets_tier_precedence(self):
+        owner_cluster = FakeParcelClusterResult(
+            cluster_type="owner",
+            group_key="smith land holdings llc",
+            parcels=[_make_parcel() for _ in range(8)],
+            total_acreage=12.0,
+        )
+        ghost_sub = _make_subdivision_cluster("ghost sub", total=20, vacant=18, acreage=20.0)
+        stall = StallAssessment(
+            is_stalled=True,
+            stall_signals=["high_vacancy", "roads_installed", "no_recent_activity"],
+            stall_confidence=0.60,
+            vacancy_ratio=0.90,
+            infrastructure_invested=True,
+        )
+
+        result = rank_from_pipeline(
+            parcel_clusters=[ghost_sub, owner_cluster],
+            stall_assessments={},
+            subdivisions={},
+            stall_by_group_key={"ghost sub": stall},
+            listing_history_evidence={},
+            owner_link_evidence={
+                "smith land holdings llc": OwnerLinkEvidence(
+                    owner_linked_historical_count=2,
+                    owner_linked_failed_exit_count=1,
+                    owner_link_confidence=1.0,
+                )
+            },
+        )
+
+        assert result[0].opportunity_type == "owner_cluster"
+        assert result[0].precedence_tier == 1
+        assert result[1].precedence_tier >= 2
+
 
 class TestGroupKeyStallMatching:
     """Tests the critical bridge: matching stall assessments to clusters by group_key."""
@@ -199,7 +260,8 @@ class TestGroupKeyStallMatching:
         assert opp.infrastructure_invested is True
         assert opp.stall_confidence == 0.60
         assert opp.stall_signals == ["high_vacancy", "roads_installed", "no_recent_activity"]
-        assert opp.composite_score > 0.35  # Strong without seller intent; seller intent pushes higher
+        assert opp.precedence_tier == 4
+        assert opp.composite_score > 0.25  # Structural-only opportunity stays viable but below seller-intent-led targets
 
     def test_infrastructure_flag_flows_to_api_model(self):
         """Verify infrastructure_invested=True makes it through asdict() for SQLite."""

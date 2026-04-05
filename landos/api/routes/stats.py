@@ -21,6 +21,6 @@ def pipeline_stats():
         "vacant_parcels": store.get_vacant_parcel_count(),
         "clusters": store.get_cluster_count(),
         "clusters_with_listings": store.get_clusters_with_listings_count(),
-        "opportunities": store.get_opportunity_count(),
+        "opportunities": store.get_strategic_opportunity_count(),
         "pipeline_run": stored_stats,
     }
