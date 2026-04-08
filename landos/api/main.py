@@ -17,7 +17,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from fastapi import FastAPI
+import os
+import shutil
+
+from fastapi import FastAPI, File, UploadFile, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.clusters import router as clusters_router
@@ -63,3 +66,24 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+# ── Temporary DB upload endpoint ─────────────────────────────────────────────
+# Protected by ADMIN_TOKEN env var. Remove after initial data seed.
+
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+DB_PATH = _PROJECT_ROOT / "data" / "landos.db"
+
+
+@app.post("/admin/upload-db")
+async def upload_db(
+    file: UploadFile = File(...),
+    authorization: str = Header(...),
+):
+    if not ADMIN_TOKEN or authorization != f"Bearer {ADMIN_TOKEN}":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(DB_PATH, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    size_mb = DB_PATH.stat().st_size / (1024 * 1024)
+    return {"status": "ok", "size_mb": round(size_mb, 1), "path": str(DB_PATH)}
