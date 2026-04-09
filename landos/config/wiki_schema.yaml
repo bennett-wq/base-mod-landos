@@ -1,0 +1,97 @@
+# wiki_schema.yaml — Karpathy-style LLM Wiki schema for LandOS
+#
+# Defines what the wiki maintains, how pages are generated, and lint rules.
+# Read by: wiki_ingest.py, wiki_lint.py
+
+wiki_root: "/Users/bennett2026/Documents/BaseMod LandOS/11 — Wiki"
+db_path: "landos/data/landos.db"
+vault_root: "/Users/bennett2026/Documents/BaseMod LandOS"
+templates_dir: "landos/templates/wiki"
+
+pages:
+  - id: market_snapshot
+    template: market_snapshot.md.j2
+    output: "Market/Market Snapshot — Washtenaw.md"
+    description: "County-level tier breakdown, lot totals, score distributions"
+    refresh: daily
+    staleness_days: 2
+
+  - id: opportunity_detail
+    template: opportunity_detail.md.j2
+    output_pattern: "Opportunities/Opportunity — {name}.md"
+    description: "Per-opportunity detail: score, lots, owner, history signals"
+    max_pages: 30
+    filter: "precedence_tier <= 2"
+    order_by: "precedence_tier ASC, composite_score DESC"
+    refresh: daily
+    staleness_days: 2
+
+  - id: subdivision_profile
+    template: subdivision_profile.md.j2
+    output_pattern: "Subdivisions/Subdivision — {name}.md"
+    description: "Per-subdivision: vacancy, stall flag, linked opportunities"
+    order_by: "vacancy_ratio DESC"
+    refresh: daily
+    staleness_days: 7
+
+  - id: pipeline_health
+    template: pipeline_health.md.j2
+    output: "Pipeline/Pipeline Health.md"
+    description: "Latest pipeline run stats, timing, error count"
+    refresh: daily
+    staleness_days: 1
+
+  - id: pipeline_run
+    template: pipeline_run.md.j2
+    output_pattern: "Pipeline/Run — {date}.md"
+    description: "Daily snapshot of pipeline run results"
+    refresh: daily
+    staleness_days: 30
+
+  - id: lint_report
+    template: lint_report.md.j2
+    output: "Lint/Latest Lint Report.md"
+    description: "Wiki health check: stale pages, contradictions, missing pages"
+    refresh: daily
+    staleness_days: 1
+
+  - id: wiki_index
+    template: wiki_index.md.j2
+    output: "Wiki Index.md"
+    description: "Auto-generated table of contents with freshness indicators"
+    refresh: daily
+    staleness_days: 1
+
+lint:
+  checks:
+    - id: stale_pages
+      description: "Pages not updated within staleness_days"
+      severity: warning
+
+    - id: score_drift
+      description: "Opportunities whose composite_score changed >20% between runs"
+      severity: info
+
+    - id: missing_pages
+      description: "Tier 1/2 opportunities in DB without a wiki page"
+      severity: error
+
+    - id: orphaned_pages
+      description: "Wiki pages with no inbound links"
+      severity: warning
+
+    - id: vacancy_contradictions
+      description: "Subdivision vacancy_ratio in wiki vs DB differs"
+      severity: error
+
+    - id: dead_references
+      description: "Wiki pages referencing listings no longer in DB"
+      severity: warning
+
+cross_references:
+  - from: "Opportunities/*"
+    to: "Subdivisions/*"
+    link_field: subdivision_name
+  - from: "Subdivisions/*"
+    to: "Opportunities/*"
+    link_field: linked_opportunities

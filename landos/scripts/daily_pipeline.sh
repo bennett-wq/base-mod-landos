@@ -79,6 +79,22 @@ if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/run_pipeline_to_db.py" \
     --top 200 --historical >> "${LOG_FILE}" 2>&1; then
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo "[${END_TIME}] Pipeline completed successfully" >> "${LOG_FILE}"
+
+    # Wiki ingest: generate/update Obsidian wiki pages from pipeline data
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki ingest starting" >> "${LOG_FILE}"
+    if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/wiki_ingest.py" >> "${LOG_FILE}" 2>&1; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki ingest completed" >> "${LOG_FILE}"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki ingest FAILED (non-fatal)" >> "${LOG_FILE}"
+    fi
+
+    # Wiki lint: health-check wiki pages against DB
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki lint starting" >> "${LOG_FILE}"
+    if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/wiki_lint.py" >> "${LOG_FILE}" 2>&1; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki lint completed" >> "${LOG_FILE}"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki lint FAILED (non-fatal)" >> "${LOG_FILE}"
+    fi
 else
     EXIT_CODE=$?
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
