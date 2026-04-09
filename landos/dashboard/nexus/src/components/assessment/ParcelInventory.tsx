@@ -1,63 +1,19 @@
-const PARCELS = [
-  {
-    id: 'H-12-04-300-012',
-    lotSize: '12.4 ac',
-    zoning: 'R-1',
-    status: 'vacant' as const,
-    findings: 'Slight slope to North; optimal for Hawthorne model placement.',
-  },
-  {
-    id: 'H-12-04-300-013',
-    lotSize: '8.1 ac',
-    zoning: 'R-1',
-    status: 'listed' as const,
-    findings: 'Includes existing retention pond; high ecological value noted.',
-  },
-  {
-    id: 'H-12-04-300-014',
-    lotSize: '15.2 ac',
-    zoning: 'AG',
-    status: 'vacant' as const,
-    findings: 'Direct road access point; requires minor soil stabilization.',
-  },
-  {
-    id: 'H-12-04-300-015',
-    lotSize: '4.5 ac',
-    zoning: 'R-1',
-    status: 'vacant' as const,
-    findings: 'Utility easement bisects parcel; limits vertical build footprint.',
-  },
-  {
-    id: 'H-12-04-301-001',
-    lotSize: '6.8 ac',
-    zoning: 'R-2',
-    status: 'listed' as const,
-    findings: 'Adjacent to municipal water hookup; minimal infrastructure cost.',
-  },
-  {
-    id: 'H-12-04-301-002',
-    lotSize: '9.3 ac',
-    zoning: 'R-1',
-    status: 'vacant' as const,
-    findings: 'Flat topography, sandy loam soil. Ideal for slab-on-grade.',
-  },
-  {
-    id: 'H-12-04-301-003',
-    lotSize: '3.7 ac',
-    zoning: 'R-1',
-    status: 'vacant' as const,
-    findings: 'Narrow frontage; may require variance for setback compliance.',
-  },
-  {
-    id: 'H-12-04-301-004',
-    lotSize: '11.0 ac',
-    zoning: 'AG',
-    status: 'vacant' as const,
-    findings: 'Former agricultural use; Phase 1 ESA clear. Ready for development.',
-  },
-]
+import type { ApiParcel } from '@/lib/api'
 
-export function ParcelInventory() {
+interface ParcelInventoryProps {
+  parcels: ApiParcel[]
+}
+
+export function ParcelInventory({ parcels }: ParcelInventoryProps) {
+  if (parcels.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant">
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-2">Parcel Inventory</p>
+        <p className="text-sm">No parcel data available for this opportunity.</p>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -65,7 +21,7 @@ export function ParcelInventory() {
           Parcel Inventory
         </h3>
         <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded">
-          {PARCELS.length} Parcels
+          {parcels.length} Parcels
         </span>
       </div>
 
@@ -78,7 +34,7 @@ export function ParcelInventory() {
                   Parcel ID
                 </th>
                 <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  Lot Size
+                  Acreage
                 </th>
                 <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
                   Zoning
@@ -87,37 +43,48 @@ export function ParcelInventory() {
                   Status
                 </th>
                 <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  Agent Findings
+                  Owner
                 </th>
               </tr>
             </thead>
             <tbody>
-              {PARCELS.map((parcel, i) => (
-                <tr
-                  key={parcel.id}
-                  className={i % 2 === 1 ? 'bg-surface-container-low/30' : 'bg-white'}
-                >
-                  <td className="px-6 py-4 text-sm font-bold text-primary tracking-tight">
-                    {parcel.id}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">{parcel.lotSize}</td>
-                  <td className="px-6 py-4 text-sm font-medium">{parcel.zoning}</td>
-                  <td className="px-6 py-4">
-                    {parcel.status === 'listed' ? (
-                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase">
-                        Listed
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-bold uppercase">
-                        Vacant
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm italic text-on-surface-variant leading-relaxed max-w-xs">
-                    {parcel.findings}
-                  </td>
-                </tr>
-              ))}
+              {parcels.map((parcel, i) => {
+                const displayId = parcel.source_system_ids?.regrid_id
+                  || parcel.parcel_number_raw
+                  || parcel.parcel_id
+                const status = parcel.vacancy_status?.toUpperCase() ?? 'UNKNOWN'
+                const isVacant = status === 'VACANT'
+                return (
+                  <tr
+                    key={parcel.parcel_id}
+                    className={i % 2 === 1 ? 'bg-surface-container-low/30' : 'bg-white'}
+                  >
+                    <td className="px-6 py-4 text-sm font-bold text-primary tracking-tight">
+                      {displayId}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      {parcel.acreage ? `${parcel.acreage.toFixed(1)} ac` : '—'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      {parcel.zoning_raw || '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {isVacant ? (
+                        <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-bold uppercase">
+                          Vacant
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase">
+                          {status}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant leading-relaxed max-w-xs truncate">
+                      {parcel.owner_name_raw || '—'}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

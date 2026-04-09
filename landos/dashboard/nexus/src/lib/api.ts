@@ -229,6 +229,38 @@ export interface ApiStrategicOpp {
   score_breakdown: Record<string, number>
 }
 
+// ── Strategic Detail (single opportunity + parcels) ────────────────────────
+
+export interface ApiParcel {
+  parcel_id: string
+  regrid_id?: string
+  municipality_id?: string
+  county?: string
+  vacancy_status?: string
+  acreage?: number
+  owner_name_raw?: string
+  opportunity_score?: number
+  centroid_lat?: number
+  centroid_lon?: number
+  address_raw?: string
+  zoning_raw?: string
+  subdivision_id?: string
+  source_system_ids?: Record<string, string>
+  parcel_number_raw?: string
+  legal_description_raw?: string
+}
+
+export interface ApiStrategicDetailResponse {
+  opportunity: ApiStrategicOpp
+  parcels: ApiParcel[]
+}
+
+export function fetchStrategicById(id: string): Promise<ApiStrategicDetailResponse | null> {
+  return apiFetch(`/api/strategic/${encodeURIComponent(id)}`, null)
+}
+
+// ── Strategic List ─────────────────────────────────────────────────────────
+
 export function fetchStrategic(params?: {
   min_lots?: number
   infrastructure?: boolean

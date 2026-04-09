@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   BarChart3,
   DollarSign,
@@ -6,11 +7,14 @@ import {
   MessageSquareText,
   Scale,
   Leaf,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 import { AssessmentHeader } from '../components/assessment/AssessmentHeader'
 import { AssessmentView } from '../components/assessment/AssessmentView'
 import { ParcelInventory } from '../components/assessment/ParcelInventory'
 import { BrokerNotes } from '../components/assessment/BrokerNotes'
+import { useStrategicOpportunity } from '../hooks/useStrategicOpportunity'
 
 type SubView = 'assessment' | 'financials' | 'parcels' | 'broker-notes' | 'zoning' | 'environmental'
 
@@ -33,7 +37,42 @@ function ComingSoon({ label }: { label: string }) {
 }
 
 export default function DeepAssessmentPage() {
+  const { id } = useParams<{ id: string }>()
+  const { data, isLoading, isError } = useStrategicOpportunity(id)
   const [activeView, setActiveView] = useState<SubView>('assessment')
+
+  const opp = data?.opportunity
+  const parcels = data?.parcels ?? []
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm">Loading assessment data…</p>
+      </div>
+    )
+  }
+
+  // Error / not found
+  if (isError || !opp) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
+        <AlertTriangle className="h-8 w-8 text-yellow-600 mb-4" />
+        <p className="text-sm font-bold mb-1">Opportunity not found</p>
+        <p className="text-xs text-on-surface-variant/60">
+          {id ? `No data for ID: ${id}` : 'No opportunity ID provided in URL.'}
+        </p>
+      </div>
+    )
+  }
+
+  // Build header props from real data
+  const entityName = opp.owner_name || opp.name || 'Unknown Entity'
+  const address = opp.subdivision_name
+    ? `${opp.subdivision_name}, ${opp.municipality_id || 'MI'}`
+    : opp.municipality_id || 'Washtenaw County, MI'
+  const assetId = opp.opportunity_id.slice(0, 12).toUpperCase()
 
   return (
     <div className="flex -m-8 min-h-[calc(100vh-120px)]">
@@ -69,14 +108,14 @@ export default function DeepAssessmentPage() {
       {/* Main content area */}
       <div className="flex-1 overflow-y-auto p-8 bg-surface">
         <AssessmentHeader
-          assetId="NEX-88129-WAS"
-          entityName="Horseshoe Lake Corporation"
-          address="Horseshoe Lake Rd, Augusta Township, MI"
+          assetId={assetId}
+          entityName={entityName}
+          address={address}
         />
 
-        {activeView === 'assessment' && <AssessmentView />}
-        {activeView === 'parcels' && <ParcelInventory />}
-        {activeView === 'broker-notes' && <BrokerNotes />}
+        {activeView === 'assessment' && <AssessmentView opportunity={opp} />}
+        {activeView === 'parcels' && <ParcelInventory parcels={parcels} />}
+        {activeView === 'broker-notes' && <BrokerNotes opportunity={opp} />}
         {activeView === 'financials' && <ComingSoon label="Financials" />}
         {activeView === 'zoning' && <ComingSoon label="Zoning" />}
         {activeView === 'environmental' && <ComingSoon label="Environmental" />}
