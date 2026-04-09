@@ -121,6 +121,56 @@ BBO_TO_LISTING: dict[str, str] = {
     "Sewer":                 "sewer",
     "WaterSource":           "water_source",
     "CurrentUse":            "current_use",
+
+    # ── Discovery batch (2026-04-08) — high-value unmapped fields ────────
+
+    # Spark internal listing ID — needed for native API calls (genealogy)
+    "ListingId":             "listing_id_spark",
+
+    # On-market date — more precise than ListingContractDate
+    "OnMarketDate":          "on_market_date",
+
+    # Tax / economics (100% populated in Washtenaw)
+    "TaxAnnualAmount":       "tax_annual_amount",
+    "TaxAssessedValue":      "tax_assessed_value",
+    "TaxYear":               "tax_year",
+    "Tax_sp_Info_co_SEV":    "state_equalized_value",
+    "Tax_sp_Info_co_Taxable_sp_Value": "taxable_value",
+
+    # Agent contact (for broker outreach)
+    "ListAgentEmail":        "listing_agent_email",
+    "ListAgentMobilePhone":  "listing_agent_mobile",
+    "ListAgentStateLicense": "listing_agent_license",
+
+    # Office contact
+    "ListOfficePhone":       "listing_office_phone",
+    "ListOfficeEmail":       "listing_office_email",
+
+    # Property classification
+    "PropertySubType":       "property_sub_type",
+    "Ownership":             "ownership_type",
+
+    # Pre-computed price/acre from API (100% populated)
+    "OfficeContract_sp_Info_co_List_sp_PriceAcre": "api_price_per_acre",
+
+    # Road frontage in feet (93% populated)
+    "General_sp_Property_sp_Info_co_Road_sp_Frontage": "road_frontage_feet",
+
+    # Municipality name from API (100% populated)
+    "Location_sp_Property_sp_Info_co_Municipality": "municipality_name",
+
+    # School district (100% populated)
+    "HighSchoolDistrict":    "school_district",
+
+    # Cross street for location context (93%)
+    "CrossStreet":           "cross_street",
+
+    # Listing/financing terms
+    "ListingTerms":          "listing_terms",
+
+    # Freshness signals
+    "PhotosChangeTimestamp":     "photos_change_timestamp",
+    "DocumentsChangeTimestamp":  "documents_change_timestamp",
 }
 
 # ── RESO StandardStatus → StandardStatus enum value ───────────────────────

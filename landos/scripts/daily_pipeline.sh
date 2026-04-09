@@ -80,6 +80,24 @@ if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/run_pipeline_to_db.py" \
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo "[${END_TIME}] Pipeline completed successfully" >> "${LOG_FILE}"
 
+    # Spark historical genealogy fetch (for top opportunities)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Genealogy fetch starting" >> "${LOG_FILE}"
+    if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/spark_historical_fetch.py" \
+        --limit 30 >> "${LOG_FILE}" 2>&1; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Genealogy fetch completed" >> "${LOG_FILE}"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Genealogy fetch FAILED (non-fatal)" >> "${LOG_FILE}"
+    fi
+
+    # Market statistics fetch (derived from listing_history or native API)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Market stats fetch starting" >> "${LOG_FILE}"
+    if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/spark_market_stats.py" \
+        --county Washtenaw >> "${LOG_FILE}" 2>&1; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Market stats fetch completed" >> "${LOG_FILE}"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Market stats fetch FAILED (non-fatal)" >> "${LOG_FILE}"
+    fi
+
     # Wiki ingest: generate/update Obsidian wiki pages from pipeline data
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wiki ingest starting" >> "${LOG_FILE}"
     if "${VENV}/bin/python3" "${LANDOS_DIR}/scripts/wiki_ingest.py" >> "${LOG_FILE}" 2>&1; then

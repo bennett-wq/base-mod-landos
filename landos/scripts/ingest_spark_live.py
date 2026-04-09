@@ -33,6 +33,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 from src.adapters.spark.ingestion import SparkIngestionAdapter, InMemoryListingStore
+from src.adapters.spark.field_map import RESO_TO_LISTING, BBO_TO_LISTING
 from src.triggers.cooldown import InMemoryCooldownTracker
 from src.triggers.context import TriggerContext
 from src.triggers.engine import TriggerEngine
@@ -184,6 +185,134 @@ def fetch_status_surfaces(
     return current_records, all_records
 
 
+# ── Field Discovery ──────────────────────────────────────────────────────
+
+# Fields to probe that we suspect exist but aren't in our current field_map
+PROBE_FIELDS = [
+    "PrivateOfficeRemarks",
+    "DaysOffMarket",
+    "CustomFields",
+    "OffMarketDays",
+    "CumulativeDaysOffMarket",
+    "ListingAgreement",
+    "SellerType",
+    "OwnerName",
+    "Tax_sp_Info_co_Owner_sp_Name2",
+]
+
+
+def discover_fields(api_key: str, county: str | None = None) -> None:
+    """Fetch sample records and report all fields not in our field_map.
+
+    Compares every key returned by the API against RESO_TO_LISTING and
+    BBO_TO_LISTING to find fields we're leaving on the table.
+    """
+    print()
+    print("=" * 70)
+    print("  LandOS — Spark Field Discovery")
+    print("=" * 70)
+
+    # Known mapped fields (API-side names)
+    mapped_fields = set(RESO_TO_LISTING.keys()) | set(BBO_TO_LISTING.keys())
+
+    # Fetch a small sample across Active + Closed to see the full field surface
+    all_fields: dict[str, list] = {}  # field_name → list of sample values
+    field_population: dict[str, int] = {}  # field_name → count of non-null values
+    total_records = 0
+
+    for status in ["Active", "Closed", "Expired"]:
+        records = fetch_listings(api_key, top=5, county=county, status=status)
+        for rec in records:
+            total_records += 1
+            for key, val in rec.items():
+                if key not in all_fields:
+                    all_fields[key] = []
+                    field_population[key] = 0
+                if val is not None and val != "" and val != []:
+                    field_population[key] = field_population.get(key, 0) + 1
+                    if len(all_fields[key]) < 3:
+                        all_fields[key].append(val)
+
+    all_field_names = set(all_fields.keys())
+    unmapped = all_field_names - mapped_fields
+    mapped_present = all_field_names & mapped_fields
+    mapped_missing = mapped_fields - all_field_names
+
+    print(f"\n  Total records sampled: {total_records}")
+    print(f"  Total fields returned by API: {len(all_field_names)}")
+    print(f"  Already mapped in field_map.py: {len(mapped_present)}")
+    print(f"  UNMAPPED (new/unknown): {len(unmapped)}")
+    print(f"  Mapped but not returned: {len(mapped_missing)}")
+
+    # Report unmapped fields with sample values and population
+    if unmapped:
+        print()
+        print("=" * 70)
+        print("  UNMAPPED FIELDS (not in RESO_TO_LISTING or BBO_TO_LISTING)")
+        print("=" * 70)
+        for field in sorted(unmapped):
+            pop = field_population.get(field, 0)
+            pct = (pop / total_records * 100) if total_records else 0
+            samples = all_fields.get(field, [])
+            sample_str = repr(samples[0])[:80] if samples else "(empty)"
+            print(f"  {field}")
+            print(f"    Population: {pop}/{total_records} ({pct:.0f}%)")
+            print(f"    Sample: {sample_str}")
+            print()
+
+    # Report probe fields specifically
+    print("=" * 70)
+    print("  PROBE FIELD RESULTS (targeted fields)")
+    print("=" * 70)
+    for field in PROBE_FIELDS:
+        if field in all_field_names:
+            pop = field_population.get(field, 0)
+            pct = (pop / total_records * 100) if total_records else 0
+            samples = all_fields.get(field, [])
+            sample_str = repr(samples[0])[:100] if samples else "(empty)"
+            status = "★ FOUND" if field not in mapped_fields else "✓ ALREADY MAPPED"
+            print(f"  {status}: {field}")
+            print(f"    Population: {pop}/{total_records} ({pct:.0f}%)")
+            print(f"    Sample: {sample_str}")
+        else:
+            print(f"  ✗ NOT RETURNED: {field}")
+        print()
+
+    # Report mapped fields that the API doesn't return
+    if mapped_missing:
+        print("=" * 70)
+        print("  MAPPED BUT NOT RETURNED (dead fields in our field_map)")
+        print("=" * 70)
+        for field in sorted(mapped_missing):
+            print(f"  {field}")
+        print()
+
+    # Save discovery results
+    output_dir = Path(__file__).resolve().parent.parent / "data" / "discovery"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "field_discovery.json"
+    output = {
+        "discovered_at": datetime.utcnow().isoformat(),
+        "total_records_sampled": total_records,
+        "total_fields": len(all_field_names),
+        "unmapped_fields": sorted(unmapped),
+        "mapped_present": sorted(mapped_present),
+        "mapped_missing": sorted(mapped_missing),
+        "field_population": {
+            k: {"count": v, "pct": round(v / total_records * 100, 1) if total_records else 0}
+            for k, v in sorted(field_population.items())
+        },
+        "sample_values": {
+            k: [repr(s)[:200] for s in v]
+            for k, v in sorted(all_fields.items())
+            if k in unmapped
+        },
+    }
+    output_path.write_text(json.dumps(output, indent=2, default=str))
+    print(f"  Full discovery results saved to: {output_path}")
+    print()
+
+
 # ── Signal report ─────────────────────────────────────────────────────────
 
 def print_report(adapter: SparkIngestionAdapter, results: list) -> None:
@@ -257,12 +386,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest live Spark MLS land listings")
     parser.add_argument("--top", type=int, default=100, help="Max records to fetch (default: 100)")
     parser.add_argument("--county", default=None, help="Filter by county (e.g., Washtenaw)")
+    parser.add_argument("--discover", action="store_true",
+                        help="Run field discovery mode: probe for unmapped fields and exit")
     args = parser.parse_args()
 
     api_key = os.environ.get("SPARK_API_KEY")
     if not api_key:
         print("ERROR: SPARK_API_KEY not set. Add it to .env or set the env var.", file=sys.stderr)
         sys.exit(1)
+
+    if args.discover:
+        discover_fields(api_key, county=args.county)
+        return
 
     print()
     print("=" * 70)

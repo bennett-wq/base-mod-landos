@@ -302,6 +302,45 @@ class SQLiteStore:
                 ON strategic_opportunities(composite_score DESC);
             CREATE INDEX IF NOT EXISTS idx_strategic_lots
                 ON strategic_opportunities(lot_count);
+
+            CREATE TABLE IF NOT EXISTS listing_genealogy (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                listing_key TEXT NOT NULL,
+                related_listing_key TEXT,
+                relationship TEXT,
+                event_type TEXT,
+                event_date TEXT,
+                list_price INTEGER,
+                status TEXT,
+                agent_name TEXT,
+                office_name TEXT,
+                days_on_market INTEGER,
+                source_data_json TEXT NOT NULL,
+                fetched_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_genealogy_listing
+                ON listing_genealogy(listing_key);
+            CREATE INDEX IF NOT EXISTS idx_genealogy_related
+                ON listing_genealogy(related_listing_key);
+
+            CREATE TABLE IF NOT EXISTS market_statistics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stat_type TEXT NOT NULL,
+                county TEXT NOT NULL,
+                property_type TEXT NOT NULL,
+                period TEXT NOT NULL,
+                value REAL,
+                year INTEGER,
+                month INTEGER,
+                source_data_json TEXT NOT NULL,
+                fetched_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_mkt_stat_type
+                ON market_statistics(stat_type);
+            CREATE INDEX IF NOT EXISTS idx_mkt_period
+                ON market_statistics(period);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_mkt_unique
+                ON market_statistics(stat_type, county, property_type, period);
         """)
         self._ensure_column("listing_history", "run_id", "TEXT")
         self._ensure_column("listing_history", "snapshot_fingerprint", "TEXT")
@@ -726,6 +765,14 @@ class SQLiteStore:
         rows = self._conn.execute(query, params).fetchall()
         return [json.loads(r["data_json"]) for r in rows]
 
+    def get_strategic_opportunity_by_id(self, opportunity_id: str) -> dict | None:
+        """Get a single strategic opportunity by ID, or None if not found."""
+        row = self._conn.execute(
+            "SELECT data_json FROM strategic_opportunities WHERE opportunity_id = ?",
+            (opportunity_id,),
+        ).fetchone()
+        return json.loads(row["data_json"]) if row else None
+
     # ── Listing History ────────────────────────────────────────────────────────
 
     def save_listing_history(self, listing: Listing, run_id: str | None = None) -> None:
@@ -853,13 +900,144 @@ class SQLiteStore:
         ).fetchone()
         return row["c"]
 
+    # ── Listing Genealogy ─────────────────────────────────────────────────────
+
+    def save_genealogy_batch(self, entries: list[dict]) -> None:
+        """Save a batch of genealogy entries. Each entry is a dict with keys
+        matching the listing_genealogy columns."""
+        now = datetime.now(timezone.utc).isoformat()
+        for entry in entries:
+            self._conn.execute(
+                """INSERT INTO listing_genealogy
+                   (listing_key, related_listing_key, relationship, event_type,
+                    event_date, list_price, status, agent_name, office_name,
+                    days_on_market, source_data_json, fetched_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    entry.get("listing_key"),
+                    entry.get("related_listing_key"),
+                    entry.get("relationship"),
+                    entry.get("event_type"),
+                    entry.get("event_date"),
+                    entry.get("list_price"),
+                    entry.get("status"),
+                    entry.get("agent_name"),
+                    entry.get("office_name"),
+                    entry.get("days_on_market"),
+                    json.dumps(entry.get("source_data", {}), default=str),
+                    now,
+                ),
+            )
+        self._conn.commit()
+
+    def get_genealogy_by_listing(self, listing_key: str) -> list[dict]:
+        """Get full genealogy chain for a listing."""
+        rows = self._conn.execute(
+            "SELECT * FROM listing_genealogy WHERE listing_key = ? ORDER BY event_date",
+            (listing_key,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_genealogy_for_listings(self, listing_keys: list[str]) -> list[dict]:
+        """Get genealogy for multiple listings."""
+        if not listing_keys:
+            return []
+        placeholders = ",".join("?" * len(listing_keys))
+        rows = self._conn.execute(
+            f"SELECT * FROM listing_genealogy WHERE listing_key IN ({placeholders}) ORDER BY listing_key, event_date",
+            listing_keys,
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def clear_genealogy(self) -> None:
+        """Clear all genealogy data (for re-fetch)."""
+        self._conn.execute("DELETE FROM listing_genealogy")
+        self._conn.commit()
+
+    # ── Market Statistics ────────────────────────────────────────────────────
+
+    def save_market_stats_batch(self, entries: list[dict]) -> None:
+        """Save market statistics. Uses INSERT OR REPLACE on the unique index."""
+        now = datetime.now(timezone.utc).isoformat()
+        for entry in entries:
+            self._conn.execute(
+                """INSERT OR REPLACE INTO market_statistics
+                   (stat_type, county, property_type, period, value,
+                    year, month, source_data_json, fetched_at)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (
+                    entry["stat_type"],
+                    entry["county"],
+                    entry["property_type"],
+                    entry["period"],
+                    entry.get("value"),
+                    entry.get("year"),
+                    entry.get("month"),
+                    json.dumps(entry.get("source_data", {}), default=str),
+                    now,
+                ),
+            )
+        self._conn.commit()
+
+    def get_market_stats(
+        self,
+        stat_type: str | None = None,
+        county: str = "Washtenaw",
+        limit: int = 200,
+    ) -> list[dict]:
+        """Get market stats, optionally filtered by type."""
+        if stat_type:
+            rows = self._conn.execute(
+                "SELECT * FROM market_statistics WHERE stat_type = ? AND county = ? ORDER BY period DESC LIMIT ?",
+                (stat_type, county, limit),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM market_statistics WHERE county = ? ORDER BY stat_type, period DESC LIMIT ?",
+                (county, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_market_stats_summary(self, county: str = "Washtenaw") -> dict:
+        """Get latest value + trend for each stat type."""
+        stat_types = self._conn.execute(
+            "SELECT DISTINCT stat_type FROM market_statistics WHERE county = ?",
+            (county,),
+        ).fetchall()
+        summary = {}
+        for row in stat_types:
+            st = row["stat_type"]
+            latest_rows = self._conn.execute(
+                "SELECT * FROM market_statistics WHERE stat_type = ? AND county = ? ORDER BY period DESC LIMIT 2",
+                (st, county),
+            ).fetchall()
+            if not latest_rows:
+                continue
+            latest = dict(latest_rows[0])
+            prev = dict(latest_rows[1]) if len(latest_rows) > 1 else None
+            change_pct = None
+            trend = "flat"
+            if prev and prev["value"] and latest["value"]:
+                change_pct = round(
+                    (latest["value"] - prev["value"]) / abs(prev["value"]) * 100, 1
+                ) if prev["value"] != 0 else None
+                if change_pct is not None:
+                    trend = "up" if change_pct > 0 else "down" if change_pct < 0 else "flat"
+            summary[st] = {
+                "latest": latest["value"],
+                "period": latest["period"],
+                "trend": trend,
+                "change_pct": change_pct,
+            }
+        return summary
+
     # ── Pipeline Reset ───────────────────────────────────────────────────────
 
     def reset_current_state(self) -> None:
         """Clear all current-state and derived tables for a fresh pipeline run.
 
-        Does NOT wipe listing_history — that table preserves seller-intent
-        continuity (prior listed lots, expired attempts, broker history).
+        Does NOT wipe listing_history, listing_genealogy, or market_statistics —
+        those tables accumulate over time and are fetched separately.
         """
         tables_to_clear = [
             "listings",

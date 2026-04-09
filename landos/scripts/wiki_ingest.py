@@ -98,6 +98,8 @@ class WikiIngestor:
         self._ingest_subdivisions()
         self._ingest_pipeline_health()
         self._ingest_pipeline_run()
+        self._ingest_genealogy_timelines()
+        self._ingest_market_trends()
         self._ingest_wiki_index()
 
         print(f"[wiki-ingest] Done. {len(self.pages_written)} pages written.")
@@ -434,6 +436,246 @@ class WikiIngestor:
 
         return sorted(movers, key=lambda m: abs(m["pct_change"]), reverse=True)[:10]
 
+    # ── Genealogy Timelines ───────────────────────────────────────────────────
+
+    def _ingest_genealogy_timelines(self) -> None:
+        """Generate genealogy timeline pages for top opportunities."""
+        print("[wiki-ingest] Generating genealogy timelines...")
+
+        # Check if genealogy table has data
+        try:
+            total = self.db.execute("SELECT COUNT(*) FROM listing_genealogy").fetchone()[0]
+        except Exception:
+            print("  No listing_genealogy table — skipping")
+            return
+
+        if total == 0:
+            print("  No genealogy data — skipping")
+            return
+
+        # Get top opportunities that have genealogy data
+        opp_rows = self.db.execute("""
+            SELECT name, data_json
+            FROM strategic_opportunities
+            WHERE precedence_tier <= 2
+            ORDER BY precedence_tier ASC, composite_score DESC
+            LIMIT 30
+        """).fetchall()
+
+        count = 0
+        for opp_row in opp_rows:
+            opp = json.loads(opp_row["data_json"])
+            opp_name = opp.get("name") or opp_row["name"] or "unnamed"
+            listing_keys = opp.get("listing_keys", []) + opp.get("owner_linked_listing_keys", [])
+            listing_keys = list(set(listing_keys))
+
+            if not listing_keys:
+                continue
+
+            # Get genealogy entries for these listing keys
+            placeholders = ",".join("?" * len(listing_keys))
+            entries = [
+                dict(r)
+                for r in self.db.execute(
+                    f"SELECT * FROM listing_genealogy WHERE listing_key IN ({placeholders}) ORDER BY event_date",
+                    listing_keys,
+                ).fetchall()
+            ]
+
+            if not entries:
+                continue
+
+            # Compute aggregates
+            all_agents = [e["agent_name"] for e in entries if e["agent_name"]]
+            all_offices = [e["office_name"] for e in entries if e["office_name"]]
+            all_prices = [e["list_price"] for e in entries if e["list_price"] and e["list_price"] > 0]
+            all_doms = [e["days_on_market"] for e in entries if e["days_on_market"] is not None]
+
+            # Agent counts
+            agent_counts: dict[str, int] = {}
+            for a in all_agents:
+                agent_counts[a] = agent_counts.get(a, 0) + 1
+
+            # Status counts
+            status_counts: dict[str, int] = {}
+            for e in entries:
+                s = e.get("event_type") or e.get("status") or "unknown"
+                status_counts[s] = status_counts.get(s, 0) + 1
+
+            failed_statuses = {"expired", "withdrawn", "canceled"}
+            failed_attempts = sum(
+                1 for e in entries if (e.get("event_type") or "").lower() in failed_statuses
+            )
+
+            unique_related = len({
+                e["related_listing_key"]
+                for e in entries
+                if e.get("related_listing_key") and e.get("relationship") != "self"
+            })
+
+            # Price changes (between consecutive entries with different prices)
+            price_changes = []
+            sorted_entries = sorted(
+                [e for e in entries if e["list_price"] and e["list_price"] > 0],
+                key=lambda x: x.get("event_date") or "",
+            )
+            for i in range(1, len(sorted_entries)):
+                prev_p = sorted_entries[i - 1]["list_price"]
+                curr_p = sorted_entries[i]["list_price"]
+                if prev_p != curr_p:
+                    diff = curr_p - prev_p
+                    price_changes.append({
+                        "direction": "+" if diff > 0 else "-",
+                        "amount": abs(diff),
+                        "from_listing": sorted_entries[i - 1].get("related_listing_key", "?")[:12],
+                        "to_listing": sorted_entries[i].get("related_listing_key", "?")[:12],
+                    })
+
+            safe_name = _safe_filename(opp_name)
+            tmpl = self.jinja.get_template("genealogy_timeline.md.j2")
+            content = tmpl.render(
+                generated_at=self.generated_at,
+                opportunity_name=opp_name,
+                listing_keys=listing_keys,
+                entries=entries,
+                unique_related=unique_related,
+                unique_agents=len(set(all_agents)),
+                unique_offices=len(set(all_offices)),
+                min_price=min(all_prices) if all_prices else 0,
+                max_price=max(all_prices) if all_prices else 0,
+                max_dom=max(all_doms) if all_doms else None,
+                agent_counts=agent_counts,
+                status_counts=status_counts,
+                failed_attempts=failed_attempts,
+                price_changes=price_changes[:20],
+            )
+            self._write_page(f"Genealogy/Genealogy — {safe_name}.md", content)
+            count += 1
+
+        print(f"  {count} genealogy pages")
+
+    # ── Market Trends ────────────────────────────────────────────────────────
+
+    def _ingest_market_trends(self) -> None:
+        """Generate market trends page from market_statistics table."""
+        print("[wiki-ingest] Generating market trends...")
+
+        # Check if market_statistics table has data
+        try:
+            total = self.db.execute("SELECT COUNT(*) FROM market_statistics").fetchone()[0]
+        except Exception:
+            print("  No market_statistics table — skipping")
+            return
+
+        if total == 0:
+            print("  No market statistics data — skipping")
+            return
+
+        county = "Washtenaw"
+        property_type = "Land"
+
+        # Get all stats
+        all_stats = [
+            dict(r)
+            for r in self.db.execute(
+                "SELECT * FROM market_statistics WHERE county = ? ORDER BY stat_type, period DESC",
+                (county,),
+            ).fetchall()
+        ]
+
+        # Group by stat_type
+        by_type: dict[str, list[dict]] = {}
+        for row in all_stats:
+            st = row["stat_type"]
+            if st not in by_type:
+                by_type[st] = []
+            by_type[st].append(row)
+
+        # Build summary
+        stat_labels = {
+            "absorption": "Absorption Rate",
+            "inventory": "Active Inventory",
+            "price": "Avg List Price",
+            "ratio": "Sale-to-List Ratio",
+            "dom": "Avg Days on Market",
+            "volume": "Sales Volume",
+        }
+
+        summary: dict[str, dict] = {}
+        for st, rows in by_type.items():
+            if not rows:
+                continue
+            latest = rows[0]  # already sorted DESC
+            prev = rows[1] if len(rows) > 1 else None
+
+            change_pct = None
+            trend = "flat"
+            if prev and prev["value"] and latest["value"]:
+                if prev["value"] != 0:
+                    change_pct = (latest["value"] - prev["value"]) / abs(prev["value"]) * 100
+                    trend = "up" if change_pct > 1 else "down" if change_pct < -1 else "flat"
+
+            trend_arrows = {"up": "^", "down": "v", "flat": "="}
+
+            # Format value based on stat type
+            val = latest["value"]
+            if st == "price":
+                formatted = f"${val:,.0f}"
+            elif st == "volume":
+                formatted = f"${val:,.0f}"
+            elif st == "absorption":
+                formatted = f"{val:.1%}"
+            elif st == "ratio":
+                formatted = f"{val:.2%}"
+            elif st == "inventory":
+                formatted = f"{val:.0f}"
+            elif st == "dom":
+                formatted = f"{val:.0f}"
+            else:
+                formatted = f"{val:.2f}"
+
+            change_str = f"{change_pct:+.1f}%" if change_pct is not None else "—"
+
+            summary[st] = {
+                "latest": val,
+                "period": latest["period"],
+                "trend": trend,
+                "trend_arrow": trend_arrows.get(trend, "?"),
+                "change_pct": change_pct,
+                "formatted": formatted,
+                "change_str": change_str,
+            }
+
+        # Check if data is derived
+        is_derived = any(
+            "derived_from_listing_history" in (r.get("source_data_json") or "")
+            for r in all_stats[:5]
+        )
+
+        # Convert stat type rows to simple objects for template
+        def _to_rows(st: str) -> list:
+            return [{"period": r["period"], "value": r["value"]} for r in by_type.get(st, [])]
+
+        safe_county = _safe_filename(county)
+        tmpl = self.jinja.get_template("market_trends.md.j2")
+        content = tmpl.render(
+            generated_at=self.generated_at,
+            county=county,
+            property_type=property_type,
+            stat_types=list(by_type.keys()),
+            total_data_points=total,
+            summary=summary,
+            stat_labels=stat_labels,
+            is_derived=is_derived,
+            inventory_data=_to_rows("inventory"),
+            price_data=_to_rows("price"),
+            dom_data=_to_rows("dom"),
+            absorption_data=_to_rows("absorption"),
+            volume_data=_to_rows("volume"),
+            ratio_data=_to_rows("ratio"),
+        )
+        self._write_page(f"Market/Market Trends — {safe_county}.md", content)
+
     # ── Wiki Index ───────────────────────────────────────────────────────────
 
     def _ingest_wiki_index(self) -> None:
@@ -492,8 +734,10 @@ class WikiIngestor:
         subdivision_pages = [_sub_info(p) for p in sorted((self.wiki_root / "Subdivisions").glob("*.md"))]
         pipeline_pages = [_page_info(p) for p in sorted((self.wiki_root / "Pipeline").glob("*.md"))]
         lint_pages = [_page_info(p) for p in sorted((self.wiki_root / "Lint").glob("*.md"))]
+        genealogy_dir = self.wiki_root / "Genealogy"
+        genealogy_pages = [_page_info(p, staleness_days=7) for p in sorted(genealogy_dir.glob("*.md"))] if genealogy_dir.exists() else []
 
-        all_pages = market_pages + opportunity_pages + subdivision_pages + pipeline_pages + lint_pages
+        all_pages = market_pages + opportunity_pages + subdivision_pages + pipeline_pages + lint_pages + genealogy_pages
         stale_count = sum(1 for p in all_pages if "STALE" in str(p.get("freshness", "")))
 
         tmpl = self.jinja.get_template("wiki_index.md.j2")
@@ -506,6 +750,7 @@ class WikiIngestor:
             subdivision_pages=subdivision_pages,
             pipeline_pages=pipeline_pages,
             lint_pages=lint_pages,
+            genealogy_pages=genealogy_pages,
         )
         self._write_page("Wiki Index.md", content)
 

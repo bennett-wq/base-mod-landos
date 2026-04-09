@@ -55,6 +55,21 @@ pages:
     refresh: daily
     staleness_days: 1
 
+  - id: genealogy_timeline
+    template: genealogy_timeline.md.j2
+    output_pattern: "Genealogy/Genealogy — {name}.md"
+    description: "Per-opportunity listing genealogy timeline from Spark historical API"
+    max_pages: 30
+    refresh: weekly
+    staleness_days: 7
+
+  - id: market_trends
+    template: market_trends.md.j2
+    output: "Market/Market Trends — Washtenaw.md"
+    description: "County-level market statistics trends (absorption, DOM, price, inventory, volume, ratio)"
+    refresh: weekly
+    staleness_days: 7
+
   - id: wiki_index
     template: wiki_index.md.j2
     output: "Wiki Index.md"
@@ -95,3 +110,6 @@ cross_references:
   - from: "Subdivisions/*"
     to: "Opportunities/*"
     link_field: linked_opportunities
+  - from: "Genealogy/*"
+    to: "Opportunities/*"
+    link_field: opportunity_name

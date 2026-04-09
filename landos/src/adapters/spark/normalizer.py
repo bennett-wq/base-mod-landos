@@ -138,19 +138,30 @@ def normalize(record: dict, now: datetime | None = None) -> Listing:
 # ── BBO field mapper ──────────────────────────────────────────────────────
 
 # Fields that need integer coercion
-_BBO_INT_FIELDS = {"cdom", "number_of_lots", "documents_count", "photos_count"}
+_BBO_INT_FIELDS = {
+    "cdom", "number_of_lots", "documents_count", "photos_count",
+    "tax_assessed_value", "tax_year",
+}
 # Fields that need float coercion
-_BBO_FLOAT_FIELDS = {"previous_list_price", "frontage_length"}
+_BBO_FLOAT_FIELDS = {
+    "previous_list_price", "frontage_length",
+    "tax_annual_amount", "state_equalized_value", "taxable_value",
+    "api_price_per_acre", "road_frontage_feet",
+}
 # Fields that need date coercion
 _BBO_DATE_FIELDS = {
     "back_on_market_date", "off_market_date", "withdrawal_date",
     "cancellation_date", "purchase_contract_date", "contract_status_change_date",
+    "on_market_date",
 }
 # Fields that need datetime coercion (ISO 8601 with time component)
 _BBO_DATETIME_FIELDS = {
     "original_entry_timestamp", "status_change_timestamp",
     "price_change_timestamp", "major_change_timestamp", "pending_timestamp",
+    "photos_change_timestamp", "documents_change_timestamp",
 }
+# Fields where the API returns a list that should be joined to a string
+_BBO_LIST_TO_STR_FIELDS = {"listing_terms"}
 
 
 def _map_bbo_fields(record: dict) -> dict:
@@ -173,6 +184,13 @@ def _map_bbo_fields(record: dict) -> dict:
                 kwargs[dest_field] = _to_date_optional(raw)
             elif dest_field in _BBO_DATETIME_FIELDS:
                 kwargs[dest_field] = _to_datetime_optional(raw)
+            elif dest_field in _BBO_LIST_TO_STR_FIELDS:
+                if isinstance(raw, list):
+                    kwargs[dest_field] = ", ".join(str(x) for x in raw)
+                else:
+                    val = _to_str_optional(raw)
+                    if val is not None:
+                        kwargs[dest_field] = val
             else:
                 # String fields
                 val = _to_str_optional(raw)

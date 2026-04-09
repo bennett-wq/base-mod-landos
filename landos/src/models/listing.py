@@ -125,3 +125,53 @@ class Listing(BaseModel):
     # BBO — Document / media counts
     documents_count: Optional[int] = None
     photos_count: Optional[int] = None
+
+    # ── Discovery batch (2026-04-08) — high-value unmapped fields ────────
+
+    # Spark internal listing ID — needed for native API genealogy calls
+    listing_id_spark: Optional[str] = None
+
+    # On-market date
+    on_market_date: Optional[date] = None
+
+    # Tax / economics
+    tax_annual_amount: Optional[float] = None
+    tax_assessed_value: Optional[int] = None
+    tax_year: Optional[int] = None
+    state_equalized_value: Optional[float] = None
+    taxable_value: Optional[float] = None
+
+    # Agent contact
+    listing_agent_email: Optional[str] = None
+    listing_agent_mobile: Optional[str] = None
+    listing_agent_license: Optional[str] = None
+
+    # Office contact
+    listing_office_phone: Optional[str] = None
+    listing_office_email: Optional[str] = None
+
+    # Property classification
+    property_sub_type: Optional[str] = None
+    ownership_type: Optional[str] = None
+
+    # Pre-computed price/acre from API
+    api_price_per_acre: Optional[float] = None
+
+    # Road frontage in feet
+    road_frontage_feet: Optional[float] = None
+
+    # Municipality name from API
+    municipality_name: Optional[str] = None
+
+    # School district
+    school_district: Optional[str] = None
+
+    # Cross street
+    cross_street: Optional[str] = None
+
+    # Listing/financing terms (may be a list serialized as string)
+    listing_terms: Optional[str] = None
+
+    # Freshness signals
+    photos_change_timestamp: Optional[datetime] = None
+    documents_change_timestamp: Optional[datetime] = None
