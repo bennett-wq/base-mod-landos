@@ -628,7 +628,10 @@ async def handle_zoning_extractor(
     laptop /loop worker can trigger ingest-municipality via Codex.
     """
     from src.agents.zoning_extractor import extract_zoning
-    result = extract_zoning(state=state, municipality=municipality, district_code=district_code)
+    try:
+        result = extract_zoning(state=state, municipality=municipality, district_code=district_code)
+    except EnvironmentError as exc:
+        return _err(str(exc))
     return _ok(result)
 
 
@@ -644,12 +647,15 @@ async def handle_permitted_use_checker(
     Returns use_blocked if vault note is missing or the case is not deterministic.
     """
     from src.agents.permitted_use_checker import check_permitted_use
-    result = check_permitted_use(
-        model_type=model_type,
-        district_code=district_code,
-        municipality=municipality,
-        state=state,
-    )
+    try:
+        result = check_permitted_use(
+            model_type=model_type,
+            district_code=district_code,
+            municipality=municipality,
+            state=state,
+        )
+    except EnvironmentError as exc:
+        return _err(str(exc))
     return _ok(result)
 
 
