@@ -613,6 +613,25 @@ async def handle_get_cooldown_state(
     })
 
 
+# ── Agent handlers ───────────────────────────────────────────────────
+
+async def handle_zoning_extractor(
+    mesh: MeshState,
+    state: str,
+    municipality: str,
+    district_code: str,
+) -> dict[str, Any]:
+    """Extract dimensional setbacks for a municipality/district from the Tier 1 vault note.
+
+    Returns zoning_blocked if the vault note is missing or the district is not found.
+    This is expected behavior — the pipeline emits a zoning_blocked event so the
+    laptop /loop worker can trigger ingest-municipality via Codex.
+    """
+    from src.agents.zoning_extractor import extract_zoning
+    result = extract_zoning(state=state, municipality=municipality, district_code=district_code)
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -638,6 +657,8 @@ HANDLER_MAP: dict[str, Any] = {
     "list_trigger_rules": handle_list_trigger_rules,
     "dry_run_event": handle_dry_run_event,
     "get_cooldown_state": handle_get_cooldown_state,
+    # Agent tools
+    "zoning_extractor": handle_zoning_extractor,
 }
 
 

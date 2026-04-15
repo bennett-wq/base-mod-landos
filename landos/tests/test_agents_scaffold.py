@@ -22,12 +22,12 @@ def test_all_agent_modules_importable():
     )
 
 
-def test_zoning_extractor_raises_not_implemented():
-    """AC M2-1.3.1: zoning_extractor stub raises NotImplementedError."""
+def test_zoning_extractor_importable():
+    """AC M2-1.3.1 (updated M2-3): zoning_extractor is importable and extract_zoning is callable."""
     from src.agents.zoning_extractor import extract_zoning
 
-    with pytest.raises(NotImplementedError, match="zoning_extractor not yet implemented \\(M2-3\\)"):
-        extract_zoning("Washtenaw County", "R1")
+    # M2-3 replaces the NotImplementedError stub; module must import without error.
+    assert callable(extract_zoning)
 
 
 def test_permitted_use_checker_raises_not_implemented():
