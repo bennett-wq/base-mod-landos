@@ -706,6 +706,36 @@ async def handle_incentive_agent(
     return _ok(result)
 
 
+async def handle_outreach_drafter(
+    mesh: MeshState,
+    underwriting: dict[str, Any],
+    listing_agent: dict[str, Any],
+) -> dict[str, Any]:
+    """Draft an offer letter + cover note for a GO/NEGOTIATE parcel.
+
+    Hard rule (spec §4.5): NEVER sends. Drafts only. See
+    ``src/agents/outreach_drafter.py`` for the CI grep guard that enforces
+    this at the source level.
+
+    The MCP layer passes the OpportunityUnderwriting as a plain dict; we
+    validate it into the Pydantic model inside the handler so callers can
+    send JSON-serialized payloads.
+
+    Returns ``_err`` if OBSIDIAN_VAULT_PATH is unset (Finding #2 guard).
+    """
+    from src.agents.outreach_drafter import draft_outreach
+    from src.models.opportunity import OpportunityUnderwriting
+    try:
+        underwriting_model = OpportunityUnderwriting.model_validate(underwriting)
+        result = draft_outreach(
+            underwriting=underwriting_model,
+            listing_agent=listing_agent,
+        )
+    except EnvironmentError as exc:
+        return _err(str(exc))
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -736,6 +766,7 @@ HANDLER_MAP: dict[str, Any] = {
     "permitted_use_checker": handle_permitted_use_checker,
     "comp_narrator": handle_comp_narrator,
     "incentive_agent": handle_incentive_agent,
+    "outreach_drafter": handle_outreach_drafter,
 }
 
 

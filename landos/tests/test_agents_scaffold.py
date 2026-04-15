@@ -54,12 +54,12 @@ def test_incentive_agent_importable():
     assert callable(research_incentives)
 
 
-def test_outreach_drafter_raises_not_implemented():
-    """AC M2-1.3.5: outreach_drafter stub raises NotImplementedError."""
+def test_outreach_drafter_importable():
+    """AC M2-1.3.5 (updated M2-7): outreach_drafter is importable and draft_outreach is callable."""
     from src.agents.outreach_drafter import draft_outreach
 
-    with pytest.raises(NotImplementedError, match="outreach_drafter not yet implemented \\(M2-7\\)"):
-        draft_outreach("071020-04-001-000", {}, {})
+    # M2-7 replaces the NotImplementedError stub; module must import without error.
+    assert callable(draft_outreach)
 
 
 def test_opportunity_hunter_raises_not_implemented():
