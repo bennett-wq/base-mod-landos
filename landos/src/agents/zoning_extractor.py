@@ -18,9 +18,11 @@ from pathlib import Path
 from typing import Any
 
 
-# Default vault path: env var or repo default.
-_ENV_VAULT_PATH = os.environ.get("OBSIDIAN_VAULT_PATH", "/Users/bennett2026/Documents/Brain/stranded-lots")
-VAULT_PATH = Path(_ENV_VAULT_PATH)
+# Default vault path: controlled by OBSIDIAN_VAULT_PATH env var.
+# Falls back to the local Brain-stranded-lots path for the primary dev machine only.
+# Any other environment MUST set OBSIDIAN_VAULT_PATH or pass vault_path= explicitly.
+_ENV_VAULT_PATH: str | None = os.environ.get("OBSIDIAN_VAULT_PATH")
+VAULT_PATH: Path | None = Path(_ENV_VAULT_PATH) if _ENV_VAULT_PATH else None
 
 
 # ── Regex helpers ─────────────────────────────────────────────────────
@@ -115,21 +117,25 @@ def _parse_district_table(section_text: str, district_code: str) -> dict[str, An
     if any(v is None for v in required):
         return None
 
-    height_ft, max_stories = _parse_height(height_raw)
-
-    return {
-        "district_code": district_code,
-        "min_lot_sf": _parse_int(lot_area_raw),
-        "min_width_ft": _parse_float(lot_width_raw),
-        "max_coverage_pct": _parse_float(coverage_raw),
-        "max_height_ft": height_ft,
-        "max_stories": max_stories,
-        "front_setback_ft": _parse_float(front_raw),
-        "side_least_ft": _parse_float(side_least_raw),
-        "side_total_ft": _parse_float(side_total_raw),
-        "rear_setback_ft": _parse_float(rear_raw),
-        "min_ground_floor_sf": _parse_int(ground_floor_raw),
-    }
+    try:
+        height_ft, max_stories = _parse_height(height_raw)
+        return {
+            "district_code": district_code,
+            "min_lot_sf": _parse_int(lot_area_raw),
+            "min_width_ft": _parse_float(lot_width_raw),
+            "max_coverage_pct": _parse_float(coverage_raw),
+            "max_height_ft": height_ft,
+            "max_stories": max_stories,
+            "front_setback_ft": _parse_float(front_raw),
+            "side_least_ft": _parse_float(side_least_raw),
+            "side_total_ft": _parse_float(side_total_raw),
+            "rear_setback_ft": _parse_float(rear_raw),
+            "min_ground_floor_sf": _parse_int(ground_floor_raw),
+        }
+    except (ValueError, AttributeError):
+        # A malformed cell value (e.g. "**TBD**" → empty after stripping) causes
+        # float("") to raise ValueError. Treat as table_parse_failed.
+        return None
 
 
 def _extract_frontmatter_value(content: str, key: str) -> str | None:
@@ -158,8 +164,10 @@ def _find_district_section(content: str, district_code: str) -> str | None:
         return None
 
     section_start = m.end()
-    # The section ends at the next heading of equal or higher level (## or ###)
-    next_heading = re.search(r"^#{1,3}\s", content[section_start:], re.MULTILINE)
+    # The section ends at the next heading of any depth (# through ######).
+    # Using #+  (not #{1,3}) prevents #### sub-sections from contaminating the
+    # primary dimensional-standards table via last-write-wins row merging.
+    next_heading = re.search(r"^#+\s", content[section_start:], re.MULTILINE)
     if next_heading:
         section_text = content[section_start: section_start + next_heading.start()]
     else:
@@ -220,7 +228,14 @@ def extract_zoning(
         - ``"district_not_in_note"`` — file exists but no ``### {district_code}`` section
         - ``"table_parse_failed"`` — section found but table could not be parsed
     """
+    # Normalize district_code upfront so ok and blocked paths return consistent casing.
+    district_code = district_code.upper()
+
     root = vault_path if vault_path is not None else VAULT_PATH
+    if root is None:
+        raise EnvironmentError(
+            "OBSIDIAN_VAULT_PATH env var is required when vault_path is not passed"
+        )
     note_path = root / "04 - Municipalities" / f"{municipality}.md"
 
     if not note_path.exists():
@@ -232,9 +247,8 @@ def extract_zoning(
         }
 
     content = note_path.read_text(encoding="utf-8")
-    district_code_upper = district_code.upper()
 
-    section_text = _find_district_section(content, district_code_upper)
+    section_text = _find_district_section(content, district_code)
     if section_text is None:
         return {
             "status": "zoning_blocked",
@@ -243,7 +257,7 @@ def extract_zoning(
             "reason": "district_not_in_note",
         }
 
-    fields = _parse_district_table(section_text, district_code_upper)
+    fields = _parse_district_table(section_text, district_code)
     if fields is None:
         return {
             "status": "zoning_blocked",
