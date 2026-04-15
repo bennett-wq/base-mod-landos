@@ -664,19 +664,20 @@ async def handle_comp_narrator(
     set1_rows: list[dict],
     set2_rows: list[dict],
     set3_rows: list[dict],
-    sqft_target: int = 1280,
+    sqft_band: tuple[int, int] = (1000, 1500),
 ) -> dict[str, Any]:
     """Produce three comp sets with aggregates and an anchor comp + exit $/sf.
 
     The caller (typically underwriter_agent) pre-filters the listing store by
     postal_code, property_type, date_range, etc. and passes the rows here.
+    sqft_band is the (low, high) sqft range for the Set 2 Jaxon-band filter.
     """
     from src.agents.comp_narrator import narrate_comps
     result = narrate_comps(
         set1_rows=set1_rows,
         set2_rows=set2_rows,
         set3_rows=set3_rows,
-        sqft_target=sqft_target,
+        sqft_band=sqft_band,
     )
     return _ok(result)
 

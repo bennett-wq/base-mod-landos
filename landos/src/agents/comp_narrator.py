@@ -3,14 +3,17 @@
 Implemented in M2-5.
 
 Function signature:
-    narrate_comps(set1_rows, set2_rows, set3_rows, sqft_target, sqft_band) -> dict
+    narrate_comps(set1_rows, set2_rows, set3_rows, sqft_band) -> dict
 """
 
 from __future__ import annotations
 
+import logging
 import statistics
 from datetime import date
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_date(value: str | date | None) -> date | None:
@@ -33,12 +36,36 @@ def _resolve_ppsf(row: dict) -> float | None:
     return None
 
 
+def _filter_valid_date_rows(rows: list[dict], set_name: str) -> list[dict]:
+    """Drop rows whose close_date is missing or unparseable.
+
+    A Comp instance requires a valid date; rows without one are silently
+    dropped here — a data-quality issue the upstream caller should fix.
+    """
+    valid = []
+    for row in rows:
+        parsed = _parse_date(row.get("close_date"))
+        if parsed is None:
+            logger.debug(
+                "comp_narrator: dropping row with missing/invalid close_date "
+                "from %s — address=%s",
+                set_name,
+                row.get("address", "<unknown>"),
+            )
+        else:
+            valid.append(row)
+    return valid
+
+
 def _row_to_comp_dict(row: dict) -> dict:
-    """Normalize a comp row into a Comp-compatible dict."""
+    """Normalize a comp row into a Comp-compatible dict.
+
+    Caller must ensure row has a valid close_date (use _filter_valid_date_rows first).
+    """
     ppsf = _resolve_ppsf(row)
     return {
         "address": row["address"],
-        "close_date": str(_parse_date(row.get("close_date"))),
+        "close_date": str(_parse_date(row["close_date"])),
         "price": float(row["price"]),
         "sqft": row.get("sqft"),
         "ppsf": ppsf,
@@ -170,9 +197,13 @@ def _compute_confidence(
     band_count: int,
     exit_ppsf: float | None,
 ) -> str:
-    """Determine confidence tier."""
-    if not set1_rows and band_count == 0:
-        return "none"
+    """Determine confidence tier.
+
+    Thresholds:
+    - "high":   Set 1 >= 2 comps AND Set 2 jaxon_band >= 5 comps AND exit_ppsf computed
+    - "medium": Set 1 >= 1 comp OR Set 2 jaxon_band >= 2 comps (but not enough for high)
+    - "low":    otherwise, but at least one comp exists
+    """
     if len(set1_rows) >= 2 and band_count >= 5 and exit_ppsf is not None:
         return "high"
     if len(set1_rows) >= 1 or band_count >= 2:
@@ -215,56 +246,83 @@ def narrate_comps(
     set1_rows: list[dict],
     set2_rows: list[dict],
     set3_rows: list[dict],
-    sqft_target: int = 1280,
     sqft_band: tuple[int, int] = (1000, 1500),
 ) -> dict[str, Any]:
     """Produce three comp sets with aggregates and an anchor comp + exit $/sf.
 
     Args:
         set1_rows: Tight SFR comps (new-ish, pre-filtered by caller).
-        set2_rows: Broad SFR comps (large set — only aggregates extracted).
+        set2_rows: Broad SFR comps (large set — full rows + aggregates returned).
         set3_rows: Land comps (Washtenaw).
-        sqft_target: Target home sqft (default 1280 for Jaxon).
         sqft_band: (low, high) sqft range for Set 2 Jaxon-band filter.
 
     Returns:
         dict with comp sets, aggregates, anchor_comp, exit_ppsf, confidence,
         anchor_rationale, and status ("ok" or "no_comps").
+
+        On "ok" path the shape matches OpportunityUnderwriting comp fields:
+            comp_set_1_tight_sfr: list[Comp dicts]
+            comp_set_1_aggregates: {median_ppsf, count, median_price, date_range_days}
+            comp_set_2_broad_sfr: list[Comp dicts]
+            comp_set_2_aggregates: {"all": ..., "jaxon_band": ...}
+            comp_set_3_land: list[Comp dicts]
+            comp_set_3_aggregates: {"all": ..., "sub_half_acre": ..., "within_3mi": ...}
+            anchor_comp: Comp dict
+            anchor_rationale: str
+            exit_ppsf: float | None
+            confidence: "high" | "medium" | "low"
+
+    Confidence thresholds:
+        "high":   Set 1 >= 2 comps AND Set 2 jaxon_band >= 5 comps AND exit_ppsf computed
+        "medium": Set 1 >= 1 comp OR Set 2 jaxon_band >= 2 comps (but not enough for high)
+        "low":    otherwise, but at least one comp exists
+
+    Rows missing close_date are silently dropped before any aggregation.
     """
-    # Empty check
+    # ── C1: Drop rows with missing or unparseable close_date ──────────────
+    set1_rows = _filter_valid_date_rows(set1_rows, "set1")
+    set2_rows = _filter_valid_date_rows(set2_rows, "set2")
+    set3_rows = _filter_valid_date_rows(set3_rows, "set3")
+
+    # Empty check (after date filtering)
     if not set1_rows and not set2_rows and not set3_rows:
         return {
             "status": "no_comps",
-            "comp_set_1": [],
+            "comp_set_1_tight_sfr": [],
             "comp_set_1_aggregates": {"median_ppsf": 0.0, "count": 0, "median_price": None, "date_range_days": 0},
-            "comp_set_2_all": {"median_ppsf": 0.0, "count": 0, "median_price": None},
-            "comp_set_2_jaxon_band": {"median_ppsf": 0.0, "count": 0, "median_price": None},
-            "comp_set_3": [],
-            "comp_set_3_all": {"median_ppsf": 0.0, "count": 0, "median_price": None},
-            "comp_set_3_sub_half_acre": {"median_ppsf": 0.0, "count": 0, "median_price": None},
-            "comp_set_3_within_3mi": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+            "comp_set_2_broad_sfr": [],
+            "comp_set_2_aggregates": {
+                "all": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+                "jaxon_band": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+            },
+            "comp_set_3_land": [],
+            "comp_set_3_aggregates": {
+                "all": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+                "sub_half_acre": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+                "within_3mi": {"median_ppsf": 0.0, "count": 0, "median_price": None},
+            },
             "anchor_comp": None,
             "anchor_rationale": "",
             "exit_ppsf": None,
-            "confidence": "none",
         }
 
-    # ── Set 1 ─────────────────────────────────────────────────────────
+    # ── Set 1 ─────────────────────────────────────────────────────────────
     set1_comp_dicts = [_row_to_comp_dict(r) for r in set1_rows]
     agg1 = _set1_aggregates(set1_rows)
 
-    # ── Set 2 ─────────────────────────────────────────────────────────
+    # ── Set 2 ─────────────────────────────────────────────────────────────
+    set2_comp_dicts = [_row_to_comp_dict(r) for r in set2_rows]
     agg2_all, agg2_band = _set2_aggregates(set2_rows, sqft_band)
 
-    # ── Set 3 ─────────────────────────────────────────────────────────
+    # ── Set 3 ─────────────────────────────────────────────────────────────
     set3_comp_dicts = [_row_to_comp_dict(r) for r in set3_rows]
     agg3_all, agg3_sub_half, agg3_3mi = _set3_aggregates(set3_rows)
 
-    # ── Anchor comp ───────────────────────────────────────────────────
+    # ── Anchor comp ───────────────────────────────────────────────────────
     anchor_row = _select_anchor(set1_rows, set2_rows, sqft_band)
     anchor_dict = _row_to_comp_dict(anchor_row) if anchor_row is not None else None
 
-    # ── exit_ppsf ─────────────────────────────────────────────────────
+    # ── exit_ppsf ─────────────────────────────────────────────────────────
     anchor_ppsf = _resolve_ppsf(anchor_row) if anchor_row is not None else None
     band_median = agg2_band["median_ppsf"] if agg2_band["count"] > 0 else None
     # band_median of 0.0 means no data — treat as None
@@ -280,10 +338,10 @@ def narrate_comps(
     else:
         exit_ppsf = None
 
-    # ── Confidence ────────────────────────────────────────────────────
+    # ── Confidence ────────────────────────────────────────────────────────
     confidence = _compute_confidence(set1_rows, agg2_band["count"], exit_ppsf)
 
-    # ── Rationale ─────────────────────────────────────────────────────
+    # ── Rationale ─────────────────────────────────────────────────────────
     if anchor_dict is not None:
         rationale = _build_rationale(anchor_row, set1_rows, exit_ppsf, sqft_band)
     else:
@@ -291,14 +349,19 @@ def narrate_comps(
 
     return {
         "status": "ok",
-        "comp_set_1": set1_comp_dicts,
+        "comp_set_1_tight_sfr": set1_comp_dicts,
         "comp_set_1_aggregates": agg1,
-        "comp_set_2_all": agg2_all,
-        "comp_set_2_jaxon_band": agg2_band,
-        "comp_set_3": set3_comp_dicts,
-        "comp_set_3_all": agg3_all,
-        "comp_set_3_sub_half_acre": agg3_sub_half,
-        "comp_set_3_within_3mi": agg3_3mi,
+        "comp_set_2_broad_sfr": set2_comp_dicts,
+        "comp_set_2_aggregates": {
+            "all": agg2_all,
+            "jaxon_band": agg2_band,
+        },
+        "comp_set_3_land": set3_comp_dicts,
+        "comp_set_3_aggregates": {
+            "all": agg3_all,
+            "sub_half_acre": agg3_sub_half,
+            "within_3mi": agg3_3mi,
+        },
         "anchor_comp": anchor_dict,
         "anchor_rationale": rationale,
         "exit_ppsf": exit_ppsf,

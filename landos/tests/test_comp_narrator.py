@@ -147,7 +147,7 @@ def test_narrate_comps_set1_aggregates():
 def test_narrate_comps_set2_jaxon_band():
     """Set 2 Jaxon band count=16, median_ppsf ≈ 183."""
     result = narrate_comps(SET1_ROWS, SET2_ROWS, SET3_ROWS)
-    band = result["comp_set_2_jaxon_band"]
+    band = result["comp_set_2_aggregates"]["jaxon_band"]
     assert band["count"] == 16
     assert band["median_ppsf"] == pytest.approx(183.0, abs=1.0)
 
@@ -155,7 +155,7 @@ def test_narrate_comps_set2_jaxon_band():
 def test_narrate_comps_set3_within_3mi():
     """Set 3 within-3mi count=3 (Emerson 0.2mi + McGregor 0.6mi + S Pasadena 0.2mi)."""
     result = narrate_comps(SET1_ROWS, SET2_ROWS, SET3_ROWS)
-    within = result["comp_set_3_within_3mi"]
+    within = result["comp_set_3_aggregates"]["within_3mi"]
     assert within["count"] == 3
 
 
@@ -166,12 +166,12 @@ def test_narrate_comps_confidence_high():
 
 
 def test_narrate_comps_empty():
-    """All empty sets → status='no_comps'."""
+    """All empty sets → status='no_comps', confidence key absent."""
     result = narrate_comps([], [], [])
     assert result["status"] == "no_comps"
     assert result["anchor_comp"] is None
     assert result["exit_ppsf"] is None
-    assert result["confidence"] == "none"
+    assert "confidence" not in result
 
 
 def test_comp_model_round_trip():
@@ -201,9 +201,72 @@ def test_handle_comp_narrator():
             set1_rows=SET1_ROWS,
             set2_rows=SET2_ROWS,
             set3_rows=SET3_ROWS,
-            sqft_target=1280,
         )
     )
     assert response["isError"] is False
     content_text = response["content"][0]["text"]
     assert "ok" in content_text
+
+
+def test_narrate_comps_drops_rows_with_missing_close_date():
+    """Rows with close_date=None are silently dropped before aggregation.
+
+    Build a set1 with one valid row and one row with close_date=None.
+    The None-date row must not appear in comp_set_1_tight_sfr.
+    """
+    rows_with_bad = [
+        {
+            "address": "1070 Hawthorne Ave, Ypsilanti",
+            "close_date": "2026-02-09",
+            "price": 230000,
+            "sqft": 1256,
+            "ppsf": 183.0,
+            "year_built": 2022,
+            "distance_mi": 2.0,
+        },
+        {
+            "address": "Bad Date House, Ypsilanti",
+            "close_date": None,
+            "price": 200000,
+            "sqft": 1200,
+            "ppsf": 166.0,
+            "year_built": 2021,
+            "distance_mi": 1.5,
+        },
+    ]
+    result = narrate_comps(rows_with_bad, [], [])
+    tight_sfr = result["comp_set_1_tight_sfr"]
+    # Only the valid-date row survives
+    assert len(tight_sfr) == 1
+    assert tight_sfr[0]["address"] == "1070 Hawthorne Ave, Ypsilanti"
+    # The bad-date row is gone
+    addresses = [c["address"] for c in tight_sfr]
+    assert "Bad Date House, Ypsilanti" not in addresses
+
+
+def test_narrate_comps_full_pydantic_round_trip():
+    """Full narrator output can be used to construct all Pydantic comp objects.
+
+    This is the critical test that catches C2 (output shape mismatch).
+    All seven construction lines must succeed without raising.
+    """
+    result = narrate_comps(SET1_ROWS, SET2_ROWS, SET3_ROWS)
+
+    # These seven lines mirror exactly what underwriter_agent (M2-10) will do.
+    comp_set_1_tight_sfr = [Comp(**c) for c in result["comp_set_1_tight_sfr"]]
+    comp_set_1_aggregates = CompAggregates(**result["comp_set_1_aggregates"])
+    comp_set_2_broad_sfr = [Comp(**c) for c in result["comp_set_2_broad_sfr"]]
+    comp_set_2_aggregates = {k: CompAggregates(**v) for k, v in result["comp_set_2_aggregates"].items()}
+    comp_set_3_land = [Comp(**c) for c in result["comp_set_3_land"]]
+    comp_set_3_aggregates = {k: CompAggregates(**v) for k, v in result["comp_set_3_aggregates"].items()}
+    anchor_comp = Comp(**result["anchor_comp"])
+
+    # Spot-check the McCartney reference values
+    assert comp_set_1_aggregates.count == 3
+    assert comp_set_2_aggregates["jaxon_band"].count == 16
+    assert comp_set_2_aggregates["jaxon_band"].median_ppsf == pytest.approx(183.0, abs=0.5)
+    assert comp_set_3_aggregates["within_3mi"].count == 3
+    assert "1070 Hawthorne" in anchor_comp.address
+    assert len(comp_set_1_tight_sfr) == 3
+    assert len(comp_set_2_broad_sfr) == 46
+    assert len(comp_set_3_land) == 5
