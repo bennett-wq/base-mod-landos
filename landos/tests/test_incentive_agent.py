@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,8 +18,13 @@ import pytest
 from src.agents.incentive_agent import research_incentives
 from src.models.opportunity import Program
 
-# Real vault path — used by the optional real-vault sanity test (Test 17).
-_REAL_VAULT = "/Users/bennett2026/Documents/Brain/stranded-lots"
+# Real vault path — used by the optional real-vault sanity test (Test 18).
+# Overridable via STRANDED_LOTS_VAULT_PATH env var so other contributors and
+# CI machines can enable the sanity check without editing source.
+_REAL_VAULT = os.environ.get(
+    "STRANDED_LOTS_VAULT_PATH",
+    "/Users/bennett2026/Documents/Brain/stranded-lots",
+)
 
 
 # ── Vault note fixture helpers ────────────────────────────────────────

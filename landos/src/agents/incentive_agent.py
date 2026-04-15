@@ -179,7 +179,10 @@ def _try_load_programs_note(note_path: Path) -> list[dict[str, Any]]:
     - The file does not exist.
     - The file exists but contains no parseable program rows.
 
-    Never raises — callers use the empty list to decide blocked semantics.
+    Only raises for truly exceptional filesystem errors (PermissionError,
+    IsADirectoryError, UnicodeDecodeError from malformed UTF-8, etc).
+    Missing file, empty file, and missing tables all return [].
+    Callers use the empty list to decide blocked semantics.
     """
     if not note_path.exists():
         return []
@@ -277,12 +280,17 @@ def research_incentives(
     # Load municipality programs
     municipality_programs = _try_load_programs_note(muni_note_path)
 
-    # Load state-level programs (only for registered state codes)
+    # Load state-level programs (only for registered state codes).
+    # Defense-in-depth: if the caller accidentally passes the state name as the
+    # municipality (e.g. `municipality="Michigan"`), the muni path and state
+    # path resolve to the same file. Skip the state load in that case to avoid
+    # duplicating every program in the merged list.
     state_name = _STATE_CODE_TO_NAME.get(state.upper() if state else "")
     state_programs: list[dict[str, Any]] = []
     if state_name:
         state_note_path = root / "04 - Municipalities" / f"{state_name} \u2014 Programs & Incentives.md"
-        state_programs = _try_load_programs_note(state_note_path)
+        if state_note_path != muni_note_path:
+            state_programs = _try_load_programs_note(state_note_path)
 
     # ── Blocked semantics ─────────────────────────────────────────────
     if not municipality_programs and not state_programs:
@@ -327,7 +335,7 @@ def research_incentives(
         # Only state programs
         state_display = state_name if state_name else state
         rationale_intro = (
-            f"Found {s_count} {state_display} state-level program(s) (MSHDA, Wayne County PRICE) "
+            f"Found {s_count} {state_display} state-level program(s) "
             f"applicable to {municipality}: "
             + ", ".join(p["name"] for p in state_programs)
             + "."
