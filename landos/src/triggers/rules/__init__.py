@@ -24,6 +24,7 @@ from src.triggers.rules.municipal_rules import RV, RW, RX
 from src.triggers.rules.parcel_rules import RF, RG, RH
 from src.triggers.rules.phase2_placeholders import RD
 from src.triggers.rules.stallout_rules import STA, STB, STC, STD, STE, STF, STG
+from src.triggers.rules.stranded_lots_rules import ALL_STRANDED_LOTS_RULES, SL1, SL2, SL3, SL4
 
 # ── Executable registry ───────────────────────────────────────────────
 # Only fully wired, tested rules belong here. The engine is constructed
@@ -45,6 +46,8 @@ ALL_RULES: list[TriggerRule] = [
     RV, RW, RX,
     # Step 8 — stallout detection rules
     STA, STB, STC, STD, STE, STF, STG,
+    # Stranded-lots pipeline
+    *ALL_STRANDED_LOTS_RULES,
 ]
 
 # ── Planning catalog (not active) ─────────────────────────────────────
@@ -100,4 +103,5 @@ __all__ = [
     "RY", "RZ1", "RZ2", "RZ3",
     "RV", "RW", "RX",
     "STA", "STB", "STC", "STD", "STE", "STF", "STG",
+    "SL1", "SL2", "SL3", "SL4", "ALL_STRANDED_LOTS_RULES",
 ]
