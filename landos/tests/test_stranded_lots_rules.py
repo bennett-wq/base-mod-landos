@@ -300,6 +300,16 @@ class TestCooldownKeyBuilders:
         key = SL3.cooldown_key_builder(event, self._fake_ctx())
         assert key == "parcel_underwritten:14-02-100-002"
 
+    def test_sl3_key_builder_missing_apn(self):
+        """Empty APN produces a stable key (no crash)."""
+        event = _make_raw_event(
+            "parcel_underwritten",
+            EventFamily.PARCEL_STATE,
+            {"verdict": "GO"},  # no parcel_apn
+        )
+        key = SL3.cooldown_key_builder(event, self._fake_ctx())
+        assert key == "parcel_underwritten:"
+
     def test_sl4_key_builder(self):
         event = _make_raw_event(
             "area_favorable",

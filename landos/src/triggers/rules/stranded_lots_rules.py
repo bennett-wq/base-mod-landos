@@ -77,7 +77,7 @@ SL3 = TriggerRule(
     cooldown_key_builder=lambda e, ctx: f"parcel_underwritten:{e.payload.get('parcel_apn', '')}",
     raw_event_bypasses_cooldown=False,
     materiality_threshold=None,
-    description="parcel_underwritten + verdict ≥ NEGOTIATE → CREATE outreach_drafter_agent.",
+    description="parcel_underwritten + verdict in (GO, NEGOTIATE) → CREATE outreach_drafter_agent.",
 )
 
 # ── SL4 — area_favorable → RESCAN opportunity_hunter_agent ───────────────────
