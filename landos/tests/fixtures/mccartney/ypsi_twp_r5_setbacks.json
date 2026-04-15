@@ -1,0 +1,15 @@
+{
+  "district_code": "R-5",
+  "min_lot_sf": 5400,
+  "min_width_ft": 50,
+  "max_coverage_pct": 35.0,
+  "max_height_ft": 25.0,
+  "max_stories": 2,
+  "front_setback_ft": 20.0,
+  "side_least_ft": 5.0,
+  "side_total_ft": 16.0,
+  "rear_setback_ft": 35.0,
+  "min_ground_floor_sf": 720,
+  "source_url": "https://library.municode.com/mi/ypsilanti_charter_township,_(washtenaw_co.)/codes/code_of_ordinances?nodeId=COOR_APXAZO_ARTIVDIRE_S406OMIREDI",
+  "pulled_on": "2026-04-15"
+}

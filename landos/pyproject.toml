@@ -5,6 +5,7 @@ description = "BaseMod LandOS — Event Mesh"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.0,<3.0",
+    "shapely>=2.0,<3.0",
 ]
 
 [project.optional-dependencies]
