@@ -17,6 +17,9 @@ import pytest
 from src.agents.incentive_agent import research_incentives
 from src.models.opportunity import Program
 
+# Real vault path — used by the optional real-vault sanity test (Test 17).
+_REAL_VAULT = "/Users/bennett2026/Documents/Brain/stranded-lots"
+
 
 # ── Vault note fixture helpers ────────────────────────────────────────
 
@@ -332,3 +335,229 @@ def test_handle_incentive_agent_env_error(tmp_path: Path) -> None:
     assert response["isError"] is True
     error_text = response["content"][0]["text"]
     assert "OBSIDIAN_VAULT_PATH" in error_text
+
+
+# ── State-level merge test fixtures ──────────────────────────────────
+
+def _write_state_note(vault_root: Path, state_name: str, content: str) -> None:
+    """Write a state-level Programs & Incentives note to 04 - Municipalities/."""
+    muni_dir = vault_root / "04 - Municipalities"
+    muni_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{state_name} {_EM} Programs & Incentives.md"
+    (muni_dir / filename).write_text(content, encoding="utf-8")
+
+
+# Minimal state note — 2 active programs + 1 consumer subsidy = 3 programs
+_STATE_NOTE_MI = """\
+---
+tags: [state/michigan]
+municipality: "Michigan"
+---
+# Michigan \u2014 State Programs & Incentives
+
+## Active Incentive Programs
+
+| Program | Authority type | Scope | Authorized | Expires | Stacking notes | Source |
+|---|---|---|---|---|---|---|
+| **MSHDA MI Neighborhood 3.0 HCDF** | MSHDA HCDF grant \u2014 up to $100,000 per newly constructed unit | Statewide 15 RHPs | 2025-10-06 | 2026-06-30 | Modular encouraged. Non-stackable with CDBG/LIHTC. | MIN 3.0 Program Overview |
+| **Wayne County PRICE** | HUD PRICE federal program, ~$80K per new manufactured housing unit | Wayne County except Detroit | 2024-05-15 DRAFT | Multi-year | Distressed cities: Romulus, Wayne, Inkster, Melvindale | Wayne County 2024 PRICE Application |
+
+## Consumer Subsidies (D2C-relevant)
+
+| Program | Amount / benefit | Eligibility gates | Application path | Funding source | Source |
+|---|---|---|---|---|---|
+| **MSHDA MI 10K DPA** | $10,000 forgivable DPA after 10 years | Michigan resident, 30-year fixed, income \u2264 MSHDA limits | MSHDA-approved lender network | MSHDA | Get Housing Ready Guide |
+"""
+
+# A one-program municipality note used in merge tests
+_MUNI_NOTE_ONE_PROGRAM = ACTIVE_TABLE_HEADER + _RENAISSANCE_ROW + "\n"
+
+# A Michigan note with section headings but NO data rows in either table
+_STATE_NOTE_MI_MALFORMED = """\
+---
+tags: [state/michigan]
+---
+# Michigan \u2014 State Programs & Incentives
+
+## Active Incentive Programs
+
+| Program | Authority type | Scope | Authorized | Expires | Stacking notes | Source |
+|---|---|---|---|---|---|---|
+
+## Consumer Subsidies (D2C-relevant)
+
+| Program | Amount / benefit | Eligibility gates | Application path | Funding source | Source |
+|---|---|---|---|---|---|
+"""
+
+
+# ── Test 12: municipality + state programs merged ─────────────────────
+
+def test_research_incentives_merges_state_and_municipality(tmp_path: Path) -> None:
+    """Both notes written: result is municipality programs first, then state programs.
+
+    1 municipality program + 3 state programs = 4 total.
+    """
+    _write_note(tmp_path, "Ypsilanti Township", _MUNI_NOTE_ONE_PROGRAM)
+    _write_state_note(tmp_path, "Michigan", _STATE_NOTE_MI)
+
+    result = research_incentives(
+        state="MI",
+        municipality="Ypsilanti Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    programs = result["applicable_programs"]
+    assert len(programs) == 4
+
+    # Municipality programs come first
+    assert "Renaissance Zone" in programs[0]["name"]
+
+    # Rationale must mention both sources
+    rationale = result["rationale"]
+    assert "municipality" in rationale.lower()
+    assert "state" in rationale.lower()
+
+
+# ── Test 13: state programs only (no municipality note) ───────────────
+
+def test_research_incentives_state_only(tmp_path: Path) -> None:
+    """Only the Michigan state note is written; municipality note does not exist.
+
+    State programs are returned with status=ok.
+    """
+    _write_state_note(tmp_path, "Michigan", _STATE_NOTE_MI)
+
+    result = research_incentives(
+        state="MI",
+        municipality="Nonexistent Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    programs = result["applicable_programs"]
+    assert len(programs) >= 1
+
+    # All returned programs must be from the state note
+    state_program_names = {"MSHDA MI Neighborhood 3.0 HCDF", "Wayne County PRICE", "MSHDA MI 10K DPA"}
+    for p in programs:
+        assert p["name"] in state_program_names, f"Unexpected program in result: {p['name']!r}"
+
+    # Rationale mentions "state" source
+    assert "state" in result["rationale"].lower()
+
+
+# ── Test 14: non-MI state — no state note lookup ─────────────────────
+
+def test_research_incentives_municipality_only_when_non_mi_state(tmp_path: Path) -> None:
+    """OH is not in _STATE_CODE_TO_NAME, so no state note is looked up.
+
+    Municipality note alone produces status=ok without state programs.
+    """
+    _write_note(tmp_path, "Ypsilanti Township", _MUNI_NOTE_ONE_PROGRAM)
+    # Deliberately do NOT write a state note — the agent must not look for one
+
+    result = research_incentives(
+        state="OH",
+        municipality="Ypsilanti Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    programs = result["applicable_programs"]
+    # Only the 1 municipality program — no state programs bleed in
+    assert len(programs) == 1
+
+    # Rationale must not mention "state" (no state source was consulted)
+    assert "state" not in result["rationale"].lower()
+
+
+# ── Test 15: both notes missing → programs_blocked vault_note_not_found
+
+def test_research_incentives_both_missing_blocked(tmp_path: Path) -> None:
+    """Neither municipality nor state note exists → programs_blocked, vault_note_not_found."""
+    result = research_incentives(
+        state="MI",
+        municipality="Nonexistent Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "programs_blocked"
+    assert result["reason"] == "vault_note_not_found"
+
+
+# ── Test 16: malformed state note falls back to municipality programs ──
+
+def test_research_incentives_state_note_malformed_falls_back(tmp_path: Path) -> None:
+    """Municipality note has 1 program; Michigan note has correct headers but no data rows.
+
+    Result should be ok with only the 1 municipality program. No exception raised.
+    """
+    _write_note(tmp_path, "Ypsilanti Township", _MUNI_NOTE_ONE_PROGRAM)
+    _write_state_note(tmp_path, "Michigan", _STATE_NOTE_MI_MALFORMED)
+
+    result = research_incentives(
+        state="MI",
+        municipality="Ypsilanti Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    assert len(result["applicable_programs"]) == 1
+
+
+# ── Test 17: full Pydantic round-trip with state programs (Finding #8 guard) ──
+
+def test_research_incentives_full_pydantic_round_trip_with_state(tmp_path: Path) -> None:
+    """All programs from both notes round-trip into Program instances.
+
+    Finding #8 guard extended to cover the combined municipality + state list.
+    Keys MUST remain applicable_programs and net_incentive_delta.
+    """
+    _write_note(tmp_path, "Ypsilanti Township", _MUNI_NOTE_ONE_PROGRAM)
+    _write_state_note(tmp_path, "Michigan", _STATE_NOTE_MI)
+
+    result = research_incentives(
+        state="MI",
+        municipality="Ypsilanti Township",
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+
+    # Finding #8: exact key names required by OpportunityUnderwriting
+    programs = [Program(**p) for p in result["applicable_programs"]]
+    assert all(isinstance(p, Program) for p in programs)
+
+    delta = float(result["net_incentive_delta"])
+    assert isinstance(delta, float)
+
+    # 1 municipality + 3 state = 4 total
+    assert len(programs) >= 4
+
+
+# ── Test 18: real-vault sanity (skipped on CI / machines without vault) ──
+
+@pytest.mark.skipif(
+    not Path(_REAL_VAULT).exists(),
+    reason="real vault not present on this machine",
+)
+def test_research_incentives_ypsi_mi_real_vault_note() -> None:
+    """Point at the real vault on disk: assert >=8 programs returned.
+
+    5 active + 3 consumer in Michigan note = 8 state-level programs.
+    Plus whatever Ypsilanti Township note has on top.
+    This test is skipped on any machine where the vault path is absent.
+    """
+    result = research_incentives(
+        state="MI",
+        municipality="Ypsilanti Township",
+        vault_path=Path(_REAL_VAULT),
+    )
+
+    assert result["status"] == "ok", f"Expected ok, got: {result}"
+    assert len(result["applicable_programs"]) >= 8, (
+        f"Expected at least 8 programs (5 active + 3 consumer from MI state note), "
+        f"got {len(result['applicable_programs'])}"
+    )
