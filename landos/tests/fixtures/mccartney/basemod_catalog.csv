@@ -1,0 +1,26 @@
+model,factory,series,bdr,bth,sqft,box_w,box_d,footprint_w_with_garage,footprint_d_with_porch,base_price,status
+Hawthorne,Clayton,Builders Series,3,2,1620,64,32,64,35,105719,Active — Quotes exist (XMOD + MOD)
+Belmont,Clayton,Builders Series,3,2,1620,32,60,35,68,105900,Active — Quotes exist (XMOD + MOD)
+Aspen,Clayton,Builders Series,4,2,1620,32,60,35,68,108493,Active — Quotes exist (XMOD + MOD)
+Laurel,Clayton,Builders Series,3,2,1065,24,48,44,54,95245,Active — MOD quote only
+Keenland,Clayton,Builders Series,3,2,1635,30,58,50,58,106227,Mod Quote Only
+Oaklawn,Clayton,Builders Series,4,2,1860,72,32,72,35,110000,Early stage
+Cypress,Clayton,Builders Series,3,2,990,16,66,39.4,72,64775,53k quote from Kyle
+Center Street,Clayton,Residence Series,3,2,1369,28,52,48,52,89545,"Can be flipped as well, and porch adds 7-11k with 6' to front"
+McCann,Clayton,Residence Series,3,2,2040,67.5,30,67.5,50,113800,"Porch will add 5ft to depth, garage adds 20 ft to depth or width"
+The Clinton,Champion,Genesis,2,2,1120,42,28,62,34,75195,Ranch
+The Salem,Champion,Genesis,2,2,1280,48,28,68,34,80450,Ranch
+The Jaxon,Champion,Genesis,3,2,,,,28,48,81645,Ranch
+The Sunburst,Champion,Genesis,3,2,1493,56,28,56,48,93625,Ranch
+Little Sky,Champion,Genesis,3,2,,,,60,48,99995,Ranch
+The Ashville,Champion,Genesis,4,3.5,2773,60,28,80,34,144350,Two Story
+Big Sky,Champion,Genesis,3,2,1813,28,68,68,48,104595,Ranch
+The Fitzgerald,Champion,Genesis,3,2.5,2520,44,32,64,38,124495,Two Story
+The Bristow,Champion,Genesis,4,3,2400,48,32,68,38,125675,Two Story
+The Brighten,Champion,Genesis,3,2,1560,52,32,52,50,89995,Ranch
+The Arlington,Champion,Genesis,6,4,3137,52,32,38,52,179995,Two Story Duplex
+Emerald Sky,Champion,Genesis,3,2,,,,56,32,89995,Ranch
+Big Timber,Champion,Genesis,3,2,1800,60,32,80,52,98365,Ranch
+The Charleston,Champion,Genesis,3,2,1800,60,32,60,52,98950,Ranch
+The Daniel,Champion,Genesis,3,2,1920,64,32,84,36,102950,Ranch
+The Dawson,Champion,Genesis,3,2,1871,32,64,32,64,96350,Off-Set
