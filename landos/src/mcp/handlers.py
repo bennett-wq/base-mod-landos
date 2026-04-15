@@ -632,6 +632,27 @@ async def handle_zoning_extractor(
     return _ok(result)
 
 
+async def handle_permitted_use_checker(
+    mesh: MeshState,
+    model_type: str,
+    district_code: str,
+    municipality: str,
+    state: str,
+) -> dict[str, Any]:
+    """Check whether a use type is permitted in a zoning district.
+
+    Returns use_blocked if vault note is missing or the case is not deterministic.
+    """
+    from src.agents.permitted_use_checker import check_permitted_use
+    result = check_permitted_use(
+        model_type=model_type,
+        district_code=district_code,
+        municipality=municipality,
+        state=state,
+    )
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -659,6 +680,7 @@ HANDLER_MAP: dict[str, Any] = {
     "get_cooldown_state": handle_get_cooldown_state,
     # Agent tools
     "zoning_extractor": handle_zoning_extractor,
+    "permitted_use_checker": handle_permitted_use_checker,
 }
 
 

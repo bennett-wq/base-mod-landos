@@ -30,12 +30,12 @@ def test_zoning_extractor_importable():
     assert callable(extract_zoning)
 
 
-def test_permitted_use_checker_raises_not_implemented():
-    """AC M2-1.3.2: permitted_use_checker stub raises NotImplementedError."""
+def test_permitted_use_checker_importable():
+    """AC M2-1.3.2 (updated M2-4): permitted_use_checker is importable and check_permitted_use is callable."""
     from src.agents.permitted_use_checker import check_permitted_use
 
-    with pytest.raises(NotImplementedError, match="permitted_use_checker not yet implemented \\(M2-4\\)"):
-        check_permitted_use("modular_home_single_family", "R1", "Washtenaw County")
+    # M2-4 replaces the NotImplementedError stub; module must import without error.
+    assert callable(check_permitted_use)
 
 
 def test_comp_narrator_raises_not_implemented():
