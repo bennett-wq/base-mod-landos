@@ -341,13 +341,36 @@ def research_incentives(
             + "."
         )
 
+    # Surface the municipality-data gap explicitly. State programs alone are
+    # NOT a substitute for municipality-specific programs (Renaissance Zones,
+    # LDFA districts, local TIF) — the orchestrator must know when the
+    # municipality note is missing so it can still emit an ingest-municipality
+    # signal even though the status is "ok" on the strength of state data.
+    if not muni_note_exists:
+        muni_gap_sentence = (
+            f" WARNING: the {municipality} — Programs & Incentives.md vault note is "
+            f"missing — municipality-specific programs (Renaissance Zone, LDFA, local TIF) "
+            f"were NOT checked. Orchestrator should trigger ingest-municipality via the "
+            f"laptop /loop worker to fill this gap."
+        )
+    else:
+        muni_gap_sentence = ""
+
     rationale = (
         rationale_intro
+        + muni_gap_sentence
         + " Geographic boundary matching is deferred to Milestone 3 — "
         "applies_to_parcel is False for all programs in M2. "
         "Orchestrator will display the full list but no programs contribute to "
         "net_incentive_delta until Milestone 3 adds parcel geometry and boundary matching."
     )
+
+    # municipality_note_status lets the orchestrator distinguish "genuinely ok
+    # with full municipality + state data" from "ok on the strength of state
+    # data alone, municipality note needs ingesting." The OpportunityUnderwriting
+    # model does not carry this field — it is agent-level routing metadata for
+    # the underwriter_agent/orchestrator to read and strip before constructing OU.
+    municipality_note_status = "loaded" if muni_note_exists else "missing"
 
     return {
         "status": "ok",
@@ -355,4 +378,5 @@ def research_incentives(
         "applicable_programs": applicable_programs,
         "net_incentive_delta": 0.0,
         "rationale": rationale,
+        "municipality_note_status": municipality_note_status,
     }

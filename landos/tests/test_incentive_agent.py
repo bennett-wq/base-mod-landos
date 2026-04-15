@@ -425,13 +425,21 @@ def test_research_incentives_merges_state_and_municipality(tmp_path: Path) -> No
     assert "municipality" in rationale.lower()
     assert "state" in rationale.lower()
 
+    # Happy-path: municipality note loaded, no gap warning
+    assert result["municipality_note_status"] == "loaded"
+    assert "WARNING" not in rationale
+    assert "ingest-municipality" not in rationale.lower()
+
 
 # ── Test 13: state programs only (no municipality note) ───────────────
 
 def test_research_incentives_state_only(tmp_path: Path) -> None:
     """Only the Michigan state note is written; municipality note does not exist.
 
-    State programs are returned with status=ok.
+    State programs are returned with status=ok BUT the response surfaces the
+    municipality-data gap via municipality_note_status="missing" and a
+    WARNING sentence in the rationale. This prevents callers from silently
+    treating missing municipality notes as complete success (Codex review).
     """
     _write_state_note(tmp_path, "Michigan", _STATE_NOTE_MI)
 
@@ -452,6 +460,17 @@ def test_research_incentives_state_only(tmp_path: Path) -> None:
 
     # Rationale mentions "state" source
     assert "state" in result["rationale"].lower()
+
+    # CRITICAL (Codex review): the response must NOT silently treat the missing
+    # municipality note as success. municipality_note_status + rationale WARNING
+    # give the orchestrator the information it needs to still trigger
+    # ingest-municipality for Nonexistent Township.
+    assert result["municipality_note_status"] == "missing"
+    rationale = result["rationale"]
+    assert "WARNING" in rationale
+    assert "Nonexistent Township" in rationale
+    assert "ingest-municipality" in rationale.lower()
+    assert "Renaissance Zone" in rationale  # specifically names what was NOT checked
 
 
 # ── Test 14: non-MI state — no state note lookup ─────────────────────
