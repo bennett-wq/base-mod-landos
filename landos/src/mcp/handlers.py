@@ -682,6 +682,30 @@ async def handle_comp_narrator(
     return _ok(result)
 
 
+async def handle_incentive_agent(
+    mesh: MeshState,
+    state: str,
+    municipality: str,
+    parcel_apn: str | None = None,
+) -> dict[str, Any]:
+    """Read the Programs & Incentives Tier 1 note for a municipality.
+
+    Returns programs_blocked if the vault note is missing or no programs
+    table is found. Blocked is NOT an error — it is a signal for the
+    laptop /loop worker to trigger ingest-municipality via Codex.
+    """
+    from src.agents.incentive_agent import research_incentives
+    try:
+        result = research_incentives(
+            state=state,
+            municipality=municipality,
+            parcel_apn=parcel_apn,
+        )
+    except EnvironmentError as exc:
+        return _err(str(exc))
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -711,6 +735,7 @@ HANDLER_MAP: dict[str, Any] = {
     "zoning_extractor": handle_zoning_extractor,
     "permitted_use_checker": handle_permitted_use_checker,
     "comp_narrator": handle_comp_narrator,
+    "incentive_agent": handle_incentive_agent,
 }
 
 

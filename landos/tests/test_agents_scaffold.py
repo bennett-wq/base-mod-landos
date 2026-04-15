@@ -46,12 +46,12 @@ def test_comp_narrator_importable():
     assert callable(narrate_comps)
 
 
-def test_incentive_agent_raises_not_implemented():
-    """AC M2-1.3.4: incentive_agent stub raises NotImplementedError."""
-    from src.agents.incentive_agent import extract_incentives
+def test_incentive_agent_importable():
+    """AC M2-1.3.4 (updated M2-6): incentive_agent is importable and research_incentives is callable."""
+    from src.agents.incentive_agent import research_incentives
 
-    with pytest.raises(NotImplementedError, match="incentive_agent not yet implemented \\(M2-6\\)"):
-        extract_incentives("Washtenaw County", "071020-04-001-000")
+    # M2-6 replaces the NotImplementedError stub; module must import without error.
+    assert callable(research_incentives)
 
 
 def test_outreach_drafter_raises_not_implemented():
