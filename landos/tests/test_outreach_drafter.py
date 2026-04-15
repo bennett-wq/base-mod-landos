@@ -524,3 +524,34 @@ def test_outreach_drafter_offer_letter_contains_market_facts(tmp_path: Path) -> 
     assert "22" in offer_text  # months_of_inventory
     assert "180" in offer_text  # median_cdom_days
     assert "14" in offer_text  # years_listed_total
+
+
+# ── Test 14: cover-email filename matches spec §4.5 line 313 ───────────
+
+def test_outreach_drafter_cover_email_filename_matches_spec(tmp_path: Path) -> None:
+    """The cover email file on disk must end with ``-email-to-agent.md``.
+
+    Spec §4.5 line 313 pins the filename to
+    ``04 - Developments/_drafts/<parcel>-email-to-agent.md``. This test is
+    cheap insurance against future drift (the implementer previously renamed
+    this to ``-cover-note.md`` as a defensive measure against the CI grep
+    guard, which was unnecessary — the literal ``email-to-agent.md`` does not
+    trip any of the seven forbidden patterns enforced by test 10).
+    """
+    from src.agents.outreach_drafter import draft_outreach
+
+    uw = _make_full_underwriting(verdict=Verdict.GO, base_land_price=20000.0)
+    result = draft_outreach(
+        underwriting=uw,
+        listing_agent=_listing_agent_full(),
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "drafted"
+    body_path = Path(result["email_body_path"])
+    assert body_path.name.endswith("-email-to-agent.md"), (
+        f"Cover email filename {body_path.name!r} does not match spec §4.5 "
+        "line 313 — expected `<parcel>-email-to-agent.md`."
+    )
+    assert body_path.exists()
+    assert body_path.parent == _drafts_dir(tmp_path)

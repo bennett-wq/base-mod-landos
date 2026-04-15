@@ -1,10 +1,10 @@
-"""Outreach drafter — draft offer letters + cover notes to vault _drafts/.
+"""Outreach drafter — draft offer letters + cover emails to vault _drafts/.
 
 HARD INVARIANT (spec §4.5): this agent NEVER delivers outgoing correspondence.
 It writes two markdown files to the vault ``_drafts/`` directory — one offer
-letter and one cover note addressed to the listing agent — and returns file
-paths. Bennett reviews the drafts in Obsidian and transmits them manually
-through his own tooling.
+letter and one cover email to the listing agent — and returns file paths.
+Bennett reviews the drafts in Obsidian and transmits them manually through
+his own tooling.
 
 A CI-style grep test in ``tests/test_outreach_drafter.py`` reads this file and
 asserts that no delivery-layer imports or call sites appear here. DO NOT add
@@ -276,16 +276,17 @@ def _render_offer_letter(
     )
 
 
-def _render_cover_note(
+def _render_cover_email(
     underwriting: "OpportunityUnderwriting",
     listing_agent: dict[str, Any],
     offer_amount: float,
     drafted_at: datetime,
 ) -> str:
-    """Render the cover note markdown (frontmatter + body) for the agent.
+    """Render the cover email markdown (frontmatter + body) for the listing agent.
 
-    The file name and field label both avoid e-words that would trip the
-    CI grep guard, but the template itself is plain markdown.
+    Spec §4.5 names this the cover email to agent. The template is plain
+    markdown; the CI grep guard targets send-layer APIs, not the bare word
+    "email" in content or filenames.
     """
     from src.models.opportunity import Verdict
 
@@ -400,13 +401,14 @@ def draft_outreach(
     listing_agent: dict[str, Any],
     vault_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Draft an offer letter + cover note for a GO/NEGOTIATE parcel.
+    """Draft an offer letter + cover email to agent for a GO/NEGOTIATE parcel.
 
-    Writes two markdown files to ``{vault_path}/04 - Developments/_drafts/``:
+    Writes two markdown files to ``{vault_path}/04 - Developments/_drafts/``
+    per spec §4.5:
       - ``{parcel_slug}-offer-letter.md``
-      - ``{parcel_slug}-cover-note.md``
+      - ``{parcel_slug}-email-to-agent.md``
 
-    NEVER sends. NEVER imports an email-sending library. See spec §4.5.
+    NEVER sends. NEVER imports a delivery-layer library. See spec §4.5.
 
     Args:
         underwriting: A full OpportunityUnderwriting Pydantic instance.
@@ -470,7 +472,7 @@ def draft_outreach(
         gaps=gaps,
         drafted_at=drafted_at,
     )
-    cover_note_text = _render_cover_note(
+    cover_email_text = _render_cover_email(
         underwriting=underwriting,
         listing_agent=listing_agent,
         offer_amount=offer_amount,
@@ -481,17 +483,17 @@ def draft_outreach(
     drafts_dir.mkdir(parents=True, exist_ok=True)
 
     offer_letter_path = drafts_dir / f"{parcel_slug}-offer-letter.md"
-    cover_note_path = drafts_dir / f"{parcel_slug}-cover-note.md"
+    cover_email_path = drafts_dir / f"{parcel_slug}-email-to-agent.md"
 
     offer_letter_path.write_text(offer_letter_text, encoding="utf-8")
-    cover_note_path.write_text(cover_note_text, encoding="utf-8")
+    cover_email_path.write_text(cover_email_text, encoding="utf-8")
 
     return {
         "status": "drafted",
         "verdict": underwriting.verdict.value,
         "parcel_slug": parcel_slug,
         "offer_letter_path": str(offer_letter_path),
-        "email_body_path": str(cover_note_path),
+        "email_body_path": str(cover_email_path),
         "offer_amount": offer_amount,
         "gaps_flagged": gaps,
         "rationale": _build_rationale(underwriting, offer_amount, gaps),

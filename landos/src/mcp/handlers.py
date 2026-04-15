@@ -711,7 +711,7 @@ async def handle_outreach_drafter(
     underwriting: dict[str, Any],
     listing_agent: dict[str, Any],
 ) -> dict[str, Any]:
-    """Draft an offer letter + cover note for a GO/NEGOTIATE parcel.
+    """Draft an offer letter + cover email to agent for a GO/NEGOTIATE parcel.
 
     Hard rule (spec §4.5): NEVER sends. Drafts only. See
     ``src/agents/outreach_drafter.py`` for the CI grep guard that enforces
