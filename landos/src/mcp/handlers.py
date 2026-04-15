@@ -659,6 +659,28 @@ async def handle_permitted_use_checker(
     return _ok(result)
 
 
+async def handle_comp_narrator(
+    mesh: MeshState,
+    set1_rows: list[dict],
+    set2_rows: list[dict],
+    set3_rows: list[dict],
+    sqft_target: int = 1280,
+) -> dict[str, Any]:
+    """Produce three comp sets with aggregates and an anchor comp + exit $/sf.
+
+    The caller (typically underwriter_agent) pre-filters the listing store by
+    postal_code, property_type, date_range, etc. and passes the rows here.
+    """
+    from src.agents.comp_narrator import narrate_comps
+    result = narrate_comps(
+        set1_rows=set1_rows,
+        set2_rows=set2_rows,
+        set3_rows=set3_rows,
+        sqft_target=sqft_target,
+    )
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -687,6 +709,7 @@ HANDLER_MAP: dict[str, Any] = {
     # Agent tools
     "zoning_extractor": handle_zoning_extractor,
     "permitted_use_checker": handle_permitted_use_checker,
+    "comp_narrator": handle_comp_narrator,
 }
 
 

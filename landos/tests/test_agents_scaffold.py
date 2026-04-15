@@ -38,12 +38,12 @@ def test_permitted_use_checker_importable():
     assert callable(check_permitted_use)
 
 
-def test_comp_narrator_raises_not_implemented():
-    """AC M2-1.3.3: comp_narrator stub raises NotImplementedError."""
+def test_comp_narrator_importable():
+    """AC M2-1.3.3 (updated M2-5): comp_narrator is importable and narrate_comps is callable."""
     from src.agents.comp_narrator import narrate_comps
 
-    with pytest.raises(NotImplementedError, match="comp_narrator not yet implemented \\(M2-5\\)"):
-        narrate_comps("071020-04-001-000", "Washtenaw County")
+    # M2-5 replaces the NotImplementedError stub; module must import without error.
+    assert callable(narrate_comps)
 
 
 def test_incentive_agent_raises_not_implemented():
