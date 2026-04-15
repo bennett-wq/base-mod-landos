@@ -62,9 +62,13 @@ _PLACEHOLDER = "[pull from Spark]"
 # upgrade explicitly. The empty-programs case IS still flagged because that
 # reflects an ingest-municipality gap the orchestrator can act on.
 _GAP_DESCRIPTIONS: dict[str, str] = {
-    "no_incentives_checked": (
-        "applicable_programs is empty — no municipality or state incentives "
-        "were checked for this parcel."
+    "incentive_list_empty": (
+        "applicable_programs is an empty list. This could mean the "
+        "incentive_agent ran and legitimately found zero programs, or it "
+        "could mean the incentive_agent was never invoked for this parcel. "
+        "The OpportunityUnderwriting model does not currently carry a "
+        "provenance field that distinguishes the two cases — see the M3 "
+        "provenance backlog. Verify upstream before sending."
     ),
     "no_listing_history": (
         "market_stats shows zero failed_listings_on_parcel and zero "
@@ -83,7 +87,11 @@ def _detect_gaps(underwriting: "OpportunityUnderwriting") -> list[str]:
 
     programs = underwriting.applicable_programs or []
     if not programs:
-        gaps.append("no_incentives_checked")
+        # Report what we observed (empty list), not what we infer
+        # (no one checked). The OU model does not currently distinguish
+        # "checked and found 0" from "never checked" — that is an M3
+        # provenance concern.
+        gaps.append("incentive_list_empty")
 
     market = underwriting.market_stats
     if (
@@ -236,12 +244,20 @@ def _render_offer_letter(
     market = underwriting.market_stats
     anchor = underwriting.anchor_comp
     exit_total = underwriting.exit_price.total
+    # Comp.ppsf is Optional[float] — land comps legitimately lack square
+    # footage, so we cannot always compute price/sqft. Rendering a None
+    # ppsf as "$0/sf" would be a false factual claim in a letter going to
+    # the seller's agent. Show "unknown $/sf" instead so the reviewer sees
+    # the gap and can backfill before sending.
+    ppsf_display = (
+        f"${anchor.ppsf:g}/sf" if anchor.ppsf is not None else "unknown $/sf"
+    )
     market_lines = [
         "## Market justification\n\n",
         f"- **{market.years_listed_total:g} years** on market (per listing history)\n",
         f"- **{market.months_of_inventory:g} months** of inventory in this ZIP \u2014 {market.market_health}\n",
         f"- **Median CDOM:** {market.median_cdom_days} days\n",
-        f"- **Comp anchor:** {anchor.address} at ${anchor.ppsf or 0:g}/sf ({underwriting.anchor_rationale})\n",
+        f"- **Comp anchor:** {anchor.address} at {ppsf_display} ({underwriting.anchor_rationale})\n",
         (
             f"- **Asking price vs comp-supported value:** "
             f"${underwriting.base_land_price:,.0f} ask vs anchor-implied "
@@ -357,11 +373,22 @@ def _render_cover_email(
     )
     # Strip a leading "The " so "The Jaxon" interpolates cleanly after "a".
     fitting_name = _strip_leading_article(fitting_name_raw)
-    anchor_sentence = (
-        f"Our underwriting anchors on {anchor.address} at ${anchor.ppsf or 0:g}/sf, "
-        f"which supports an exit around ${underwriting.exit_price.total:,.0f} for a "
-        f"{fitting_name} build on this parcel.\n\n"
-    )
+    # Comp.ppsf is Optional[float]. When ppsf is unknown we drop the "$/sf"
+    # clause entirely rather than asserting a false "$0/sf" figure to the
+    # seller's agent. The exit-around figure still gives a concrete number
+    # for the reader to react to.
+    if anchor.ppsf is not None:
+        anchor_sentence = (
+            f"Our underwriting anchors on {anchor.address} at ${anchor.ppsf:g}/sf, "
+            f"which supports an exit around ${underwriting.exit_price.total:,.0f} for a "
+            f"{fitting_name} build on this parcel.\n\n"
+        )
+    else:
+        anchor_sentence = (
+            f"Our underwriting anchors on {anchor.address}, "
+            f"which supports an exit around ${underwriting.exit_price.total:,.0f} for a "
+            f"{fitting_name} build on this parcel.\n\n"
+        )
 
     negotiate_sentence = ""
     if underwriting.verdict == Verdict.NEGOTIATE:
@@ -504,18 +531,36 @@ def draft_outreach(
     offer_letter_path = drafts_dir / f"{parcel_slug}-offer-letter.md"
     cover_email_path = drafts_dir / f"{parcel_slug}-email-to-agent.md"
 
-    offer_letter_path.write_text(offer_letter_text, encoding="utf-8")
+    # Concurrency-safe atomic write:
+    # 1. Write both drafts to sibling .tmp files first. Neither final path
+    #    becomes visible until we promote it, so a mid-write crash cannot
+    #    leave a half-written pair on disk.
+    # 2. os.replace() is atomic on POSIX and Windows when source and dest
+    #    live on the same filesystem, which they do here (sibling files in
+    #    drafts_dir). Promoting the pair back-to-back means a concurrent
+    #    caller drafting the same parcel can only observe the old pair, our
+    #    new pair, or their own new pair — never a mismatched offer letter
+    #    paired with someone else's cover email.
+    # 3. Worst case with two concurrent callers is "last writer wins on the
+    #    pair", which is acceptable for drafts. The critical invariant is
+    #    that a mismatched pair is never observable by a reviewer opening
+    #    the files in Obsidian.
+    offer_tmp = offer_letter_path.with_suffix(offer_letter_path.suffix + ".tmp")
+    cover_tmp = cover_email_path.with_suffix(cover_email_path.suffix + ".tmp")
     try:
-        cover_email_path.write_text(cover_email_text, encoding="utf-8")
+        offer_tmp.write_text(offer_letter_text, encoding="utf-8")
+        cover_tmp.write_text(cover_email_text, encoding="utf-8")
+        os.replace(offer_tmp, offer_letter_path)
+        os.replace(cover_tmp, cover_email_path)
     except Exception:
-        # Roll back the offer letter write so the pair is atomic from the
-        # caller's perspective. A half-written pair on an NFS / iCloud vault
-        # is worse than nothing — the reviewer would act on an offer letter
-        # without the accompanying cover email.
-        try:
-            offer_letter_path.unlink()
-        except OSError:
-            pass  # best-effort cleanup; re-raise the original write error
+        # Best-effort cleanup of any tmp that was created. Do NOT touch the
+        # final paths — they either still hold the previous good pair, or
+        # they never existed in the first place.
+        for tmp in (offer_tmp, cover_tmp):
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
         raise
 
     return {

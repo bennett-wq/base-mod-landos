@@ -723,6 +723,17 @@ async def handle_outreach_drafter(
 
     Returns ``_err`` if OBSIDIAN_VAULT_PATH is unset (Finding #2 guard).
     """
+    # Validate listing_agent at the MCP boundary. The drafter calls .get()
+    # on this value, so passing a list, None, or a bare string would raise
+    # an uncaught AttributeError that escapes the handler and breaks the
+    # MCP contract — every tool response must be {"content": [...],
+    # "isError": bool}. Catch the bad shape up front and return a clean
+    # _err instead.
+    if not isinstance(listing_agent, dict):
+        return _err(
+            f"listing_agent must be a dict, got {type(listing_agent).__name__}"
+        )
+
     from pydantic import ValidationError
 
     from src.agents.outreach_drafter import draft_outreach
