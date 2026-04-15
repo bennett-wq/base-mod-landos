@@ -27,7 +27,6 @@ raises EnvironmentError which the MCP handler catches as an _err response.
 from __future__ import annotations
 
 import os
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -157,6 +156,18 @@ def _agent_field(listing_agent: dict[str, Any], key: str, default: str = _PLACEH
     return str(value)
 
 
+def _strip_leading_article(name: str) -> str:
+    """Drop a leading "The " (case-insensitive) so the name interpolates
+    cleanly after an indefinite article.
+
+    Fitting-model names like "The Jaxon" would otherwise render as the
+    ungrammatical "a The Jaxon build" in the cover email's anchor sentence.
+    Using a plain startswith check (not regex) because this module
+    deliberately carries no `re` import — keeping the grep guard tight.
+    """
+    return name[4:] if name.lower().startswith("the ") else name
+
+
 # ── Markdown renderers ────────────────────────────────────────────────
 
 def _render_offer_letter(
@@ -239,10 +250,16 @@ def _render_offer_letter(
     ]
     market_block = "".join(market_lines)
 
-    # Rationale bullets from the underwriting engine
+    # Rationale bullets from the underwriting engine. Wrap in an H2 heading
+    # so the reader gets a visual separator between the market-justification
+    # bullets and the underwriting rationale bullets that follow. When
+    # rationale_bullets is empty we skip the heading entirely so the section
+    # doesn't render as an empty stub.
     if underwriting.rationale_bullets:
         rationale_block = (
-            "\n".join(f"- {line}" for line in underwriting.rationale_bullets) + "\n\n"
+            "## Underwriting rationale\n\n"
+            + "\n".join(f"- {line}" for line in underwriting.rationale_bullets)
+            + "\n\n"
         )
     else:
         rationale_block = ""
@@ -333,11 +350,13 @@ def _render_cover_email(
     )
 
     anchor = underwriting.anchor_comp
-    fitting_name = (
+    fitting_name_raw = (
         underwriting.fitting_models[0].model_name
         if underwriting.fitting_models
         else "modular"
     )
+    # Strip a leading "The " so "The Jaxon" interpolates cleanly after "a".
+    fitting_name = _strip_leading_article(fitting_name_raw)
     anchor_sentence = (
         f"Our underwriting anchors on {anchor.address} at ${anchor.ppsf or 0:g}/sf, "
         f"which supports an exit around ${underwriting.exit_price.total:,.0f} for a "
@@ -486,7 +505,18 @@ def draft_outreach(
     cover_email_path = drafts_dir / f"{parcel_slug}-email-to-agent.md"
 
     offer_letter_path.write_text(offer_letter_text, encoding="utf-8")
-    cover_email_path.write_text(cover_email_text, encoding="utf-8")
+    try:
+        cover_email_path.write_text(cover_email_text, encoding="utf-8")
+    except Exception:
+        # Roll back the offer letter write so the pair is atomic from the
+        # caller's perspective. A half-written pair on an NFS / iCloud vault
+        # is worse than nothing — the reviewer would act on an offer letter
+        # without the accompanying cover email.
+        try:
+            offer_letter_path.unlink()
+        except OSError:
+            pass  # best-effort cleanup; re-raise the original write error
+        raise
 
     return {
         "status": "drafted",

@@ -723,6 +723,8 @@ async def handle_outreach_drafter(
 
     Returns ``_err`` if OBSIDIAN_VAULT_PATH is unset (Finding #2 guard).
     """
+    from pydantic import ValidationError
+
     from src.agents.outreach_drafter import draft_outreach
     from src.models.opportunity import OpportunityUnderwriting
     try:
@@ -731,6 +733,8 @@ async def handle_outreach_drafter(
             underwriting=underwriting_model,
             listing_agent=listing_agent,
         )
+    except ValidationError as exc:
+        return _err(f"Invalid underwriting payload: {exc}")
     except EnvironmentError as exc:
         return _err(str(exc))
     return _ok(result)

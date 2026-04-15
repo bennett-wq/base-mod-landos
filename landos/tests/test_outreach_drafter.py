@@ -555,3 +555,187 @@ def test_outreach_drafter_cover_email_filename_matches_spec(tmp_path: Path) -> N
     )
     assert body_path.exists()
     assert body_path.parent == _drafts_dir(tmp_path)
+
+
+# ── Test 15: cover email never emits "a The <model>" article collision ──
+
+def test_outreach_drafter_cover_email_no_article_collision(tmp_path: Path) -> None:
+    """Fitting-model names beginning with "The " must not render as "a The ...".
+
+    Regression test for the code-review finding: fitting_models[0].model_name
+    of "The Jaxon" previously produced the ungrammatical
+    `"for a The Jaxon build on this parcel"` in the cover email. The fix
+    strips a leading "The " before the name is interpolated after the
+    indefinite article.
+    """
+    from src.agents.outreach_drafter import draft_outreach
+
+    jaxon_model_id = uuid4()
+    uw = _make_full_underwriting(
+        verdict=Verdict.GO,
+        base_land_price=20000.0,
+        fitting_model_id=jaxon_model_id,
+        fitting_models=[
+            ModelFit(
+                model_id=jaxon_model_id,
+                model_name="The Jaxon",
+                fits=True,
+                reason="fits buildable envelope",
+            )
+        ],
+    )
+    result = draft_outreach(
+        underwriting=uw,
+        listing_agent=_listing_agent_full(),
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "drafted"
+    body_text = Path(result["email_body_path"]).read_text(encoding="utf-8")
+
+    # Hard-check that none of the article-collision permutations slipped
+    # through. "a The " is the literal bug; the lowercase and capitalized
+    # variants guard against future formatting drift.
+    assert "a The " not in body_text, (
+        "Cover email rendered 'a The <model>' article collision — "
+        "_strip_leading_article helper is not wired up."
+    )
+    assert "a the " not in body_text
+    assert "A The " not in body_text
+
+    # Positive assertion: the stripped form should be present.
+    assert "a Jaxon build" in body_text
+
+
+# ── Test 16: offer letter wraps rationale bullets in an H2 heading ─────
+
+def test_outreach_drafter_offer_letter_has_rationale_heading(tmp_path: Path) -> None:
+    """Non-empty rationale_bullets must be preceded by `## Underwriting rationale`.
+
+    Regression test: the market-justification bullets and the rationale
+    bullets previously rendered as two unlabeled lists running together.
+    The reader needs an H2 separator so the two bullet blocks don't collide
+    in Obsidian's rendered view.
+    """
+    from src.agents.outreach_drafter import draft_outreach
+
+    uw = _make_full_underwriting(
+        verdict=Verdict.GO,
+        rationale_bullets=[
+            "14 years of failed listings across the package.",
+            "22 months of land inventory in 48198 — deep buyer's market.",
+        ],
+    )
+    result = draft_outreach(
+        underwriting=uw,
+        listing_agent=_listing_agent_full(),
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "drafted"
+    offer_text = Path(result["offer_letter_path"]).read_text(encoding="utf-8")
+    assert "## Underwriting rationale" in offer_text
+
+
+# ── Test 17: empty rationale_bullets omits the rationale heading ───────
+
+def test_outreach_drafter_offer_letter_omits_rationale_heading_when_empty(
+    tmp_path: Path,
+) -> None:
+    """Empty rationale_bullets must NOT produce an empty `## Underwriting rationale`
+    stub in the offer letter.
+    """
+    from src.agents.outreach_drafter import draft_outreach
+
+    uw = _make_full_underwriting(verdict=Verdict.GO, rationale_bullets=[])
+    result = draft_outreach(
+        underwriting=uw,
+        listing_agent=_listing_agent_full(),
+        vault_path=tmp_path,
+    )
+
+    assert result["status"] == "drafted"
+    offer_text = Path(result["offer_letter_path"]).read_text(encoding="utf-8")
+    assert "## Underwriting rationale" not in offer_text
+
+
+# ── Test 18: handler returns _err on a malformed underwriting payload ──
+
+def test_handle_outreach_drafter_mcp_handler_validation_error_returns_err(
+    tmp_path: Path,
+) -> None:
+    """Malformed OpportunityUnderwriting dict produces _err, not a raise.
+
+    Regression test: previously the handler only caught EnvironmentError, so
+    any pydantic ValidationError on malformed MCP input propagated out of
+    the handler and broke the MCP contract
+    (all tool responses must be `{"content": [...], "isError": bool}`).
+    """
+    from src.mcp.handlers import MeshState, handle_outreach_drafter
+    import src.agents.outreach_drafter as _agent_mod
+
+    mesh = MeshState()
+    # Deliberately missing nearly every required field so pydantic raises.
+    malformed = {"verdict": "GO"}
+
+    with patch.object(_agent_mod, "VAULT_PATH", tmp_path):
+        response = asyncio.run(
+            handle_outreach_drafter(
+                mesh,
+                underwriting=malformed,
+                listing_agent=_listing_agent_full(),
+            )
+        )
+
+    assert response["isError"] is True
+    error_text = response["content"][0]["text"]
+    assert "Invalid underwriting payload" in error_text
+
+
+# ── Test 19: offer letter is rolled back if the cover email write fails ──
+
+def test_outreach_drafter_rolls_back_offer_letter_on_cover_email_write_failure(
+    tmp_path: Path,
+) -> None:
+    """If the cover email write fails after the offer letter write succeeds,
+    the offer letter file must be unlinked so the draft pair stays atomic.
+
+    Mid-write failures are a real production concern on NFS / iCloud-synced
+    vaults, where a transient I/O error on the second write would otherwise
+    leave the reviewer with an offer letter and no matching cover email.
+    """
+    import pathlib
+
+    from src.agents.outreach_drafter import draft_outreach
+
+    uw = _make_full_underwriting(verdict=Verdict.GO, base_land_price=20000.0)
+
+    # Patch Path.write_text at the class level: the offer letter write
+    # (call 1) succeeds, the cover email write (call 2) raises. We let the
+    # original write_text run on the first call by dispatching through the
+    # real bound method, so the offer letter actually lands on disk.
+    original_write_text = pathlib.Path.write_text
+    call_count = {"n": 0}
+
+    def fake_write_text(self: pathlib.Path, *args: Any, **kwargs: Any) -> int:
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            return original_write_text(self, *args, **kwargs)
+        raise OSError("test disk full")
+
+    with patch.object(pathlib.Path, "write_text", fake_write_text):
+        with pytest.raises(OSError, match="test disk full"):
+            draft_outreach(
+                underwriting=uw,
+                listing_agent=_listing_agent_full(),
+                vault_path=tmp_path,
+            )
+
+    # The drafts dir was created, but the offer letter must have been
+    # rolled back so the pair is atomic from the caller's perspective.
+    drafts_dir = _drafts_dir(tmp_path)
+    remaining = list(drafts_dir.iterdir()) if drafts_dir.exists() else []
+    assert remaining == [], (
+        f"Offer letter was not rolled back after cover email write failure: "
+        f"{remaining!r}"
+    )
