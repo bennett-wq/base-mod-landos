@@ -751,6 +751,46 @@ async def handle_outreach_drafter(
     return _ok(result)
 
 
+async def handle_opportunity_hunter(
+    mesh: MeshState,
+    scope: dict[str, Any],
+    trigger_reason: str,
+    program_name: str,
+    top: int = 100,
+) -> dict[str, Any]:
+    """Query Spark for active Land listings in a favorable scope.
+
+    Invoked when incentive_agent finds a new program (TIF, Renaissance
+    Zone, MSHDA allocation, etc.) that changes parcel underwriting in an
+    area. Returns the parcel list; the orchestrator (M2-10) turns each
+    returned parcel into a ``parcel_discovered`` event with the program
+    name in the event's ``trigger`` field.
+
+    The handler catches ``EnvironmentError`` (Finding #2) so a missing
+    SPARK_API_KEY surfaces as an MCP ``_err`` response instead of leaking
+    a raw Python exception to the caller. It also type-checks ``scope``
+    at the boundary — passing a list, string, or None would otherwise
+    cause the agent's ``scope.get(...)`` calls to raise AttributeError.
+    """
+    if not isinstance(scope, dict):
+        return _err(
+            f"scope must be a dict, got {type(scope).__name__}"
+        )
+
+    from src.agents.opportunity_hunter import hunt_opportunities
+
+    try:
+        result = hunt_opportunities(
+            scope=scope,
+            trigger_reason=trigger_reason,
+            program_name=program_name,
+            top=top,
+        )
+    except EnvironmentError as exc:
+        return _err(str(exc))
+    return _ok(result)
+
+
 # ── Tool dispatch ─────────────────────────────────────────────────────
 
 HANDLER_MAP: dict[str, Any] = {
@@ -782,6 +822,7 @@ HANDLER_MAP: dict[str, Any] = {
     "comp_narrator": handle_comp_narrator,
     "incentive_agent": handle_incentive_agent,
     "outreach_drafter": handle_outreach_drafter,
+    "opportunity_hunter": handle_opportunity_hunter,
 }
 
 

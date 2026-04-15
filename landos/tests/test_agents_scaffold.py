@@ -62,12 +62,12 @@ def test_outreach_drafter_importable():
     assert callable(draft_outreach)
 
 
-def test_opportunity_hunter_raises_not_implemented():
-    """AC M2-1.3.6: opportunity_hunter stub raises NotImplementedError."""
+def test_opportunity_hunter_importable():
+    """AC M2-1.3.6 (updated M2-8): opportunity_hunter is importable and hunt_opportunities is callable."""
     from src.agents.opportunity_hunter import hunt_opportunities
 
-    with pytest.raises(NotImplementedError, match="opportunity_hunter not yet implemented \\(M2-8\\)"):
-        hunt_opportunities("Washtenaw County", "R1")
+    # M2-8 replaces the NotImplementedError stub; module must import without error.
+    assert callable(hunt_opportunities)
 
 
 def test_land_bank_hunter_raises_not_implemented():
