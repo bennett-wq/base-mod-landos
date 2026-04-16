@@ -70,12 +70,12 @@ def test_opportunity_hunter_importable():
     assert callable(hunt_opportunities)
 
 
-def test_land_bank_hunter_raises_not_implemented():
-    """AC M2-1.3.7: land_bank_hunter stub raises NotImplementedError."""
+def test_land_bank_hunter_importable():
+    """AC M2-1.3.7 (updated M2-9): land_bank_hunter is importable and hunt_land_banks is callable."""
     from src.agents.land_bank_hunter import hunt_land_banks
 
-    with pytest.raises(NotImplementedError, match="land_bank_hunter not yet implemented \\(M2-9\\)"):
-        hunt_land_banks("Washtenaw County")
+    # M2-9 replaces the NotImplementedError stub; module must import without error.
+    assert callable(hunt_land_banks)
 
 
 def test_underwriter_agent_raises_not_implemented():

@@ -751,6 +751,29 @@ async def handle_outreach_drafter(
     return _ok(result)
 
 
+async def handle_land_bank_hunter(
+    mesh: MeshState,
+    state: str,
+    county: str,
+) -> dict[str, Any]:
+    """Query land bank sources for a state/county pair.
+
+    Returns discovered parcels so the orchestrator (M2-10) can fire
+    ``parcel.discovered { source: "land-bank", price: ..., auction_date }``
+    events. The agent returns a result dict; it does NOT emit events directly.
+
+    Catches ``EnvironmentError`` (Finding #2) so a missing live-adapter
+    credential surfaces as an MCP ``_err`` response instead of leaking a
+    raw Python exception to the caller.
+    """
+    from src.agents.land_bank_hunter import hunt_land_banks
+    try:
+        result = hunt_land_banks(state=state, county=county)
+    except EnvironmentError as exc:
+        return _err(str(exc))
+    return _ok(result)
+
+
 async def handle_opportunity_hunter(
     mesh: MeshState,
     scope: dict[str, Any],
@@ -823,6 +846,7 @@ HANDLER_MAP: dict[str, Any] = {
     "incentive_agent": handle_incentive_agent,
     "outreach_drafter": handle_outreach_drafter,
     "opportunity_hunter": handle_opportunity_hunter,
+    "land_bank_hunter": handle_land_bank_hunter,
 }
 
 
