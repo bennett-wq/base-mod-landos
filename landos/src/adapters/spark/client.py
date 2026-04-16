@@ -146,4 +146,4 @@ def fetch_active_land_listings(
     # Spark's OData response shape: {"value": [...]} (standard v4) or the
     # older {"D": {"Results": [...]}} envelope. Match whatever the existing
     # scripts/ingest_spark_live.py pattern accepts.
-    return data.get("value", data.get("D", {}).get("Results", []))
+    return data.get("value") or data.get("D", {}).get("Results") or []

@@ -207,6 +207,53 @@ def test_client_returns_empty_list_when_value_field_missing() -> None:
     assert result == []
 
 
+def test_client_handles_null_value_in_response():
+    """Spark sometimes returns {"value": null} during maintenance. Must not crash."""
+    from src.adapters.spark.client import fetch_active_land_listings
+
+    def mock_urlopen(req, timeout=60):
+        import io
+        body = b'{"value": null}'
+        resp = io.BytesIO(body)
+        resp.status = 200
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = lambda s, *a: None
+        resp.read = lambda: body
+        return resp
+
+    result = fetch_active_land_listings(
+        scope_type="county",
+        scope_value="Washtenaw",
+        api_key="test-key",
+        _urlopen=mock_urlopen,
+    )
+    assert result == []
+
+
+def test_client_wraps_malformed_json_response():
+    """Non-JSON response body should raise SparkHTTPError, not JSONDecodeError."""
+    from src.adapters.spark.client import SparkHTTPError, fetch_active_land_listings
+    import pytest
+
+    def mock_urlopen(req, timeout=60):
+        import io
+        body = b"<html>Gateway Timeout</html>"
+        resp = io.BytesIO(body)
+        resp.status = 200
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = lambda s, *a: None
+        resp.read = lambda: body
+        return resp
+
+    with pytest.raises(SparkHTTPError, match="Spark API request failed"):
+        fetch_active_land_listings(
+            scope_type="county",
+            scope_value="Washtenaw",
+            api_key="test-key",
+            _urlopen=mock_urlopen,
+        )
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # Agent tests
 # ─────────────────────────────────────────────────────────────────────────
@@ -425,6 +472,17 @@ def test_hunt_opportunities_success_builds_parcel_dicts() -> None:
 
     assert [p["listing_key"] for p in result["discovered_parcels"]] == ["a", "b", "c"]
     assert [p["list_price"] for p in result["discovered_parcels"]] == [10000, 20000, 30000]
+
+
+def test_parcel_from_record_handles_sparse_spark_record():
+    """Records with missing fields should produce None values, not KeyError."""
+    from src.agents.opportunity_hunter import _parcel_from_record
+
+    p = _parcel_from_record({"ListingKey": "sparse-1"})
+    assert p["listing_key"] == "sparse-1"
+    assert p["list_price"] is None
+    assert p["county"] is None
+    assert p["latitude"] is None
 
 
 def test_hunt_opportunities_spark_http_error_returns_error_status() -> None:
