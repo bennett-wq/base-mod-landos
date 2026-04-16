@@ -766,6 +766,10 @@ async def handle_land_bank_hunter(
     credential surfaces as an MCP ``_err`` response instead of leaking a
     raw Python exception to the caller.
     """
+    if not isinstance(state, str):
+        return _err(f"state must be a string, got {type(state).__name__}")
+    if not isinstance(county, str):
+        return _err(f"county must be a string, got {type(county).__name__}")
     from src.agents.land_bank_hunter import hunt_land_banks
     try:
         result = hunt_land_banks(state=state, county=county)

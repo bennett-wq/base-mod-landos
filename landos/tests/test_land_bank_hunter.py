@@ -451,3 +451,76 @@ def test_handler_no_source_configured_returns_ok_envelope() -> None:
     assert payload["status"] == "no_source_configured"
     assert payload["discovered_parcels"] == []
     assert "Kalamazoo" in payload["reason"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Handler boundary validation — non-string state/county (Codex fix)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "state,county",
+    [
+        (None, "Genesee"),
+        ("MI", None),
+        (None, None),
+        (42, "Genesee"),
+        ("MI", 42),
+        (["MI"], "Genesee"),
+        ("MI", ["Genesee"]),
+    ],
+)
+def test_handler_rejects_non_string_state_or_county(state: Any, county: Any) -> None:
+    """Handler must return isError=True when state or county is not a string.
+
+    Without this guard, a None/int/list would reach agent's .strip() call and
+    raise AttributeError, leaking a raw exception to the caller (Codex fix).
+    """
+    from src.mcp.handlers import MeshState, handle_land_bank_hunter
+
+    mesh = MeshState()
+    response = _run(
+        handle_land_bank_hunter(mesh, state=state, county=county)
+    )
+
+    assert response["isError"] is True
+    assert "must be a string" in response["content"][0]["text"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Empty-inventory warning branch (Codex fix)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def test_hunt_land_banks_empty_inventory_warning() -> None:
+    """Adapter configured but returns [] → status=ok, warning=no_parcels_in_inventory.
+
+    This covers the zero-result gap-surfacing branch in hunt_land_banks, which
+    is reachable when a live adapter returns an empty list (M3 scope). In M2
+    we inject a stub adapter that returns [] to exercise the branch now.
+    """
+    import src.agents.land_bank_hunter as agent_mod
+    from src.agents.land_bank_hunter import LandBankSource, hunt_land_banks
+
+    original_sources = agent_mod._LAND_BANK_SOURCES.copy()
+    try:
+        agent_mod._LAND_BANK_SOURCES[("mi", "empty")] = [
+            LandBankSource(
+                name="Empty Test Source",
+                source_type="land_bank",
+                county="Empty",
+                state="MI",
+                adapter=lambda: [],
+            )
+        ]
+
+        result = hunt_land_banks(state="MI", county="Empty")
+
+        assert result["status"] == "ok"
+        assert result["warning"] == "no_parcels_in_inventory"
+        assert result["discovered_parcels"] == []
+        assert result["sources_queried"] == ["Empty Test Source"]
+        assert result["reason"] is None
+    finally:
+        agent_mod._LAND_BANK_SOURCES.clear()
+        agent_mod._LAND_BANK_SOURCES.update(original_sources)
