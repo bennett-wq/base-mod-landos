@@ -140,10 +140,15 @@ def fetch_active_land_listings(
         TimeoutError,
         OSError,
         json.JSONDecodeError,
+        UnicodeDecodeError,
     ) as exc:
         raise SparkHTTPError(f"Spark API request failed: {exc}") from exc
 
     # Spark's OData response shape: {"value": [...]} (standard v4) or the
     # older {"D": {"Results": [...]}} envelope. Match whatever the existing
     # scripts/ingest_spark_live.py pattern accepts.
+    # Guard: if data is not a dict (e.g. Spark returns a bare JSON array),
+    # return empty list instead of crashing on .get() (Codex review #2).
+    if not isinstance(data, dict):
+        return []
     return data.get("value") or data.get("D", {}).get("Results") or []

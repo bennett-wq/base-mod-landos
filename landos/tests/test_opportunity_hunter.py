@@ -645,3 +645,107 @@ def test_handler_happy_path_returns_ok_envelope() -> None:
     assert payload["program_name"] == "Ypsilanti Township Renaissance Zone"
     assert len(payload["discovered_parcels"]) == 1
     assert payload["discovered_parcels"][0]["listing_key"] == "only-one"
+
+
+# ── Codex stage-3 review fixes (4 findings) ────────────────────────────
+
+
+def test_hunt_opportunities_unhashable_scope_type_returns_error() -> None:
+    """Codex #1: scope['type'] = [] would crash on frozenset membership test.
+
+    Must return a structured error, not raise TypeError.
+    """
+    from src.agents.opportunity_hunter import hunt_opportunities
+
+    result = hunt_opportunities(
+        scope={"type": ["not", "a", "string"], "value": "Washtenaw"},
+        trigger_reason="test",
+        program_name="test",
+        _fetch=lambda **kw: [],
+    )
+    assert result["status"] == "error"
+    assert "must be a string" in result["reason"]
+    assert result["discovered_parcels"] == []
+
+
+def test_client_handles_non_dict_json_response() -> None:
+    """Codex #2: Spark returning a bare JSON array (e.g. []) would crash on .get().
+
+    Must return empty list, not raise AttributeError.
+    """
+    from src.adapters.spark.client import fetch_active_land_listings
+
+    def mock_urlopen(req, timeout=60):
+        import io
+        body = b"[]"
+        resp = io.BytesIO(body)
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = lambda s, *a: None
+        resp.read = lambda: body
+        return resp
+
+    result = fetch_active_land_listings(
+        scope_type="county",
+        scope_value="Washtenaw",
+        api_key="test-key",
+        _urlopen=mock_urlopen,
+    )
+    assert result == []
+
+
+def test_client_wraps_unicode_decode_error() -> None:
+    """Codex #3: Non-UTF-8 response bytes should be caught as SparkHTTPError.
+
+    Without UnicodeDecodeError in the except clause, the raw decode error
+    would escape to the caller.
+    """
+    import pytest
+    from src.adapters.spark.client import SparkHTTPError, fetch_active_land_listings
+
+    def mock_urlopen(req, timeout=60):
+        import io
+
+        class FakeResp:
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                pass
+            def read(self):
+                return b"\x80\x81\x82"  # invalid UTF-8
+
+        return FakeResp()
+
+    with pytest.raises(SparkHTTPError, match="Spark API request failed"):
+        fetch_active_land_listings(
+            scope_type="county",
+            scope_value="Washtenaw",
+            api_key="test-key",
+            _urlopen=mock_urlopen,
+        )
+
+
+def test_hunt_opportunities_filters_non_dict_records() -> None:
+    """Codex #4: Malformed Spark items (None, strings) in the records list.
+
+    Agent must skip non-dict items instead of crashing on .get().
+    """
+    from src.agents.opportunity_hunter import hunt_opportunities
+
+    mixed_records = [
+        None,
+        "not-a-dict",
+        _sample_record(ListingKey="valid-1"),
+        42,
+        _sample_record(ListingKey="valid-2"),
+    ]
+
+    result = hunt_opportunities(
+        scope={"type": "county", "value": "Washtenaw"},
+        trigger_reason="test",
+        program_name="test",
+        _fetch=lambda **kw: mixed_records,
+    )
+    assert result["status"] == "ok"
+    keys = [p["listing_key"] for p in result["discovered_parcels"]]
+    assert keys == ["valid-1", "valid-2"]
+    assert result["warning"] is None  # parcels found, no warning

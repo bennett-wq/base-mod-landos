@@ -183,6 +183,21 @@ def hunt_opportunities(
             reason="invalid_scope_shape: scope must have both 'type' and 'value' keys",
         )
 
+    # Guard: scope_type must be a string.  Non-string (e.g. list, dict)
+    # would crash the `in _SUPPORTED_SCOPE_TYPES` frozenset membership
+    # test with TypeError when the value is unhashable (Codex review #1).
+    if not isinstance(scope_type, str):
+        return _envelope(
+            status="error",
+            scope=scope,
+            trigger_reason=trigger_reason,
+            program_name=program_name,
+            reason=(
+                f"invalid_scope_shape: scope['type'] must be a string, "
+                f"got {type(scope_type).__name__}"
+            ),
+        )
+
     # ── Unsupported scope types (tif and anything else) ───────────────
     if scope_type == "tif":
         return _envelope(
@@ -232,7 +247,11 @@ def hunt_opportunities(
     # it indicates a drift between the agent's and client's scope lists.
 
     # ── Build parcels ────────────────────────────────────────────────
-    discovered = [_parcel_from_record(rec) for rec in records]
+    # Filter out non-dict items — a malformed Spark response could include
+    # null or non-object items in the value array (Codex review #4).
+    discovered = [
+        _parcel_from_record(rec) for rec in records if isinstance(rec, dict)
+    ]
 
     # ── Zero-result gap surfacing (Finding #10) ──────────────────────
     if not discovered:
